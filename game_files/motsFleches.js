@@ -47,9 +47,10 @@ function resetGame(gridID) {
     else {
       infos = _gridManager.getGridInfos();
       sendChatMessage('Grille ' + infos.provider + ' ' + infos.id + ' (Niveau ' + infos.level + ') prête !');
-      
-      // Send reset order to clients
+
+      // Send reset order to clients, then start game automatically
       _io.sockets.emit('grid_reset');
+      startGame();
     }
   });
 }
@@ -131,6 +132,9 @@ function checkWord(player, wordObj) {
     // Notify all clients about this word
     wordObj.color = player.getColor();
     _io.sockets.emit('word_founded', wordObj);
+
+    // Notify chat about the found word
+    sendChatMessage('<strong>' + player.getNick() + '</strong> a trouvé <strong>' + wordObj.word + '</strong> (+' + points + ' pts) !');
 
     // Check for bonuses
     bonuses = bonusChecker(points, _gridManager.getNbRemainingWords());

@@ -401,6 +401,8 @@ html, body {
   -moz-box-sizing: border-box;
   -webkit-box-sizing: border-box;
   border-top: 1px solid rgba(127, 140, 141, 0.2);
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .letter {

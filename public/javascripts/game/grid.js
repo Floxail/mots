@@ -53,29 +53,12 @@ define(['cursor'], function (Cursor) {
     frame.setAttribute('data-col', column);
     frame.setAttribute('data-pos', info.pos);
 
-    switch (info.nbLines) {
-      case 1:
-        lineHeight = size;
-        fontSize = Math.floor(lineHeight / 5.4);
-        break;
-
-      case 2:
-        lineHeight = Math.floor(size / info.nbLines);
-        fontSize = Math.floor(lineHeight / 2.6);
-        break;
-
-      case 3:
-        lineHeight = Math.floor(size / info.nbLines);
-        fontSize = Math.floor(lineHeight / 1.8);
-        break;
-      
-      case 4:
-        lineHeight = Math.floor(size / info.nbLines);
-        fontSize = Math.round(lineHeight / 1.5);
-        break;
-
-      default: 
-        console.log('[ERROR][grid.js] Don\'t know how to display ' + info.nbLines + ' lines frame !!!');
+    if (info.nbLines === 1) {
+      lineHeight = size;
+      fontSize = Math.floor(size / 5.4);
+    } else {
+      lineHeight = Math.floor(size / info.nbLines);
+      fontSize = Math.max(7, Math.floor(size / 5.5));
     }
     
     frame.style.lineHeight = lineHeight + 'px';
@@ -87,7 +70,8 @@ define(['cursor'], function (Cursor) {
       
       // Insert description and arrow
       descNode.innerHTML = info.desc[i];
-      descNode.classList.add('arrow' + info.arrow[i].toString());
+      if (info.arrow[i] !== null)
+        descNode.classList.add('arrow' + info.arrow[i].toString());
       
       frame.appendChild(descNode);
     };
@@ -147,10 +131,10 @@ define(['cursor'], function (Cursor) {
 
   function getFrameAxisNumber(index, axis) {
     if (axis == AxisType.Horizontal) {
-      return (Math.floor(index / _grid.nbColumns));
+      return (Math.floor(index / _grid.nbLines));
     }
     else {
-      return (index % _grid.nbColumns);
+      return (index % _grid.nbLines);
     }
   }
 
@@ -163,7 +147,7 @@ define(['cursor'], function (Cursor) {
   */
   function findWord(initialPos, axis) {
     var word    = _grid.cases[initialPos].letter,
-        jump    = (axis == AxisType.Horizontal) ? 1 : _grid.nbColumns, // The axis will define how many frames we have to jump to retreive the next letter
+        jump    = (axis == AxisType.Horizontal) ? 1 : _grid.nbLines, // The axis will define how many frames we have to jump to retreive the next letter
         i       = initialPos - jump,
         wordAxe = getFrameAxisNumber(initialPos, axis),
         firstLetterIndex  = 0;
@@ -237,7 +221,7 @@ define(['cursor'], function (Cursor) {
   */
   Grid.prototype.RevealWord = function (wordObj) {
     var index = wordObj.start,
-        jump = (wordObj.axis == AxisType.Horizontal) ? 1 : _grid.nbColumns,
+        jump = (wordObj.axis == AxisType.Horizontal) ? 1 : _grid.nbLines,
         size = wordObj.word.length,
         i,
         node,
@@ -288,7 +272,7 @@ define(['cursor'], function (Cursor) {
     for (i = 0; i < nbFrames; i++) {
       // Get line and col
       line = Math.floor(i / _grid.nbLines);
-      col = i % _grid.nbColumns;
+      col = i % _grid.nbLines;
 
       // Insert frame
       if (_grid.cases[i].type == CaseType.Letter)

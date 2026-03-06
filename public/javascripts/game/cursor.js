@@ -26,7 +26,7 @@ define(function () {
     // Getting Grid
     _grid = gridObj.cases;
     _nbLines = gridObj.nbLines;
-    _nbCols = gridObj.nbColumns
+    _nbCols = gridObj.nbLines
 
     // Retreive callback
     _letterUpdateCallback = letterUpdateCallback;

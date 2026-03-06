@@ -2,7 +2,7 @@ Mots.js
 ====
 
 Un jeu de mots fléchés multijoueur basé sur Node.js !
-Les grilles sont récupérés chez Metro. Vous pouvez choisir de lancer la grille du jour ou jouer sur la grille de votre choix.
+Les grilles sont récupérées chez GSO (rcijeux.fr). Vous pouvez choisir de lancer la grille du jour ou jouer sur la grille de votre choix.
 
 ![](./illustrations/mots-details1.png)
 
@@ -25,9 +25,34 @@ Quand vous êtes prêt, écrivez `!start` dans le chat, puis amusez vous ! :smil
 
 #### Options
 
-~~Par défaut si vous ne rajoutez pas de paramètre lors du lancement du serveur, le jeu ira charger la grille Metro du jour.~~ ⚠️ Le journal Metro aillant arreté de publier quotidiennement de nouvelles grilles, le jeu lance toujours la même grille.
+Par défaut, le jeu tente de charger la grille GSO du jour en estimant son numéro à partir de la date actuelle.
 
-Pour forcer le chargement d'une grille, rajouter son numéro à la fin de votre commande ou pendant une partie grâce au bouton prévu.
+Vous pouvez spécifier une grille au lancement :
+
+```
+$ npm start <numéro>      # Charge la grille numérotée
+$ npm start default       # Charge la grille par défaut (debug)
+```
+
+Pendant une partie, vous pouvez changer de grille via le chat avec la commande `!grid <numéro>`.
+
+#### Commandes chat
+
+| Commande | Description |
+|---|---|
+| `!start` | Lance la partie (en salle d'attente uniquement) |
+| `!grid <numéro>` | Charge une nouvelle grille et relance la partie |
+
+#### Système de bonus
+
+Des points bonus sont attribués en plus des lettres trouvées :
+
+| Bonus | Points | Condition |
+|---|---|---|
+| Preum's ! | +4 | Premier mot trouvé de la partie |
+| Finish him ! | +4 | Dernier mot trouvé (grille complétée) |
+| Débloqueur | +5 | Premier mot après 2 minutes d'inactivité |
+| Gros mot ! | +3 | Mot de 6 lettres ou plus |
 
 
 ## Crédits

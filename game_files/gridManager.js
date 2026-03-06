@@ -1,4 +1,5 @@
 var https    = require('https'),
+    vm      = require('vm'),
     config  = require('../conf.json').GRID_PROVIDER,
     enums   = require('./enums'),
     Case    = require('./case');
@@ -91,11 +92,8 @@ function onGetGridError(cb, errorMessage) {
 }
 
 function parseGrid(callback, serverText) {
-  var stArray,
-      info,
-      i, j,
-      length,
-      line,
+  var sandbox = {},
+      data,
       currentCase = 0,
       type,
       grid = {
@@ -105,85 +103,55 @@ function parseGrid(callback, serverText) {
         cases: []
       };
 
-  // Initial sort. Isolate each "line" by spliting on '&' char
-  stArray = serverText.split('&');
+  // Parse the .mfj file (JS object: var gamedata = {...})
+  try {
+    vm.runInNewContext(serverText, sandbox);
+  } catch (e) {
+    onGetGridError(callback, 'Failed to parse grid file: ' + e.message);
+    return;
+  }
 
-  // Then parse each line
-  length = stArray.length;
-  for (i = 0; i < length; i++) {
+  data = sandbox.gamedata;
+  if (!data || !data.grille) {
+    onGetGridError(callback, 'Invalid grid format: no gamedata found');
+    return;
+  }
 
-    // Get key / value for this line
-    info = stArray[i].split('=');
+  // nbLines = width (chars per row), nbColumns = height (number of rows)
+  grid.nbLines   = data.nbcaseslargeur;
+  grid.nbColumns = data.nbcaseshauteur;
+  grid.nbWords   = data.definitions.length;
 
-    // If this line describe a grid line, insert new line in our grid
-    if (info[0].indexOf('lign') > -1) {
+  _wordsPoints        = data.definitions;
+  _gridInfos.nbWords  = data.definitions.length;
+  _gridInfos.level    = parseInt(data.force, 10);
 
-      for (j in info[1]) {
-        type = getCaseType(info[1][j]);
+  // Build cases row by row
+  data.grille.forEach(function(row) {
+    for (var j = 0; j < row.length; j++) {
+      type = getCaseType(row[j]);
 
-        if (type == enums.CaseType.Letter) {
-          grid.cases.push(new Case.LetterCase(currentCase++, info[1][j]));
-          _nbLetters++;
-        }
-        else if (type == enums.CaseType.Description)
-          grid.cases.push(new Case.DescriptionCase(currentCase++, info[1][j]));
-        else
-          grid.cases.push(new Case.EmptyCase(currentCase++));
-      };
-
-      // Update col & line counters
-      if (grid.nbLines == 0)
-        grid.nbLines = info[1].length;
-      grid.nbColumns++;
-    }
-    // If this line is a description, add it
-    else if (info[0].indexOf('tx') > -1) {
-      insertDescription(grid, info[1]);
-    }
-    // If this line set a dotted frame, apply the effect to the right frame
-    else if (info[0].indexOf('pointillev') > -1 || info[0].indexOf('pointilleh') > -1) {
-      grid.cases[(parseInt(info[0].substr(10), 10)) - 1].dashed = info[1];
-    }
-    else if (info[0].indexOf('pointille') > -1) {
-      grid.cases[(parseInt(info[0].substr(9), 10)) - 1].dashed = info[1];
-    }
-    // Else try to deal with the line key
-    else {
-      switch (info[0]) {
-        case 'nomjeu':
-        case 'coul':
-        case 'nbphotos':
-        case 'casephotos':
-        case 'fin':
-        case '?':
-        case '':
-          // Ignore useless tags
-          break;
-
-        case 'niveau':
-          _wordsPoints = info[1];
-          grid.nbWords = _wordsPoints.length;
-          _gridInfos.nbWords = _wordsPoints.length;
-          break;
-
-        case 'themecase':
-          _theme = info[1];
-          break;
-
-        case 'legende':
-          _gridInfos.level = parseInt(info[1][info[1].length - 1], 10);
-          break;
-
-        default:
-          console.info('\t[GRIDMANAGER] Unknow grid tag [' + info[0] + ']');
+      if (type === enums.CaseType.Letter) {
+        grid.cases.push(new Case.LetterCase(currentCase++, row[j]));
+        _nbLetters++;
+      }
+      else if (type === enums.CaseType.Description) {
+        grid.cases.push(new Case.DescriptionCase(currentCase++, row[j]));
+      }
+      else {
+        grid.cases.push(new Case.EmptyCase(currentCase++));
       }
     }
-  };
+  });
 
-  // Once the entire grid is retreived, place arrows
+  // Assign definitions to description cells in order
+  data.definitions.forEach(function(defArray) {
+    var defText = Array.isArray(defArray) ? defArray.join('\n') : String(defArray);
+    insertDescription(grid, defText);
+  });
+
+  // Place arrows and store the grid
   placeArrows(grid);
-
-  // Then store the grid
   _grid = grid;
 }
 
@@ -234,8 +202,23 @@ function placeArrows(grid) {
           grid.cases[i].arrow[1] = enumArrow.BottomRight;
           break;
 
-        default:
-          console.error('[ERROR][gridManager::placeArrows] Unknow arrow type [' + grid.cases[i].value + '] at frame ' + i);
+        case 's':
+        case 't':
+        case 'u':
+          grid.cases[i].arrow[0] = enumArrow.Bottom;
+          grid.cases[i].arrow[1] = enumArrow.BottomRight;
+          break;
+
+        default: {
+          // Infer arrow direction from adjacent cells
+          var colIdx = i % grid.nbLines;
+          var hasRight = (colIdx + 1 < grid.nbLines) && grid.cases[i + 1] && (grid.cases[i + 1].type === enums.CaseType.Letter);
+          var hasBelow = (i + grid.nbLines < grid.cases.length) && grid.cases[i + grid.nbLines] && (grid.cases[i + grid.nbLines].type === enums.CaseType.Letter);
+          var arrowIdx = 0;
+          if (hasRight) { grid.cases[i].arrow[arrowIdx++] = enumArrow.Right; }
+          if (hasBelow) { grid.cases[i].arrow[arrowIdx] = enumArrow.Bottom; }
+          console.warn('[WARN][gridManager::placeArrows] Unknown arrow type [' + grid.cases[i].value + '] at frame ' + i + ', inferred arrows from context');
+        }
       }
     }
   };
@@ -256,8 +239,7 @@ function getGridAddress(commandArgv) {
       today = new Date();
       dayDiff = Math.abs(today.getTime() - gridDefaultDay.getTime());
       dayDiff = Math.floor(dayDiff / (1000 * 3600 * 24));
-      // gridNumber = config.PROVIDER_DEFAULT_GRID + dayDiff;
-      gridNumber = config.PROVIDER_DEFAULT_GRID;
+      gridNumber = config.PROVIDER_DEFAULT_GRID + dayDiff;
       break;
 
     // Retreive the default grid
@@ -289,7 +271,7 @@ function getGridAddress(commandArgv) {
 * @return {Int}    Points scored by the player. If return 0, it's just the wrong word :)
 */
 GridManager.prototype.checkPlayerWord = function (wordObj) {
-  var jump      = (wordObj.axis == 0) ? 1 : _grid.nbColumns,
+  var jump      = (wordObj.axis == 0) ? 1 : _grid.nbLines,
       wordSize  = wordObj.word.length,
       points    = 0,
       index     = wordObj.start,
