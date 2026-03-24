@@ -376,6 +376,7 @@ html, body {
 .description {
   background-color: rgba(52, 73, 94, 0.4);
   background: url('../images/grey.png');
+  position: relative;
 }
 .description span {
   position: relative;
@@ -459,6 +460,11 @@ html, body {
   font-size: 22px;
   color: #444;
   line-height: 20px;
+}
+
+/* When the TOP span of a 2-definition cell has a downward arrow, anchor it to the cell bottom */
+.description span.arrow-cell-bottom {
+  position: static;
 }
 
 .dash1 { border-bottom: 1px dashed rgba(127, 140, 141, 0.2); }

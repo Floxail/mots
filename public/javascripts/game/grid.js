@@ -67,12 +67,18 @@ define(['cursor'], function (Cursor) {
     // Adding description in frame
     for (var i = 0; i < info.nbDesc; i++) {
       descNode = document.createElement('span');
-      
+
       // Insert description and arrow
       descNode.innerHTML = info.desc[i];
-      if (info.arrow[i] !== null)
+      if (info.arrow[i] !== null) {
         descNode.classList.add('arrow' + info.arrow[i].toString());
-      
+        // If the TOP span of a 2-definition cell has a downward arrow (2=Bottom, 3=BottomRight),
+        // anchor its :after to the cell bottom instead of the span bottom
+        if (i === 0 && info.nbDesc === 2 && (info.arrow[i] === 2 || info.arrow[i] === 3)) {
+          descNode.classList.add('arrow-cell-bottom');
+        }
+      }
+
       frame.appendChild(descNode);
     };
 
