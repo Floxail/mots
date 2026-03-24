@@ -22,14 +22,18 @@ define(function () {
         };
 
     // Find an available space within empty spaces (fuck the ads !!!)
-    if (emptyNodes) {
+    if (emptyNodes.length > 0) {
       square.x = emptyNodes[0].offsetLeft;
       square.y = emptyNodes[0].offsetTop;
       square.width = emptyNodes[emptyNodes.length - 1].offsetLeft + emptyNodes[emptyNodes.length - 1].offsetWidth - square.x;
       square.height = emptyNodes[emptyNodes.length - 1].offsetTop + emptyNodes[emptyNodes.length - 1].offsetHeight - square.y;
 
       // Now put the info panel on the grid
-      document.getElementById('gs-grid-container').innerHTML += '<div id="ig-infos" style="left: ' + square.x + 'px; top: ' + square.y + 'px; width: ' + square.width + 'px; height: ' + square.height + 'px;"><header></header><time></time><footer></footer></div>';
+      var igInfos = document.createElement('div');
+      igInfos.id = 'ig-infos';
+      igInfos.style.cssText = 'left: ' + square.x + 'px; top: ' + square.y + 'px; width: ' + square.width + 'px; height: ' + square.height + 'px;';
+      igInfos.innerHTML = '<header></header><time></time><footer></footer>';
+      document.getElementById('gs-grid-container').appendChild(igInfos);
     }
   }
 
@@ -157,6 +161,9 @@ define(function () {
     // First inject the game info panel
     injectInGameInfoPanel();
 
+    // If the grid has no empty cells the panel could not be injected — skip gracefully
+    if (!document.getElementById('ig-infos')) return;
+
     // Retreive time node and inject timer
     timeNode = document.querySelector('#ig-infos > time');
     timeNode.innerHTML = formatTime(time);
@@ -180,9 +187,11 @@ define(function () {
     if (_gameTimer != null)
       window.clearInterval(_gameTimer);
 
+    if (!document.getElementById('ig-infos')) return;
+
     // Set game over class
     document.querySelector('#ig-infos > header').classList.add('game-over');
-    
+
     // Put winner picture
     gamePanel.innerHTML += '<img id="winner-pic" src="' + winner.monster.path + '" alt="winner picture" />';
     window.setTimeout(function() {
