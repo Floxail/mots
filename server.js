@@ -25,6 +25,18 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', routes.index);
+
+// Solo mode — returns full grid (letters included) for client-side word validation
+app.get('/api/grid/:number?', function (req, res) {
+  var GridManager = require('./game_files/gridManager');
+  var gm = new GridManager();
+  var number = req.params.number ? parseInt(req.params.number) : 0;
+  if (isNaN(number)) number = 0;
+  gm.retreiveAndParseGrid(number, function (grid) {
+    if (!grid) return res.status(500).json({ error: 'Impossible de charger la grille' });
+    res.json(gm.getFullGrid());
+  });
+});
 app.get('/conf.json', function(req, res) {
     // Derive public address from request headers (works locally and on cloud platforms)
     var protocol = req.headers['x-forwarded-proto'] || req.protocol;

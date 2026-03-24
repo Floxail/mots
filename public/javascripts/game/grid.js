@@ -67,12 +67,19 @@ define(['cursor'], function (Cursor) {
     // Adding description in frame
     for (var i = 0; i < info.nbDesc; i++) {
       descNode = document.createElement('span');
-      
+
       // Insert description and arrow
       descNode.innerHTML = info.desc[i];
-      if (info.arrow[i] !== null)
+      if (info.arrow[i] !== null) {
         descNode.classList.add('arrow' + info.arrow[i].toString());
-      
+        // When the TOP span of a 2-definition cell has a downward arrow (Bottom=2,
+        // BottomRight=3) its :after pseudo-element must be anchored to the cell
+        // bottom, not the span bottom — otherwise it appears in the middle of the cell.
+        if (i === 0 && info.nbDesc === 2 && (info.arrow[i] === 2 || info.arrow[i] === 3)) {
+          descNode.classList.add('arrow-cell-bottom');
+        }
+      }
+
       frame.appendChild(descNode);
     };
 
@@ -236,6 +243,7 @@ define(['cursor'], function (Cursor) {
 
         // Display it
         node = document.querySelector('.frame' + index);
+        if (!node) { index += jump; continue; }
         node.style.cssText += '-webkit-transition-delay: ' + animationDelay + 'ms; transition-delay: ' + animationDelay + 'ms; color: ' + wordObj.color;
         node.classList.add('reveal' + wordObj.axis);
         node.innerHTML = _grid.cases[index].letter;
@@ -259,13 +267,13 @@ define(['cursor'], function (Cursor) {
         nbFrames = _grid.cases.length,
         i;
 
-    // First we have to retreive the min size to display the grid
+    // Compute frame size from the container's smaller dimension.
+    // On mobile the container may be very narrow so we enforce a minimum of
+    // 30 px per cell and let the container scroll horizontally if needed.
     limit = (container.offsetWidth < container.offsetHeight) ? container.offsetWidth : container.offsetHeight;
-    // console.log('Plus petit cote: ' + limit);
 
-    // Determine frame size
     frameSize = (_grid.nbLines > _grid.nbColumns) ? _grid.nbLines : _grid.nbColumns;
-    frameSize = Math.floor(limit / frameSize);
+    frameSize = Math.max(30, Math.floor(limit / frameSize));
     // console.log('Taille de case: ' + frameSize);
 
     // For each frame

@@ -376,6 +376,14 @@ html, body {
 .description {
   background-color: rgba(52, 73, 94, 0.4);
   background: url('../images/grey.png');
+  position: relative; /* needed so arrow :after pseudo-elements can anchor to the cell */
+}
+
+/* When the TOP span of a 2-definition cell carries a downward arrow its :after
+   must be relative to the whole .description cell (not just the span), so we
+   remove the span from the positioning context with position:static. */
+.description span.arrow-cell-bottom {
+  position: static;
 }
 .description span {
   position: relative;
@@ -513,12 +521,20 @@ html, body {
 
 /* Set container sizes */
 .bloc1, .bloc2 { width: 50%; }
-.bloc3 { width: 33%; }
+.bloc3 { width: 33.33%; }
 .bloc4 { width: 25%; }
+.bloc5 { width: 20%; }
+.bloc6 { width: 16.66%; }
+.bloc7 { width: 14.28%; }
+.bloc8 { width: 12.5%; }
+.bloc9 { width: 11.11%; }
 
 .bloc1 > .score-bar, .bloc2 > .score-bar { width: 50%; left: 25%; }
 .bloc3 > .score-bar { width: 66%; left: 17%; }
 .bloc4 > .score-bar { width: 90%; left: 5%; }
+.bloc5 > .score-bar, .bloc6 > .score-bar,
+.bloc7 > .score-bar, .bloc8 > .score-bar,
+.bloc9 > .score-bar { width: 96%; left: 2%; }
 
 
 .score-bar {
@@ -734,4 +750,275 @@ html, body {
 @keyframes winnerAnimation {
   0% { -webkit-transform: rotateZ(-10deg); }
   100% { -webkit-transform: rotateZ(10deg); }
+}
+
+
+/*==============*\
+|                |
+|   LOBBY PANEL  |
+|                |
+\*==============*/
+
+#lobby-panel {
+  background-image: url('../images/green-bg.png');
+  overflow-y: auto;
+}
+
+#lobby-panel > header {
+  margin: 5% auto;
+  text-align: center;
+}
+
+#lobby-section {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 40px;
+  padding: 0 5% 40px;
+  flex-wrap: wrap;
+}
+
+/* ─ Room list ─────────────────────────────────────────────────────────── */
+#lobby-rooms {
+  flex: 1 1 400px;
+  max-width: 600px;
+}
+
+#lobby-room-list {
+  min-height: 60px;
+}
+
+.lobby-connecting,
+.lobby-empty {
+  color: rgba(236,240,241,0.7);
+  font-family: 'abeezeeitalic';
+  font-size: 0.95em;
+}
+
+.lobby-room-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 6px;
+  flex-wrap: wrap;
+}
+
+.room-code {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: #ecf0f1;
+  letter-spacing: 3px;
+  min-width: 60px;
+}
+
+.room-grid {
+  flex: 1;
+  color: rgba(236,240,241,0.85);
+  font-size: 0.85em;
+}
+
+.room-status {
+  font-size: 0.8em;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+.room-waiting  { background: rgba(39,160,150,0.5); color: #ecf0f1; }
+.room-in-game  { background: rgba(231,76,60,0.5);  color: #ecf0f1; }
+
+.room-players {
+  font-size: 0.8em;
+  color: rgba(236,240,241,0.7);
+}
+
+.room-join-btn {
+  padding: 5px 14px;
+  font-family: 'abeezeeregular';
+  font-size: 0.85em;
+  color: #444;
+  border: 2px solid grey;
+  border-radius: 4px;
+  background-image: url('../images/grey.png');
+  cursor: pointer;
+}
+.room-join-btn:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+/* ─ Action panel ──────────────────────────────────────────────────────── */
+#lobby-actions {
+  flex: 0 1 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.lobby-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lobby-group input[type="text"],
+.lobby-group input[type="number"] {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  font-family: 'abeezeeregular';
+  font-size: 0.95em;
+  color: #ecf0f1;
+  background: rgba(255,255,255,0.12);
+  border: 0;
+  border-bottom: 3px solid rgba(255,255,255,0.4);
+  outline: none;
+  border-radius: 3px 3px 0 0;
+  -webkit-transition: border-color 200ms ease;
+  transition: border-color 200ms ease;
+}
+.lobby-group input[type="text"]:focus,
+.lobby-group input[type="number"]:focus {
+  border-bottom-color: #27A096;
+}
+
+.lobby-group input[type="button"],
+#lobby-solo-btn {
+  padding: 9px 18px;
+  font-family: 'abeezeeregular';
+  font-size: 0.95em;
+  color: #444;
+  border: 2px solid grey;
+  border-radius: 4px;
+  background-image: url('../images/grey.png');
+  box-shadow: 0 2px 6px rgba(127,140,141,0.4);
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-transition: box-shadow 200ms ease;
+  transition: box-shadow 200ms ease;
+}
+.lobby-group input[type="button"]:hover,
+#lobby-solo-btn:hover {
+  box-shadow: 0 4px 12px rgba(127,140,141,0.7);
+}
+
+#lobby-solo-btn {
+  margin-top: 4px;
+}
+
+.lobby-sep {
+  color: rgba(236,240,241,0.5);
+  text-align: center;
+  font-size: 0.85em;
+  margin: 4px 0 2px;
+}
+
+
+/*==========================*\
+|                            |
+|   SOLO SCORE               |
+|                            |
+\*==========================*/
+
+#solo-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #ecf0f1;
+  text-shadow: 2px 2px 5px #2c3e50;
+}
+.solo-label {
+  font-size: 1.1em;
+  opacity: 0.7;
+}
+.solo-value {
+  font-size: 3em;
+  font-weight: bold;
+}
+
+
+/*===================*\
+|                     |
+|   MOBILE / TABLET   |
+|                     |
+\*===================*/
+
+/* Grid container must scroll when frame size hits the 30px minimum */
+#gs-grid-container {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Increase tap target sizes on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .letter {
+    min-width: 30px;
+    min-height: 30px;
+  }
+  .gsc-button {
+    height: 44px;
+    line-height: 44px;
+  }
+  #gsc-command-start { bottom: 46px; }
+  #gsc-command-grid  { bottom: 0; }
+}
+
+/* Stack layout on small screens */
+@media screen and (max-width: 768px) {
+  /* Game panel: vertical stack */
+  #game-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Chat: thin strip at the top */
+  #gs-chat {
+    float: none !important;
+    width: 100% !important;
+    height: 160px !important;
+    flex-shrink: 0;
+    border-bottom: 2px solid rgba(127,140,141,0.2);
+  }
+
+  #gsc-messages { height: calc(100% - 50px); }
+
+  /* Grid: fills remaining space, scrollable */
+  #gs-grid-container {
+    float: none !important;
+    width: 100% !important;
+    flex: 1 1 auto;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Scores: hidden by default on very small screens to give grid more room */
+  #gs-scores {
+    display: none;
+  }
+
+  /* Solo score stays visible */
+  #solo-score { display: flex; }
+
+  /* Lobby: single column */
+  #lobby-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+    padding: 0 4% 30px;
+  }
+
+  #lobby-panel > header { margin: 4% auto 2%; }
+
+  .lp-title {
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    font-size: 30px;
+  }
+
+  /* Login panel: smaller title on mobile */
+  #login-panel > header { margin: 5% auto; }
 }

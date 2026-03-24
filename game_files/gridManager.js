@@ -1,8 +1,17 @@
 var https    = require('https'),
     vm      = require('vm'),
+    fs      = require('fs'),
+    path    = require('path'),
     config  = require('../conf.json').GRID_PROVIDER,
     enums   = require('./enums'),
     Case    = require('./case');
+
+// Persist downloaded grids to disk so they survive server restarts
+// and work offline for tests
+var CACHE_DIR = path.join(__dirname, '..', 'cache');
+if (!fs.existsSync(CACHE_DIR)) {
+  fs.mkdirSync(CACHE_DIR, { recursive: true });
+}
 
 var enumCaseParser = {
   InARow: 1,
@@ -16,6 +25,10 @@ var enumArrow = {
   Bottom: 2,
   BottomRight: 3
 };
+
+// Module-level cache: resolved grid number → raw .mfj text
+// Shared across all GridManager instances to avoid re-downloading the same grid
+var _rawGridCache = {};
 
 
 function GridManager() {
@@ -67,7 +80,7 @@ function insertDescription(grid, desc) {
 function getCaseType(Char) {
   if (Char == 'z')
     return (enums.CaseType.Empty);
-  else if ((Char >= 'A') && (Char <= 'Z'))
+    else if ((Char >= 'A') && (Char <= 'Z'))
     return (enums.CaseType.Letter);
   else
     return (enums.CaseType.Description);
@@ -277,6 +290,15 @@ GridManager.prototype.getGrid = function () {
   return (clonedGrid);
 };
 
+/*
+* Returns a full grid clone including actual letter values (used for solo mode).
+*/
+GridManager.prototype.getFullGrid = function () {
+  var clonedGrid = JSON.parse(JSON.stringify(this._grid));
+  clonedGrid.infos = this._gridInfos;
+  return (clonedGrid);
+};
+
 GridManager.prototype.getGridInfos = function () {
   return (this._gridInfos);
 };
@@ -300,14 +322,45 @@ GridManager.prototype.getAccomplishmentRate = function (playerPoints, nbPlayers)
 };
 
 /*
-* Retreive and parse the grid. If the requested grid fails, falls back to PROVIDER_FIRST_GRID.
+* Retreive and parse the grid. Checks the raw text cache before making a network request.
+* If the requested grid fails, falls back to PROVIDER_FIRST_GRID.
 */
 GridManager.prototype.retreiveAndParseGrid = function (gridNumber, callback) {
   var self = this;
   var gridAddr = getGridAddress(self, gridNumber);
+  var resolvedId = self._gridInfos.id;
 
   console.info('\n\t[GRIDMANAGER] Try to load ' + gridAddr);
 
+  function loadFromText(text, id) {
+    _rawGridCache[id] = text;
+    parseGrid(self, callback, text);
+    callback(self._grid);
+  }
+
+  function saveToDisk(id, text) {
+    fs.writeFile(path.join(CACHE_DIR, id + '.mfj'), text, function(err) {
+      if (err) console.warn('\t[GRIDMANAGER] Could not write cache file: ' + err.message);
+    });
+  }
+
+  // 1. Check in-memory cache
+  if (_rawGridCache[resolvedId]) {
+    console.info('\t[GRIDMANAGER] Memory cache hit for grid #' + resolvedId);
+    loadFromText(_rawGridCache[resolvedId], resolvedId);
+    return;
+  }
+
+  // 2. Check disk cache
+  var diskFile = path.join(CACHE_DIR, resolvedId + '.mfj');
+  if (fs.existsSync(diskFile)) {
+    console.info('\t[GRIDMANAGER] Disk cache hit for grid #' + resolvedId);
+    var diskText = fs.readFileSync(diskFile, 'utf8');
+    loadFromText(diskText, resolvedId);
+    return;
+  }
+
+  // 3. Download from network
   var req = https.get(gridAddr, function (res) {
     // If the grid is not found, try the fallback
     if (res.statusCode !== 200) {
@@ -316,6 +369,18 @@ GridManager.prototype.retreiveAndParseGrid = function (gridNumber, callback) {
       console.warn('\t[GRIDMANAGER] Grid not found (HTTP ' + res.statusCode + '), falling back to #' + fallback);
       self._gridInfos.provider = config.PROVIDER_NAME;
       self._gridInfos.id = fallback;
+
+      if (_rawGridCache[fallback]) {
+        loadFromText(_rawGridCache[fallback], fallback);
+        return;
+      }
+      var diskFallback = path.join(CACHE_DIR, fallback + '.mfj');
+      if (fs.existsSync(diskFallback)) {
+        console.info('\t[GRIDMANAGER] Disk cache hit for fallback grid #' + fallback);
+        loadFromText(fs.readFileSync(diskFallback, 'utf8'), fallback);
+        return;
+      }
+
       var fallbackAddr = config.PROVIDER_ADDR + fallback + config.PROVIDER_EXTENSION;
       var fallbackReq = https.get(fallbackAddr, function (res2) {
         if (res2.statusCode !== 200) {
@@ -326,9 +391,10 @@ GridManager.prototype.retreiveAndParseGrid = function (gridNumber, callback) {
         var chunks = [];
         res2.on('data', function (chunk) { chunks.push(chunk); });
         res2.on('end', function () {
-          parseGrid(self, callback, Buffer.concat(chunks).toString());
+          var text = Buffer.concat(chunks).toString();
+          saveToDisk(fallback, text);
           console.info('\n\t[GRIDMANAGER] Fallback grid loaded: ' + config.PROVIDER_NAME + ' #' + fallback);
-          callback(self._grid);
+          loadFromText(text, fallback);
         });
       });
       fallbackReq.on('error', function (e) { onGetGridError(callback, e.message); });
@@ -339,9 +405,10 @@ GridManager.prototype.retreiveAndParseGrid = function (gridNumber, callback) {
     res.on('data', function (chunk) { bodyChunks.push(chunk); });
     res.on('end', function () {
       console.info('\t[GRIDMANAGER] Grid downloaded, start parsing...\n');
-      parseGrid(self, callback, Buffer.concat(bodyChunks).toString());
+      var text = Buffer.concat(bodyChunks).toString();
+      saveToDisk(resolvedId, text);
       console.info('\n\t[GRIDMANAGER] Parsing Done. Now play ' + self._gridInfos.provider + ' ' + self._gridInfos.id + ' - Level ' + self._gridInfos.level);
-      callback(self._grid);
+      loadFromText(text, resolvedId);
     });
   });
 
