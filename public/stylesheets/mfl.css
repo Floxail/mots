@@ -376,7 +376,6 @@ html, body {
 .description {
   background-color: rgba(52, 73, 94, 0.4);
   background: url('../images/grey.png');
-  position: relative; /* needed so arrow :after pseudo-elements can anchor to the cell */
 }
 
 /* When the TOP span of a 2-definition cell carries a downward arrow its :after
