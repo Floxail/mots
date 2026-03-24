@@ -4,7 +4,7 @@ var enums           = require('./enums'),
     PlayersManager  = require('./playersManager');
 
 // Defines
-var MAX_PLAYERS   = 4;
+var MAX_PLAYERS   = 9;
 var SERVER_CHAT_COLOR = '#c0392b';
 var TIME_BEFORE_START = 5;
 
@@ -289,9 +289,10 @@ exports.startMflServer = function (desiredGrid, httpServer) {
       // Send to the player availables logos
       socket.emit('logos', _playersManager.getAvailableMonsters());
     }
-    // Else: game in progress — tell client logos are unavailable, but listen for rejoin attempt
+    // Else: game in progress — allow rejoin OR new player if slots remain
     else {
-      socket.emit('logos', null);
+      // Send logos if there's still room, null if full
+      socket.emit('logos', _playersManager.getNumberOfPlayers() < MAX_PLAYERS ? _playersManager.getAvailableMonsters() : null);
 
       socket.once('userIsReady', function (infos) {
         if (!infos || typeof infos.nick !== 'string') return;
@@ -300,6 +301,7 @@ exports.startMflServer = function (desiredGrid, httpServer) {
 
         var rejoiningPlayer = _playersManager.findPlayerByNick(nick);
         if (rejoiningPlayer) {
+          // Reconnect an existing player
           rejoiningPlayer.updateSocket(socket);
           socket.playerInstance = rejoiningPlayer;
           // Send player list in chat so client rebuilds the score panel first
@@ -320,6 +322,22 @@ exports.startMflServer = function (desiredGrid, httpServer) {
             if (!wordObj || typeof wordObj.word !== 'string' || typeof wordObj.start !== 'number' || (wordObj.axis !== 0 && wordObj.axis !== 1)) return;
             if (wordObj.word.length === 0 || wordObj.word.length > 50) return;
             checkWord(rejoiningPlayer, wordObj);
+          });
+        } else if (_playersManager.getNumberOfPlayers() < MAX_PLAYERS) {
+          // New player joining a game already in progress
+          var player = _playersManager.addNewPlayer(socket);
+          socket.playerInstance = player;
+          playerLog(socket, nick, infos.monster);
+          // Send the current grid state so they can play immediately
+          socket.emit('grid_event', { grid: _gridManager.getGrid(), timer: 0 });
+          socket.on('chat', function (message) {
+            if (typeof message !== 'string') return;
+            message = message.trim().substring(0, 200);
+            if (message.length === 0) return;
+            if (checkServerCommand(message) == false) {
+              var p = socket.playerInstance;
+              if (p) sendChatMessage(message, p.getNick(), p.getColor());
+            }
           });
         } else {
           socket.emit('game_already_started');
