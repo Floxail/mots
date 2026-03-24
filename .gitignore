@@ -2,3 +2,6 @@
 
 # Dependency directory
 node_modules
+
+# Claude context file
+CLAUDE.md

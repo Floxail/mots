@@ -57,32 +57,32 @@ function resetGame(gridID) {
 
 function playerLog (socket, nick, monsterId) {
   var gridInfos = _gridManager.getGridInfos();
+  var player = socket.playerInstance;
 
-  // Retreive PlayerInstance
-  socket.get('PlayerInstance', function (error, player) {
+  if (!player) {
+    console.error('No PlayerInstance on socket');
+    return;
+  }
 
-    if (error)
-      console.error(error);
-    else {
+  // Set new player parameters
+  player.setNick(nick);
+  _playersManager.setMonsterToPlayer(player, monsterId);
+  // Refresh monster list for unready players
+  _io.sockets.emit('logos', _playersManager.getAvailableMonsters());
 
-      // Set new player parameters
-      player.setNick(nick);
-      _playersManager.setMonsterToPlayer(player, monsterId);
-      // Refresh monster list for unready players
-      _io.sockets.emit('logos', _playersManager.getAvailableMonsters());
-
-      // Bind found word event
-      socket.on('wordValidation', function (wordObj) {
-        checkWord(player, wordObj);
-      });
-
-      // Notify everyone about the new client
-      sendChatMessage( nick + ' a rejoint la partie !<br/>' + _playersManager.getNumberOfPlayers() + ' joueurs connectés', undefined, undefined, _playersManager.getPlayerList());
-
-      // Send grid informations to the player
-      sendPlayerMessage(socket, 'Grille actuelle: ' + gridInfos.provider + ' ' + gridInfos.id + ' (Niveau ' + gridInfos.level + ')');
-    }
+  // Bind found word event
+  socket.on('wordValidation', function (wordObj) {
+    // Validate word object structure
+    if (!wordObj || typeof wordObj.word !== 'string' || typeof wordObj.start !== 'number' || (wordObj.axis !== 0 && wordObj.axis !== 1)) return;
+    if (wordObj.word.length === 0 || wordObj.word.length > 50) return;
+    checkWord(player, wordObj);
   });
+
+  // Notify everyone about the new client
+  sendChatMessage( nick + ' a rejoint la partie !<br/>' + _playersManager.getNumberOfPlayers() + ' joueurs connectés', undefined, undefined, _playersManager.getPlayerList());
+
+  // Send grid informations to the player
+  sendPlayerMessage(socket, 'Grille actuelle: ' + gridInfos.provider + ' ' + gridInfos.id + ' (Niveau ' + gridInfos.level + ')');
 }
 
 function bonusChecker(playerPoints, nbWordsRemaining) {
@@ -165,7 +165,7 @@ function checkServerCommand(message) {
     startGame();
     return (true);
   }
-  
+
   // Check the change grid command
   if (message.indexOf('!grid') >= 0) {
     // Retreive grid number and reset game parameters
@@ -194,11 +194,11 @@ function sendPlayerMessage(socket, Message) {
 /**
  *  Start mfl server.
  */
-exports.startMflServer = function (desiredGrid) {
-  // Instanciiate io module with proper parameters
-  _io = require('socket.io').listen(config.SOCKET_PORT);
-  _io.configure(function(){
-    _io.set('log level', 2);
+exports.startMflServer = function (desiredGrid, httpServer) {
+  // Instanciate io module with proper parameters
+  var { Server } = require('socket.io');
+  _io = new Server(httpServer, {
+    cors: { origin: '*' }
   });
 
   // Retreive the grid
@@ -214,7 +214,7 @@ exports.startMflServer = function (desiredGrid) {
   // Create playersManager instance and register events
   _playersManager = new PlayersManager();
   _playersManager.on('players-ready', function () {
-});
+  });
 
 
   // On new client connection
@@ -222,55 +222,115 @@ exports.startMflServer = function (desiredGrid) {
 
     // If it remains slots in the room, add player and bind events
     if ((_gameState == enums.ServerState.WaitingForPlayers) && (_playersManager.getNumberOfPlayers() < MAX_PLAYERS)) {
-      
+
       // Add new player
       var player = _playersManager.addNewPlayer(socket);
-      
+
+      // Store player instance directly on the socket
+      socket.playerInstance = player;
+
       // Register to socket events
       socket.on('disconnect', function () {
-        // When a player disconnect, retreive player instance
-        socket.get('PlayerInstance', function (error, player) {
-          sendChatMessage( player.getNick() + ' a quitté la partie');
-          _playersManager.removePlayer(player);
-          player = null;
-        });
-
-      });
-
-      socket.on('userIsReady', function (infos) {
-        // Log player, bind events and notify everyone
-        if (_gameState == enums.ServerState.WaitingForPlayers)
-          playerLog(socket, infos.nick, infos.monster);
-        else // Notify game has started
-          socket.disconnect('game_already_started');
-      });
-
-      socket.on('chat', function (message) {
-        // If it's a message for the server, treat it
-        // Else broadcast the message to everyone
-        if (checkServerCommand(message) == false) {
-          socket.get('PlayerInstance', function (error, player) {
-            sendChatMessage(message, player.getNick(), player.getColor());
-          });
+        var player = socket.playerInstance;
+        if (player) {
+          // Only remove from list if game hasn't started (allow rejoin during game)
+          if (_gameState == enums.ServerState.WaitingForPlayers) {
+            sendChatMessage( player.getNick() + ' a quitté la partie');
+            _playersManager.removePlayer(player);
+          } else {
+            sendChatMessage( player.getNick() + ' s\'est déconnecté (peut revenir avec le même pseudo)');
+          }
         }
       });
 
-      // Remember PlayerInstance and push it to the player list
-      socket.set('PlayerInstance', player);
+      socket.on('userIsReady', function (infos) {
+        // Validate nick
+        if (!infos || typeof infos.nick !== 'string') return;
+        var nick = infos.nick.trim().substring(0, 20);
+        if (nick.length === 0) return;
+
+        if (_gameState == enums.ServerState.WaitingForPlayers) {
+          // Normal lobby join
+          playerLog(socket, nick, infos.monster);
+        } else {
+          // Game in progress — check if this nick belongs to a disconnected player
+          var rejoiningPlayer = _playersManager.findPlayerByNick(nick);
+          if (rejoiningPlayer) {
+            rejoiningPlayer.updateSocket(socket);
+            socket.playerInstance = rejoiningPlayer;
+            // Send player list in chat so client rebuilds the score panel first
+            sendChatMessage('<strong>' + nick + '</strong> a rejoint la partie !', undefined, undefined, _playersManager.getPlayerList());
+            // Resend current grid state and score after the chat (client processes events in order)
+            socket.emit('grid_event', { grid: _gridManager.getGrid(), timer: 0 });
+            socket.emit('score_update', { playerID: rejoiningPlayer.getID(), score: rejoiningPlayer.getScore(), words: rejoiningPlayer.getNbWords(), progress: _gridManager.getAccomplishmentRate(rejoiningPlayer.getScore(), _playersManager.getNumberOfPlayers()), bonus: [] });
+          } else {
+            // No matching player — game is full/started
+            socket.emit('game_already_started');
+            socket.disconnect(true);
+          }
+        }
+      });
+
+      socket.on('chat', function (message) {
+        // Validate message
+        if (typeof message !== 'string') return;
+        message = message.trim().substring(0, 200);
+        if (message.length === 0) return;
+
+        // If it's a message for the server, treat it
+        // Else broadcast the message to everyone
+        if (checkServerCommand(message) == false) {
+          var player = socket.playerInstance;
+          if (player)
+            sendChatMessage(message, player.getNick(), player.getColor());
+        }
+      });
 
       // Send to the player availables logos
       socket.emit('logos', _playersManager.getAvailableMonsters());
     }
-    // Else notify players he can't play for the moment
+    // Else: game in progress — tell client logos are unavailable, but listen for rejoin attempt
     else {
-      // To do it, returns an empty list of available logos == null
       socket.emit('logos', null);
+
+      socket.once('userIsReady', function (infos) {
+        if (!infos || typeof infos.nick !== 'string') return;
+        var nick = infos.nick.trim().substring(0, 20);
+        if (nick.length === 0) return;
+
+        var rejoiningPlayer = _playersManager.findPlayerByNick(nick);
+        if (rejoiningPlayer) {
+          rejoiningPlayer.updateSocket(socket);
+          socket.playerInstance = rejoiningPlayer;
+          // Send player list in chat so client rebuilds the score panel first
+          sendChatMessage('<strong>' + nick + '</strong> a rejoint la partie !', undefined, undefined, _playersManager.getPlayerList());
+          socket.emit('grid_event', { grid: _gridManager.getGrid(), timer: 0 });
+          socket.emit('score_update', { playerID: rejoiningPlayer.getID(), score: rejoiningPlayer.getScore(), words: rejoiningPlayer.getNbWords(), progress: _gridManager.getAccomplishmentRate(rejoiningPlayer.getScore(), _playersManager.getNumberOfPlayers()), bonus: [] });
+
+          socket.on('chat', function (message) {
+            if (typeof message !== 'string') return;
+            message = message.trim().substring(0, 200);
+            if (message.length === 0) return;
+            if (checkServerCommand(message) == false) {
+              var p = socket.playerInstance;
+              if (p) sendChatMessage(message, p.getNick(), p.getColor());
+            }
+          });
+          socket.on('wordValidation', function (wordObj) {
+            if (!wordObj || typeof wordObj.word !== 'string' || typeof wordObj.start !== 'number' || (wordObj.axis !== 0 && wordObj.axis !== 1)) return;
+            if (wordObj.word.length === 0 || wordObj.word.length > 50) return;
+            checkWord(rejoiningPlayer, wordObj);
+          });
+        } else {
+          socket.emit('game_already_started');
+        }
+      });
     }
 
   });
-  
+
 
   // Set game state and print ready message
   _gameState = enums.ServerState.WaitingForPlayers;
-  console.log('Game started and waiting for players on port ' + config.SOCKET_PORT);
+  console.log('Game started and waiting for players.');
 };

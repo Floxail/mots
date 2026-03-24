@@ -263,9 +263,9 @@ html, body {
   padding: 8px;
 
   /*width: 94%;*/
-  width: -webkit-calc(100% - 66px);
-  width: -moz-calc(100% - 66px);
-  width: calc(100% - 66px);
+  width: -webkit-calc(100% - 68px);
+  width: -moz-calc(100% - 68px);
+  width: calc(100% - 68px);
 
   height: 60px;
 
@@ -282,11 +282,11 @@ html, body {
   right: 0;
 
   height: 36px;
-  width: 50px;
+  width: 60px;
 
-  font-family: 'icomoon';
+  font-family: 'abeezeeregular';
   color: #444;
-  font-size: 17px;
+  font-size: 13px;
   line-height: 36px;
   text-align: center;
 
@@ -297,28 +297,13 @@ html, body {
   overflow: hidden;
   cursor: pointer;
 
-  -webkit-transition: box-shadow 200ms ease, width 200ms ease;
-  -moz-transition: box-shadow 200ms ease, width 200ms ease;
-  transition: box-shadow 200ms ease, width 200ms ease;
+  -webkit-transition: box-shadow 200ms ease;
+  -moz-transition: box-shadow 200ms ease;
+  transition: box-shadow 200ms ease;
 }
 .gsc-button:hover { box-shadow: 0px 2px 10px 0px rgb(127, 140, 141); }
 #gsc-command-start { bottom: 38px; }
 #gsc-command-grid { bottom: 0; }
-#gsc-command-start:hover, #gsc-command-grid:hover {
-  width: 100px;
-}
-#gsc-command-start:hover:after {
-  content: 'Lancer';
-  font-family: 'abeezeeregular';
-  margin-left: 10px;
-  font-size: 14px;
-}
-#gsc-command-grid:hover:after {
-  content: 'Grille';
-  font-family: 'abeezeeregular';
-  margin-left: 10px;
-  font-size: 14px;
-}
 
 /* Game grid part */
 #gs-grid-container {
@@ -393,6 +378,7 @@ html, body {
   background: url('../images/grey.png');
 }
 .description span {
+  position: relative;
   display: inline-block;
   width: 100%;
 
@@ -424,51 +410,55 @@ html, body {
 }
 
 
-/* Right arrow */
+/* Right arrow — outside, centered vertically in its span */
 .description span.arrow0:after {
   position: absolute;
-  right: -16px;
-  top: 5px;
+  right: -18px;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+  transform: translateY(-50%);
   content: "\e603";
   font-family: 'icomoon';
-  font-size: 17px;
-  line-height: 17px;
+  font-size: 16px;
+  line-height: 16px;
   color: #444;
 }
-/* Right Bottom arrow */
+/* Right+Bottom diagonal arrow */
 .description span.arrow1:after {
   position: absolute;
-  top: 5%;
-  right: -18px;
+  top: 10%;
+  right: -20px;
   content: "\e600";
   font-family: 'icomoon';
-  font-size: 21px;
-  line-height: 21px;
+  font-size: 20px;
+  line-height: 20px;
   color: #444;
   -webkit-transform: rotateZ(90deg) rotateX(-180deg);
+  transform: rotateZ(90deg) rotateX(-180deg);
 }
-/* Bottom arrow */
+/* Bottom arrow — outside, centered horizontally in its span */
 .description span.arrow2:after {
   position: absolute;
-  left: 35%;
-  bottom: -16px;
+  bottom: -18px;
+  left: 50%;
   content: "\e603";
   font-family: 'icomoon';
-  font-size: 17px;
-  line-height: 17px;
+  font-size: 16px;
+  line-height: 16px;
   color: #444;
-  -webkit-transform: rotateZ(90deg);
+  -webkit-transform: translateX(-50%) rotate(90deg);
+  transform: translateX(-50%) rotate(90deg);
 }
-/* Bottom Right arrow */
+/* Bottom+Right diagonal arrow */
 .description span.arrow3:after {
   position: absolute;
-  left: 5%;
-  bottom: -19px;
+  left: 10%;
+  bottom: -20px;
   content: "\e600";
   font-family: 'icomoon';
-  font-size: 24px;
+  font-size: 22px;
   color: #444;
-  line-height: 21px;
+  line-height: 20px;
 }
 
 .dash1 { border-bottom: 1px dashed rgba(127, 140, 141, 0.2); }

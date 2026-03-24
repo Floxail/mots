@@ -26,7 +26,7 @@ define(function () {
     // Getting Grid
     _grid = gridObj.cases;
     _nbLines = gridObj.nbLines;
-    _nbCols = gridObj.nbLines
+    _nbCols = gridObj.nbColumns
 
     // Retreive callback
     _letterUpdateCallback = letterUpdateCallback;
@@ -92,10 +92,10 @@ define(function () {
         index = ((frameNumber + 1) >= _grid.length) ? 0 : (frameNumber + 1);
         break;
       case enumDirections.Up:
-        index = (frameNumber > _nbCols) ? (frameNumber - _nbCols) : 0;
+        index = (frameNumber > _nbLines) ? (frameNumber - _nbLines) : 0;
         break;
       case enumDirections.Down:
-        index = ((frameNumber + _nbCols) >= _grid.length) ? 0 : (frameNumber + _nbCols);
+        index = ((frameNumber + _nbLines) >= _grid.length) ? 0 : (frameNumber + _nbLines);
         break;
 
       default:

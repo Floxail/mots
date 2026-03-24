@@ -46,20 +46,42 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
       
       // Bind server disconnect event
       _socket.on('disconnect', function (reason) {
-        if (reason && reason == 'booted')
-          document.getElementById('ep-text').innerHTML = 'Désolé, la partie a déjà commencée !';
-        else
-          document.getElementById('ep-text').innerHTML = 'Connection au serveur perdue';
+        document.getElementById('ep-text').innerHTML = 'Connection au serveur perdue';
         _ui.ChangeGameScreen(enumPanels.Error, true);
-        console.log('Connection with the server lost :( ');
+        console.log('Connection with the server lost: ' + reason);
+      });
+
+      // Bind game already started event
+      _socket.on('game_already_started', function () {
+        localStorage.removeItem('mfl_nick');
+        document.getElementById('ep-text').innerHTML = 'Désolé, la partie a déjà commencée !';
+        _ui.ChangeGameScreen(enumPanels.Error, true);
       });
 
       // Bind login event
       _socket.on('logos', function (availableLogos) {
         if (_gameState == enumState.Login) {
           if (availableLogos == null) {
-            document.getElementById('lp-infos').innerHTML = '';
-            _ui.InfoTooltip(true, "<strong>Ho non, c'est balot !</strong><br/>Il semblerait qu'il n'y ai plus de place pour le jeu en cours.");
+            // Try silent rejoin if we have a stored nick from a previous session
+            var savedNick = localStorage.getItem('mfl_nick');
+            if (savedNick) {
+              _socket.emit('userIsReady', { nick: savedNick, monster: 0 });
+              // Bind game events now so we can receive grid_event on successful rejoin
+              _chat = new Chat(_socket, _scoreManager.UpdatePlayerList);
+              _socket.on('grid_event', onStartGame);
+              _socket.on('grid_reset', resetGame);
+              _socket.on('score_update', _scoreManager.RefreshScore);
+              _socket.on('game_over', function (winner) {
+                _ui.displayGameOver(winner);
+                _chat.congrats(winner);
+              });
+              _ui.ChangeGameScreen(enumPanels.Game, true);
+              _gameState = enumState.Waiting;
+              _ui.bindServerCommandButtons(_socket);
+            } else {
+              document.getElementById('lp-infos').innerHTML = '';
+              _ui.InfoTooltip(true, "<strong>Ho non, c'est balot !</strong><br/>Il semblerait qu'il n'y ai plus de place pour le jeu en cours.");
+            }
           }
           else
             prepareUserLoginForm(availableLogos);
@@ -102,10 +124,10 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
         // Unset last selection if any and set the new monster
         if (oldSelection)
           oldSelection.classList.remove('myMonster');
-        event.srcElement.classList.add('myMonster');
+        event.target.classList.add('myMonster');
 
         // Show the color !
-        document.getElementById('lp-nick').style.borderColor = event.srcElement.style.borderColor;
+        document.getElementById('lp-nick').style.borderColor = event.target.style.borderColor;
       }
     };
   }
@@ -133,6 +155,9 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
     _socket.on('grid_event', onStartGame);
     // Bind also grid reset, to play more than one game :p
     _socket.on('grid_reset', resetGame);
+
+    // Save nick for potential rejoin after page refresh
+    localStorage.setItem('mfl_nick', nick);
 
     // Send player infos to the server
     _socket.emit('userIsReady', { 'nick': nick, 'monster': monster } );

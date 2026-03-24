@@ -68,11 +68,11 @@ define(function () {
       // Add event listener on animation end to properly remove the node
       bonusNode.addEventListener('animationend', function (event) {
         // Remove node when animation ends
-        scoreNode.removeChild(event.srcElement);
+        scoreNode.removeChild(event.target);
       }, false);
       bonusNode.addEventListener('webkitAnimationEnd', function (event) {
         // Remove node when animation ends
-        scoreNode.removeChild(event.srcElement);  
+        scoreNode.removeChild(event.target);
       }, false);
 
       // Adding bonus in DOM and increase delay before the next bonus

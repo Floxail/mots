@@ -9,6 +9,7 @@
     "PROVIDER_ADDR": "https://www.rcijeux.fr/drupal_game/gso/mfleches/grids/",
     "PROVIDER_EXTENSION": ".mfj",
     "PROVIDER_DEFAULT_GRID": 2118,
-    "PROVIDER_DEFAULT_GRID_DATE": 1772323200000
+    "PROVIDER_DEFAULT_GRID_DATE": 1772323200000,
+    "PROVIDER_FIRST_GRID": 1292
   }
 }

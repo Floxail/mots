@@ -5,10 +5,13 @@
   "scripts": {
     "start": "node server.js"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
-    "express": "3.4.8",
-    "jade": "*",
+    "express": "^4.18.2",
+    "pug": "^3.0.2",
     "prompts": "^2.1.0",
-    "socket.io": "~0.9"
+    "socket.io": "^4.7.2"
   }
 }

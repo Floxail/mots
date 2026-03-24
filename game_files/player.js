@@ -28,6 +28,10 @@ Player.prototype.updateScore = function (points) {
   this._playerTinyObject.nbWords++;
 };
 
+Player.prototype.updateSocket = function (newSocket) {
+  this._socket = newSocket;
+};
+
 Player.prototype.resetPlayerInfos = function () {
   this._playerTinyObject.score = 0;
   this._playerTinyObject.nbWords = 0;

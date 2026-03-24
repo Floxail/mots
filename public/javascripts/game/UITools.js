@@ -141,7 +141,7 @@ define(function () {
         if (oldSelection)
           oldSelection.classList.remove('myMonster');
         
-        event.srcElement.classList.add('myMonster');
+        event.target.classList.add('myMonster');
       }
     };
   };

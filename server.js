@@ -3,42 +3,41 @@
  */
 var express = require('express'),
     routes  = require('./routes'),
-    http  = require('http'),
-    path  = require('path'),
-    os = require('os'),
+    http    = require('http'),
+    path    = require('path'),
+    os      = require('os'),
     prompts = require('prompts'),
-    app   = express(),
+    app     = express(),
     config  = require('./conf.json'),
-    mfl   = require('./game_files/motsFleches'),
+    mfl     = require('./game_files/motsFleches'),
 
     _gridNumber = 0;
 
 
 // all environments
-app.set('port', config.SERVER_PORT);
+var _port = process.env.PORT || config.SERVER_PORT;
+app.set('port', _port);
 app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+app.set('view engine', 'pug');
 
-app.use(express.favicon());
-app.use(express.logger('dev'));
 app.use(express.json());
-app.use(express.urlencoded());
-app.use(express.methodOverride());
-app.use(app.router);
+app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
-
-// development only
-if ('development' == app.get('env')) {
-  app.use(express.errorHandler());
-}
 
 app.get('/', routes.index);
 app.get('/conf.json', function(req, res) {
-    res.json({ SOCKET_ADDR: config.SOCKET_ADDR, SOCKET_PORT: config.SOCKET_PORT });
+    // Derive public address from request headers (works locally and on cloud platforms)
+    var protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    var host = req.get('host'); // e.g. "myapp.railway.app" or "192.168.1.5:2121"
+    var parts = host.split(':');
+    var hostname = parts[0];
+    var port = parts[1] ? parseInt(parts[1]) : (protocol === 'https' ? 443 : 80);
+    res.json({ SOCKET_ADDR: protocol + '://' + hostname, SOCKET_PORT: port });
 });
 
-// Start server
-http.createServer(app).listen(app.get('port'), onServerReady);
+// Create HTTP server (Socket.IO will attach to it too — single port)
+var _server = http.createServer(app);
+_server.listen(_port, onServerReady);
 
 // Retreive command line arguments
 if (process.argv[2]) {
@@ -52,11 +51,15 @@ if (process.argv[2]) {
 
 /** Call when the express server has started */
 async function onServerReady() {
-  console.log('Express server listening on port ' + app.get('port'));
+  console.log('Express server listening on port ' + _port);
 
   var addresses = getLocalIpAddresses();
 
-  if (addresses.length > 1) {
+  if (addresses.length === 0) {
+    // Cloud environment — no local interfaces, URL is derived from request headers
+    console.log('\n\n\tGame server ready (cloud mode)\n\n');
+  }
+  else if (addresses.length > 1) {
     var response = await prompts({
       type: 'select',
       name: 'value',
@@ -64,18 +67,15 @@ async function onServerReady() {
       choices: addresses,
     });
 
-    // Update socket address with the choosen one
-    config.SOCKET_ADDR = `http://${addresses[response.value]}`;
+    console.log(`\n\n\tWaiting for players at http://${addresses[response.value]}:${_port}\n\n`);
   }
   else {
-    config.SOCKET_ADDR = `http://${addresses[0]}`;
+    console.log(`\n\n\tWaiting for players at http://${addresses[0]}:${_port}\n\n`);
   }
-
-  console.log(`\n\n\tWaiting for players at ${config.SOCKET_ADDR}:${config.SERVER_PORT}\n\n`);
 
   // Load desired grid in parameter.
   // -1 to retreive the day grid, 0 for the default one or any number for a special one
-  mfl.startMflServer(_gridNumber);
+  mfl.startMflServer(_gridNumber, _server);
 }
 
 /** Get local ip addresses */
@@ -84,8 +84,6 @@ function getLocalIpAddresses() {
   var addresses = [];
 
   Object.keys(ifaces).map(function (ifname) {
-    var alias = 0;
-
     return ifaces[ifname].map(function (iface) {
       if (iface.family !== 'IPv4' || iface.internal !== false) return;
       addresses.push(iface.address);
