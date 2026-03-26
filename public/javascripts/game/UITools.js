@@ -158,23 +158,6 @@ define(function () {
     var timeNode,
         time = 0;
 
-    // First inject the game info panel
-    injectInGameInfoPanel();
-
-    // If the grid has no empty cells the panel could not be injected — skip gracefully
-    if (!document.getElementById('ig-infos')) return;
-
-    // Retreive time node and inject timer
-    timeNode = document.querySelector('#ig-infos > time');
-    timeNode.innerHTML = formatTime(time);
-    // Refresh timer each seconds
-    _gameTimer = window.setInterval(function () {
-      timeNode.innerHTML = formatTime(++time);
-    }, 1000);
-
-    // Display grid informations
-    document.querySelector('#ig-infos > header').innerHTML = infos.provider + ' ' + infos.id + ' - Niveau ' + infos.level;
-
     // Display grid infos below the grid
     var container = document.getElementById('gs-grid-container');
     var oldBar = document.getElementById('gs-grid-infos');
@@ -200,6 +183,23 @@ define(function () {
       + '<span class="grid-info-id">Grille n°' + infos.id + '</span>'
       + '<span class="grid-info-level">Difficulté : ' + levelStars + ' (' + infos.level + ')</span>';
     container.appendChild(bar);
+
+    // Inject the in-game info panel (timer, level) inside empty cells
+    injectInGameInfoPanel();
+
+    // If the grid has no empty cells the panel could not be injected — skip timer
+    if (!document.getElementById('ig-infos')) return;
+
+    // Retreive time node and inject timer
+    timeNode = document.querySelector('#ig-infos > time');
+    timeNode.innerHTML = formatTime(time);
+    // Refresh timer each seconds
+    _gameTimer = window.setInterval(function () {
+      timeNode.innerHTML = formatTime(++time);
+    }, 1000);
+
+    // Display grid informations
+    document.querySelector('#ig-infos > header').innerHTML = infos.provider + ' ' + infos.id + ' - Niveau ' + infos.level;
   };
 
   /*
