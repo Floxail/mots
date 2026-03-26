@@ -176,16 +176,30 @@ define(function () {
     document.querySelector('#ig-infos > header').innerHTML = infos.provider + ' ' + infos.id + ' - Niveau ' + infos.level;
 
     // Display grid infos below the grid
-    var gridInfosBar = document.getElementById('gs-grid-infos');
-    if (gridInfosBar) {
-      var gridDate = infos.date ? new Date(infos.date) : new Date();
-      var dateStr = gridDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-      var levelStars = '';
-      for (var s = 0; s < infos.level; s++) levelStars += '★';
-      gridInfosBar.innerHTML = '<span class="grid-info-date">' + dateStr + '</span>'
-        + '<span class="grid-info-id">Grille n°' + infos.id + '</span>'
-        + '<span class="grid-info-level">Difficulté : ' + levelStars + ' (' + infos.level + ')</span>';
+    var container = document.getElementById('gs-grid-container');
+    var oldBar = document.getElementById('gs-grid-infos');
+    if (oldBar) oldBar.parentNode.removeChild(oldBar);
+
+    // Calculate grid bottom from actual frame positions
+    var frames = container.querySelectorAll('.frame');
+    var gridBottom = 0;
+    for (var f = 0; f < frames.length; f++) {
+      var bottom = frames[f].offsetTop + frames[f].offsetHeight;
+      if (bottom > gridBottom) gridBottom = bottom;
     }
+
+    var gridDate = infos.date ? new Date(infos.date) : new Date();
+    var dateStr = gridDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    var levelStars = '';
+    for (var s = 0; s < infos.level; s++) levelStars += '★';
+
+    var bar = document.createElement('div');
+    bar.id = 'gs-grid-infos';
+    bar.style.top = (gridBottom + 6) + 'px';
+    bar.innerHTML = '<span class="grid-info-date">' + dateStr + '</span>'
+      + '<span class="grid-info-id">Grille n°' + infos.id + '</span>'
+      + '<span class="grid-info-level">Difficulté : ' + levelStars + ' (' + infos.level + ')</span>';
+    container.appendChild(bar);
   };
 
   /*
@@ -218,7 +232,7 @@ define(function () {
     if (_gameTimer != null)
       window.clearInterval(_gameTimer);
     var gridInfosBar = document.getElementById('gs-grid-infos');
-    if (gridInfosBar) gridInfosBar.innerHTML = '';
+    if (gridInfosBar) gridInfosBar.parentNode.removeChild(gridInfosBar);
   };
 
   /*
