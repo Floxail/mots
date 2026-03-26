@@ -3,9 +3,10 @@ var enums           = require('./enums'),
     GridManager     = require('./gridManager'),
     PlayersManager  = require('./playersManager');
 
-var MAX_PLAYERS      = 9;
-var SERVER_CHAT_COLOR = '#c0392b';
-var TIME_BEFORE_START = 5;
+var MAX_PLAYERS          = 9;
+var SERVER_CHAT_COLOR    = '#c0392b';
+var TIME_BEFORE_START    = 5;
+var ROOM_INACTIVITY_MS   = 60 * 60 * 1000; // 60 minutes before room cleanup
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -18,7 +19,7 @@ function generateRoomId() {
 
 // ─── GameRoom ─────────────────────────────────────────────────────────────────
 
-function GameRoom(id, io) {
+function GameRoom(id, io, onInactive) {
   this.id              = id;
   this._io             = io;
   this.gridManager     = new GridManager();
@@ -26,7 +27,40 @@ function GameRoom(id, io) {
   this.gameState       = enums.ServerState.WaitingForPlayers;
   this.lastWordFoundTs = null;
   this.gridReady       = false;
+  this._foundWords     = []; // {word, axis, start, color} for replay on rejoin
+  this._lastActivity   = Date.now();
+  this._onInactive     = onInactive || null;
+  this._inactivityTimer = null;
+  this._startInactivityTimer();
 }
+
+GameRoom.prototype.touchActivity = function () {
+  this._lastActivity = Date.now();
+};
+
+GameRoom.prototype._startInactivityTimer = function () {
+  var self = this;
+  this._inactivityTimer = setInterval(function () {
+    if (Date.now() - self._lastActivity >= ROOM_INACTIVITY_MS) {
+      console.log('[SERVER] Room ' + self.id + ' — closed after 60 min of inactivity');
+      self.destroy();
+    }
+  }, 60 * 1000); // check every minute
+};
+
+GameRoom.prototype.destroy = function () {
+  clearInterval(this._inactivityTimer);
+  this.broadcast('room_closed');
+  // Disconnect all sockets in this room
+  var roomSockets = this._io.sockets.adapter.rooms.get(this.id);
+  if (roomSockets) {
+    roomSockets.forEach(function (socketId) {
+      var s = this._io.sockets.sockets.get(socketId);
+      if (s) s.disconnect(true);
+    }.bind(this));
+  }
+  if (this._onInactive) this._onInactive(this.id);
+};
 
 GameRoom.prototype.broadcast = function (event, data) {
   this._io.to(this.id).emit(event, data);
@@ -34,6 +68,7 @@ GameRoom.prototype.broadcast = function (event, data) {
 
 GameRoom.prototype.sendChat = function (message, sender, color, playerList) {
   if (sender === undefined) { sender = 'server'; color = SERVER_CHAT_COLOR; }
+  this.touchActivity();
   this.broadcast('chat', { message: message, from: sender, color: color, players: playerList });
 };
 
@@ -51,6 +86,8 @@ GameRoom.prototype.startGame = function () {
 GameRoom.prototype.resetGame = function (gridId) {
   var self = this;
   self.gameState = enums.ServerState.WaitingForPlayers;
+  self._foundWords = [];
+  self.lastWordFoundTs = null;
   self.playersManager.resetPlayersForNewGame();
   self.gridManager.resetGrid(gridId, function (grid) {
     if (!grid) {
@@ -89,9 +126,11 @@ GameRoom.prototype.bonusChecker = function (playerPoints, nbWordsRemaining) {
 };
 
 GameRoom.prototype.checkWord = function (player, wordObj) {
+  this.touchActivity();
   var points = this.gridManager.checkPlayerWord(wordObj);
   if (points >= 0) {
     wordObj.color = player.getColor();
+    this._foundWords.push({ word: wordObj.word, axis: wordObj.axis, start: wordObj.start, color: wordObj.color });
     this.broadcast('word_founded', wordObj);
     this.sendChat('<strong>' + player.getNick() + '</strong> a trouvé <strong>' + wordObj.word + '</strong> (+' + points + ' pts) !');
 
@@ -111,6 +150,26 @@ GameRoom.prototype.checkWord = function (player, wordObj) {
       console.log('[SERVER] Room ' + this.id + ' — game over!');
       this.broadcast('game_over', this.playersManager.getWinner().getPlayerObject());
     }
+  }
+};
+
+// Send full game state to a (re)joining socket: grid, found words, all scores
+GameRoom.prototype.sendGameState = function (socket, player) {
+  socket.emit('grid_event', { grid: this.gridManager.getGrid(), timer: 0 });
+  if (this._foundWords.length > 0) {
+    socket.emit('found_words', this._foundWords);
+  }
+  // Send score_update for every player so the panel is fully populated
+  var players = this.playersManager.getPlayerList();
+  var nbPlayers = this.playersManager.getNumberOfPlayers();
+  for (var i = 0; i < players.length; i++) {
+    socket.emit('score_update', {
+      playerID: players[i].id,
+      score:    players[i].score,
+      words:    players[i].nbWords,
+      progress: this.gridManager.getAccomplishmentRate(players[i].score, nbPlayers),
+      bonus:    []
+    });
   }
 };
 
@@ -209,6 +268,7 @@ exports.startMflServer = function (desiredGrid, httpServer) {
   }
 
   function registerPlayerInRoom(socket, room) {
+    room.touchActivity();
     var isWaiting   = room.gameState === enums.ServerState.WaitingForPlayers;
     var hasSlot     = room.playersManager.getNumberOfPlayers() < MAX_PLAYERS;
 
@@ -223,7 +283,10 @@ exports.startMflServer = function (desiredGrid, httpServer) {
         if (room.gameState === enums.ServerState.WaitingForPlayers) {
           room.sendChat(p.getNick() + ' a quitté la partie');
           room.playersManager.removePlayer(p);
-          if (room.playersManager.getNumberOfPlayers() === 0) rooms.delete(room.id);
+          if (room.playersManager.getNumberOfPlayers() === 0) {
+            clearInterval(room._inactivityTimer);
+            rooms.delete(room.id);
+          }
         } else {
           room.sendChat(p.getNick() + ' s\'est déconnecté (peut revenir avec le même pseudo)');
         }
@@ -245,8 +308,7 @@ exports.startMflServer = function (desiredGrid, httpServer) {
             rejoiner.updateSocket(socket);
             socket.playerInstance = rejoiner;
             room.sendChat('<strong>' + nick + '</strong> a rejoint la partie !', undefined, undefined, room.playersManager.getPlayerList());
-            socket.emit('grid_event', { grid: room.gridManager.getGrid(), timer: 0 });
-            socket.emit('score_update', { playerID: rejoiner.getID(), score: rejoiner.getScore(), words: rejoiner.getNbWords(), progress: room.gridManager.getAccomplishmentRate(rejoiner.getScore(), room.playersManager.getNumberOfPlayers()), bonus: [] });
+            room.sendGameState(socket, rejoiner);
           } else {
             socket.emit('game_already_started');
             socket.disconnect(true);
@@ -273,8 +335,7 @@ exports.startMflServer = function (desiredGrid, httpServer) {
           rejoiner.updateSocket(socket);
           socket.playerInstance = rejoiner;
           room.sendChat('<strong>' + nick + '</strong> a rejoint la partie !', undefined, undefined, room.playersManager.getPlayerList());
-          socket.emit('grid_event', { grid: room.gridManager.getGrid(), timer: 0 });
-          socket.emit('score_update', { playerID: rejoiner.getID(), score: rejoiner.getScore(), words: rejoiner.getNbWords(), progress: room.gridManager.getAccomplishmentRate(rejoiner.getScore(), room.playersManager.getNumberOfPlayers()), bonus: [] });
+          room.sendGameState(socket, rejoiner);
           bindChatHandler(socket, room);
           bindWordHandler(socket, room, rejoiner);
 
@@ -283,7 +344,7 @@ exports.startMflServer = function (desiredGrid, httpServer) {
           var player = room.playersManager.addNewPlayer(socket);
           socket.playerInstance = player;
           room.playerLog(socket, nick, infos.monster);
-          socket.emit('grid_event', { grid: room.gridManager.getGrid(), timer: 0 });
+          room.sendGameState(socket, player);
           bindChatHandler(socket, room);
           broadcastRoomList();
 
@@ -304,7 +365,10 @@ exports.startMflServer = function (desiredGrid, httpServer) {
       var roomId = generateRoomId();
       while (rooms.has(roomId)) roomId = generateRoomId();
 
-      var room = new GameRoom(roomId, io);
+      var room = new GameRoom(roomId, io, function (id) {
+        rooms.delete(id);
+        broadcastRoomList();
+      });
       rooms.set(roomId, room);
 
       var gridNum = (options && options.gridNumber !== undefined && !isNaN(parseInt(options.gridNumber)))

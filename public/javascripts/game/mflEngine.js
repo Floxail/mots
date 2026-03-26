@@ -143,34 +143,62 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
       showError('Désolé, la partie a déjà commencée !');
     });
 
+    _socket.on('room_closed', function () {
+      showError('La salle a été fermée pour inactivité.');
+    });
+
     _socket.on('logos', function (availableLogos) {
       if (_gameState > enumState.Login) return; // already past login
 
-      if (availableLogos == null) {
-        // Try silent rejoin with stored nick
-        var savedNick = localStorage.getItem('mfl_nick');
-        if (savedNick) {
-          _socket.emit('userIsReady', { nick: savedNick, monster: 0 });
-          _chat = new Chat(_socket, _scoreManager.UpdatePlayerList);
-          _socket.on('grid_event', onStartGame);
-          _socket.on('grid_reset', resetGame);
-          _socket.on('score_update', _scoreManager.RefreshScore);
-          _socket.on('game_over', function (winner) {
-            _ui.displayGameOver(winner);
-            _chat.congrats(winner);
-          });
-          _ui.ChangeGameScreen(enumPanels.Game, true);
-          _gameState = enumState.Waiting;
-          _ui.bindServerCommandButtons(_socket);
-        } else {
-          document.getElementById('lp-infos').innerHTML = '';
-          _ui.InfoTooltip(true, "<strong>Ho non, c'est balot !</strong><br/>Il semblerait qu'il n'y ai plus de place pour le jeu en cours.");
-        }
-      } else {
-        prepareUserLoginForm(availableLogos);
-        _ui.ChangeGameScreen(enumPanels.Login, true);
-        document.getElementById('lp-start-btn').onclick = sendPlayerReady;
+      var savedNick = localStorage.getItem('mfl_nick');
+
+      if (availableLogos == null && !savedNick) {
+        // No slot and no saved nick — show error
+        document.getElementById('lp-infos').innerHTML = '';
+        _ui.InfoTooltip(true, "<strong>Ho non, c'est balot !</strong><br/>Il semblerait qu'il n'y ai plus de place pour le jeu en cours.");
+        return;
       }
+
+      // Auto-rejoin if we have a saved nick (refresh / reconnect)
+      if (savedNick) {
+        _socket.emit('userIsReady', { nick: savedNick, monster: 0 });
+        setupGameListeners();
+        _ui.ChangeGameScreen(enumPanels.Game, true);
+        _gameState = enumState.Waiting;
+        _ui.bindServerCommandButtons(_socket);
+        return;
+      }
+
+      // Normal login form
+      prepareUserLoginForm(availableLogos);
+      _ui.ChangeGameScreen(enumPanels.Login, true);
+      document.getElementById('lp-start-btn').onclick = sendPlayerReady;
+    });
+  }
+
+  // ─── Shared game listener setup ───────────────────────────────────────────
+
+  function setupGameListeners() {
+    _chat = new Chat(_socket, _scoreManager.UpdatePlayerList);
+    _socket.on('grid_event', onStartGame);
+    _socket.on('grid_reset', resetGame);
+    _socket.on('score_update', _scoreManager.RefreshScore);
+    _socket.on('game_over', function (winner) {
+      _ui.displayGameOver(winner);
+      _chat.congrats(winner);
+    });
+    // Replay previously found words when (re)joining a game in progress.
+    // found_words arrives right after grid_event; onStartGame creates _gridManager
+    // synchronously but DisplayGrid may not have run yet — use a short delay.
+    _socket.on('found_words', function (words) {
+      function replay() {
+        if (!_gridManager) return;
+        for (var i = 0; i < words.length; i++) {
+          _gridManager.RevealWord(words[i]);
+        }
+      }
+      // Small delay to ensure grid DOM is rendered before revealing
+      setTimeout(replay, 300);
     });
   }
 
@@ -214,18 +242,10 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
     // Prevent double-submit
     document.getElementById('lp-start-btn').onclick = function () { return false; };
 
-    _chat = new Chat(_socket, _scoreManager.UpdatePlayerList);
-    _socket.on('grid_event', onStartGame);
-    _socket.on('grid_reset', resetGame);
+    setupGameListeners();
 
     localStorage.setItem('mfl_nick', nick);
     _socket.emit('userIsReady', { 'nick': nick, 'monster': monster });
-
-    _socket.on('score_update', _scoreManager.RefreshScore);
-    _socket.on('game_over', function (winner) {
-      _ui.displayGameOver(winner);
-      _chat.congrats(winner);
-    });
 
     _ui.ChangeGameScreen(enumPanels.Game, true);
     _gameState = enumState.Waiting;

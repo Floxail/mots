@@ -70,14 +70,9 @@ define(['cursor'], function (Cursor) {
 
       // Insert description and arrow
       descNode.innerHTML = info.desc[i];
+      descNode.innerHTML = info.desc[i];
       if (info.arrow[i] !== null) {
         descNode.classList.add('arrow' + info.arrow[i].toString());
-        // When the TOP span of a 2-definition cell has a downward arrow (Bottom=2,
-        // BottomRight=3) its :after pseudo-element must be anchored to the cell
-        // bottom, not the span bottom — otherwise it appears in the middle of the cell.
-        if (i === 0 && info.nbDesc === 2 && (info.arrow[i] === 2 || info.arrow[i] === 3)) {
-          descNode.classList.add('arrow-cell-bottom');
-        }
       }
 
       frame.appendChild(descNode);

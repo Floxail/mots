@@ -263,6 +263,9 @@ GridManager.prototype.checkPlayerWord = function (wordObj) {
     index += jump;
   }
 
+  // All letters already found — reject (no points, no bonus)
+  if (points === 0) return (-1);
+
   index = wordObj.start;
   for (i = 0; i < wordSize; i++) {
     if (this._grid.cases[index].available == true)
