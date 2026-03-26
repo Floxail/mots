@@ -174,6 +174,18 @@ define(function () {
 
     // Display grid informations
     document.querySelector('#ig-infos > header').innerHTML = infos.provider + ' ' + infos.id + ' - Niveau ' + infos.level;
+
+    // Display grid infos below the grid
+    var gridInfosBar = document.getElementById('gs-grid-infos');
+    if (gridInfosBar) {
+      var gridDate = infos.date ? new Date(infos.date) : new Date();
+      var dateStr = gridDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      var levelStars = '';
+      for (var s = 0; s < infos.level; s++) levelStars += '★';
+      gridInfosBar.innerHTML = '<span class="grid-info-date">' + dateStr + '</span>'
+        + '<span class="grid-info-id">Grille n°' + infos.id + '</span>'
+        + '<span class="grid-info-level">Difficulté : ' + levelStars + ' (' + infos.level + ')</span>';
+    }
   };
 
   /*
@@ -205,6 +217,8 @@ define(function () {
   UITools.prototype.resetGridInformations = function () {
     if (_gameTimer != null)
       window.clearInterval(_gameTimer);
+    var gridInfosBar = document.getElementById('gs-grid-infos');
+    if (gridInfosBar) gridInfosBar.innerHTML = '';
   };
 
   /*

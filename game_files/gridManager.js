@@ -43,7 +43,8 @@ function GridManager() {
     provider: '',
     id:       0,
     level:    0,
-    nbWords:  0
+    nbWords:  0,
+    date:     null
   };
 }
 
@@ -240,6 +241,7 @@ function getGridAddress(self, commandArgv) {
 
   self._gridInfos.provider = config.PROVIDER_NAME;
   self._gridInfos.id = gridNumber;
+  self._gridInfos.date = config.PROVIDER_DEFAULT_GRID_DATE + (gridNumber - config.PROVIDER_DEFAULT_GRID) * 86400000;
 
   return (config.PROVIDER_ADDR + gridNumber.toString() + config.PROVIDER_EXTENSION);
 }
@@ -428,6 +430,7 @@ GridManager.prototype.resetGrid = function (gridNumber, callback) {
   this._gridInfos.id = 0;
   this._gridInfos.level = 0;
   this._gridInfos.nbWords = 0;
+  this._gridInfos.date = null;
 
   this.retreiveAndParseGrid(gridNumber, callback);
 };

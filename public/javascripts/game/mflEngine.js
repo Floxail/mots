@@ -27,7 +27,8 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
       _soloGrid,
       _soloScore       = 0,
       _countdownTimer  = null,
-      _wordFoundedHandler = null;
+      _wordFoundedHandler = null,
+      _gameListenersReady = false;
 
   Conf = JSON.parse(Conf);
 
@@ -68,6 +69,7 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
 
     // Lobby button bindings
     document.getElementById('lobby-create-btn').onclick = function () {
+      localStorage.removeItem('mfl_nick');
       var raw  = document.getElementById('lobby-grid-input').value.trim();
       var opts = {};
       if (raw && !isNaN(parseInt(raw))) opts.gridNumber = parseInt(raw);
@@ -82,6 +84,7 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
     };
 
     document.getElementById('lobby-join-btn').onclick = function () {
+      localStorage.removeItem('mfl_nick');
       var code = document.getElementById('lobby-code-input').value.trim().toUpperCase();
       if (!code) { _ui.InfoTooltip(true, 'Entrez un code de salle', 3000); return; }
       joinRoom(code);
@@ -129,7 +132,7 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
     });
     container.innerHTML = html;
     container.querySelectorAll('.room-join-btn').forEach(function (btn) {
-      btn.onclick = function () { joinRoom(btn.getAttribute('data-id')); };
+      btn.onclick = function () { localStorage.removeItem('mfl_nick'); joinRoom(btn.getAttribute('data-id')); };
     });
   }
 
@@ -179,6 +182,9 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
   // ─── Shared game listener setup ───────────────────────────────────────────
 
   function setupGameListeners() {
+    if (_gameListenersReady) return;
+    _gameListenersReady = true;
+
     _chat = new Chat(_socket, _scoreManager.UpdatePlayerList);
     _socket.on('grid_event', onStartGame);
     _socket.on('grid_reset', resetGame);

@@ -132,11 +132,18 @@ GameRoom.prototype.checkWord = function (player, wordObj) {
     wordObj.color = player.getColor();
     this._foundWords.push({ word: wordObj.word, axis: wordObj.axis, start: wordObj.start, color: wordObj.color });
     this.broadcast('word_founded', wordObj);
-    this.sendChat('<strong>' + player.getNick() + '</strong> a trouvé <strong>' + wordObj.word + '</strong> (+' + points + ' pts) !');
-
     var bonuses = this.bonusChecker(points, this.gridManager.getNbRemainingWords());
     this.lastWordFoundTs = Date.now();
     player.updateScore(points + bonuses.points);
+
+    var chatMsg = '<strong>' + player.getNick() + '</strong> a trouvé <strong>' + wordObj.word + '</strong> (+' + points + ' pts)';
+    if (bonuses.bonusList.length > 0) {
+      for (var b = 0; b < bonuses.bonusList.length; b++) {
+        chatMsg += ' 🏆 <em>' + bonuses.bonusList[b].title + '</em> (+' + bonuses.bonusList[b].points + ')';
+      }
+    }
+    chatMsg += ' !';
+    this.sendChat(chatMsg);
 
     this.broadcast('score_update', {
       playerID: player.getID(),

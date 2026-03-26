@@ -317,6 +317,25 @@ html, body {
   perspective: 1200;
 }
 
+/* Grid info bar below the grid */
+#gs-grid-infos {
+  clear: left;
+  float: left;
+  width: 900px;
+  text-align: center;
+  padding: 6px 0;
+  font-family: 'abeezeeregular', sans-serif;
+  font-size: 13px;
+  color: #555;
+  background: rgba(255,255,255,0.6);
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+}
+#gs-grid-infos:empty { display: none; }
+#gs-grid-infos .grid-info-date { text-transform: capitalize; }
+#gs-grid-infos .grid-info-level { color: #c0392b; }
+
 /* Score part */
 #gs-scores {
   float: left;
@@ -343,6 +362,11 @@ html, body {
   /* Game grid part */
   #gs-grid-container {
     float: right;
+  }
+
+  #gs-grid-infos {
+    float: right;
+    width: 900px;
   }
 
   /* Score part */
@@ -991,6 +1015,15 @@ html, body {
     flex: 1 1 auto;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
+  }
+
+  #gs-grid-infos {
+    float: none !important;
+    width: 100% !important;
+    flex-shrink: 0;
+    font-size: 11px;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 
   /* Scores: hidden by default on very small screens to give grid more room */
