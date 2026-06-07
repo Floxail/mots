@@ -1131,4 +1131,8 @@ html, body {
     height: calc(100% - 50px) !important;
     border-bottom: none;
   }
+  #gs-scores.tab-active {
+    display: block !important;
+    overflow-y: auto;
+  }
 }
