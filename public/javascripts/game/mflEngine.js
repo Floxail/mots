@@ -222,6 +222,7 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
         if (!_gridManager) return;
         for (var i = 0; i < words.length; i++) {
           _gridManager.RevealWord(words[i]);
+          _scoreManager.trackWord(words[i]);
         }
       }
       // Small delay to ensure grid DOM is rendered before revealing
@@ -294,7 +295,10 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
 
     // Replace the word_founded listener so it points to the new grid
     if (_wordFoundedHandler) _socket.off('word_founded', _wordFoundedHandler);
-    _wordFoundedHandler = function (wordObj) { _gridManager.RevealWord(wordObj); };
+    _wordFoundedHandler = function (wordObj) {
+      _gridManager.RevealWord(wordObj);
+      _scoreManager.trackWord(wordObj);
+    };
     _socket.on('word_founded', _wordFoundedHandler);
 
     if (gridEvent.timer > 0) {
