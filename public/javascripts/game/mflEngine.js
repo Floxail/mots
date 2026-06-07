@@ -354,8 +354,10 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
 
     _ui.ChangeGameScreen(enumPanels.Game, true);
 
-    // Hide chat panel — not needed in solo
+    // Hide chat panel and chat tab — not needed in solo
     document.getElementById('gs-chat').style.display = 'none';
+    var chatTabBtn = document.querySelector('.tab-btn[data-tab="chat"]');
+    if (chatTabBtn) chatTabBtn.style.display = 'none';
     document.getElementById('gs-scores').innerHTML =
       '<div id="solo-score"><span class="solo-label">Score</span><span class="solo-value">0</span></div>';
 
