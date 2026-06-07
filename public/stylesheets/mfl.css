@@ -414,6 +414,21 @@ html, body {
   background: url('../images/grey.png');
 }
 
+/* Arrow direction badge — replaces ::after arrows */
+.arrow-badge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: #e8c840;
+  color: #111;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 1;
+  pointer-events: none;
+}
+
 /* When the TOP span of a 2-definition cell carries a downward arrow its :after
    must be relative to the whole .description cell (not just the span), so we
    remove the span from the positioning context with position:static. */
