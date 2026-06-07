@@ -133,6 +133,7 @@ define(function () {
     var scoreNodes = document.querySelectorAll('.playerScore'),
         size, i;
 
+    _playerColors = {};
     _playerWords = {};
 
     for (i = 0, size = scoreNodes.length; i < size; i++) {
