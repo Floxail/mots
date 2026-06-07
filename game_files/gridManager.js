@@ -28,7 +28,14 @@ var enumArrow = {
 
 // Module-level cache: resolved grid number → raw .mfj text
 // Shared across all GridManager instances to avoid re-downloading the same grid
-var _rawGridCache = {};
+var _rawGridCache      = {};
+var _inFlightCallbacks = {}; // gridId → [{s, cb}] — callers waiting on an active download
+var MAX_CACHE_ENTRIES  = 50;
+
+function evictCacheIfNeeded() {
+  var keys = Object.keys(_rawGridCache);
+  if (keys.length > MAX_CACHE_ENTRIES) delete _rawGridCache[keys[0]];
+}
 
 
 function GridManager() {
@@ -329,6 +336,7 @@ GridManager.prototype.getAccomplishmentRate = function (playerPoints, nbPlayers)
 /*
 * Retreive and parse the grid. Checks the raw text cache before making a network request.
 * If the requested grid fails, falls back to PROVIDER_FIRST_GRID.
+* Concurrent requests for the same grid ID are deduplicated (only one download runs at a time).
 */
 GridManager.prototype.retreiveAndParseGrid = function (gridNumber, callback) {
   var self = this;
@@ -337,16 +345,39 @@ GridManager.prototype.retreiveAndParseGrid = function (gridNumber, callback) {
 
   console.info('\n\t[GRIDMANAGER] Try to load ' + gridAddr);
 
-  function loadFromText(text, id) {
-    _rawGridCache[id] = text;
-    parseGrid(self, callback, text);
-    callback(self._grid);
-  }
-
   function saveToDisk(id, text) {
     fs.writeFile(path.join(CACHE_DIR, id + '.mfj'), text, function(err) {
       if (err) console.warn('\t[GRIDMANAGER] Could not write cache file: ' + err.message);
     });
+  }
+
+  // Fix #3: only call callback after a successful parse (parseGrid calls callback(null) itself on error).
+  function loadOne(s, cb, text) {
+    parseGrid(s, cb, text);
+    if (s._grid) cb(s._grid);
+  }
+
+  // Notify a single caller (memory/disk-cache paths).
+  function loadFromText(text, id) {
+    evictCacheIfNeeded();
+    _rawGridCache[id] = text;
+    loadOne(self, callback, text);
+  }
+
+  // Notify all callers waiting on an in-flight network download.
+  function resolveWaiters(text, id) {
+    evictCacheIfNeeded();
+    _rawGridCache[id] = text;
+    var waiters = _inFlightCallbacks[id] || [];
+    delete _inFlightCallbacks[id];
+    for (var w = 0; w < waiters.length; w++) loadOne(waiters[w].s, waiters[w].cb, text);
+  }
+
+  // Error-out all callers waiting on an in-flight download.
+  function failWaiters(id, msg) {
+    var waiters = _inFlightCallbacks[id] || [];
+    delete _inFlightCallbacks[id];
+    for (var w = 0; w < waiters.length; w++) onGetGridError(waiters[w].cb, msg);
   }
 
   // 1. Check in-memory cache
@@ -356,68 +387,89 @@ GridManager.prototype.retreiveAndParseGrid = function (gridNumber, callback) {
     return;
   }
 
-  // 2. Check disk cache
+  // 2. Check disk cache (async — fix #6: no longer blocks the event loop)
   var diskFile = path.join(CACHE_DIR, resolvedId + '.mfj');
-  if (fs.existsSync(diskFile)) {
-    console.info('\t[GRIDMANAGER] Disk cache hit for grid #' + resolvedId);
-    var diskText = fs.readFileSync(diskFile, 'utf8');
-    loadFromText(diskText, resolvedId);
-    return;
-  }
-
-  // 3. Download from network
-  var req = https.get(gridAddr, function (res) {
-    // If the grid is not found, try the fallback
-    if (res.statusCode !== 200) {
-      res.resume(); // Consume and discard response body
-      var fallback = config.PROVIDER_FIRST_GRID;
-      console.warn('\t[GRIDMANAGER] Grid not found (HTTP ' + res.statusCode + '), falling back to #' + fallback);
-      self._gridInfos.provider = config.PROVIDER_NAME;
-      self._gridInfos.id = fallback;
-
-      if (_rawGridCache[fallback]) {
-        loadFromText(_rawGridCache[fallback], fallback);
-        return;
-      }
-      var diskFallback = path.join(CACHE_DIR, fallback + '.mfj');
-      if (fs.existsSync(diskFallback)) {
-        console.info('\t[GRIDMANAGER] Disk cache hit for fallback grid #' + fallback);
-        loadFromText(fs.readFileSync(diskFallback, 'utf8'), fallback);
-        return;
-      }
-
-      var fallbackAddr = config.PROVIDER_ADDR + fallback + config.PROVIDER_EXTENSION;
-      var fallbackReq = https.get(fallbackAddr, function (res2) {
-        if (res2.statusCode !== 200) {
-          res2.resume();
-          onGetGridError(callback, 'Fallback grid also failed (HTTP ' + res2.statusCode + ')');
-          return;
-        }
-        var chunks = [];
-        res2.on('data', function (chunk) { chunks.push(chunk); });
-        res2.on('end', function () {
-          var text = Buffer.concat(chunks).toString();
-          saveToDisk(fallback, text);
-          console.info('\n\t[GRIDMANAGER] Fallback grid loaded: ' + config.PROVIDER_NAME + ' #' + fallback);
-          loadFromText(text, fallback);
-        });
-      });
-      fallbackReq.on('error', function (e) { onGetGridError(callback, e.message); });
+  fs.readFile(diskFile, 'utf8', function (diskErr, diskText) {
+    if (!diskErr) {
+      console.info('\t[GRIDMANAGER] Disk cache hit for grid #' + resolvedId);
+      loadFromText(diskText, resolvedId);
       return;
     }
 
-    var bodyChunks = [];
-    res.on('data', function (chunk) { bodyChunks.push(chunk); });
-    res.on('end', function () {
-      console.info('\t[GRIDMANAGER] Grid downloaded, start parsing...\n');
-      var text = Buffer.concat(bodyChunks).toString();
-      saveToDisk(resolvedId, text);
-      console.info('\n\t[GRIDMANAGER] Parsing Done. Now play ' + self._gridInfos.provider + ' ' + self._gridInfos.id + ' - Level ' + self._gridInfos.level);
-      loadFromText(text, resolvedId);
-    });
-  });
+    // 3. Download from network.  Fix #10: deduplicate concurrent requests for the same ID.
+    if (_inFlightCallbacks[resolvedId]) {
+      _inFlightCallbacks[resolvedId].push({ s: self, cb: callback });
+      return;
+    }
+    _inFlightCallbacks[resolvedId] = [{ s: self, cb: callback }];
 
-  req.on('error', function (e) { onGetGridError(callback, e.message); });
+    var req = https.get(gridAddr, function (res) {
+      if (res.statusCode !== 200) {
+        res.resume();
+        var waiters = _inFlightCallbacks[resolvedId] || [];
+        delete _inFlightCallbacks[resolvedId];
+
+        var fallback = config.PROVIDER_FIRST_GRID;
+        console.warn('\t[GRIDMANAGER] Grid not found (HTTP ' + res.statusCode + '), falling back to #' + fallback);
+        for (var w = 0; w < waiters.length; w++) {
+          waiters[w].s._gridInfos.provider = config.PROVIDER_NAME;
+          waiters[w].s._gridInfos.id = fallback;
+        }
+
+        if (_rawGridCache[fallback]) {
+          for (var w2 = 0; w2 < waiters.length; w2++) loadOne(waiters[w2].s, waiters[w2].cb, _rawGridCache[fallback]);
+          return;
+        }
+
+        var diskFallback = path.join(CACHE_DIR, fallback + '.mfj');
+        fs.readFile(diskFallback, 'utf8', function (ferr, fallbackDiskText) {
+          if (!ferr) {
+            console.info('\t[GRIDMANAGER] Disk cache hit for fallback grid #' + fallback);
+            evictCacheIfNeeded();
+            _rawGridCache[fallback] = fallbackDiskText;
+            for (var w = 0; w < waiters.length; w++) loadOne(waiters[w].s, waiters[w].cb, fallbackDiskText);
+            return;
+          }
+          var fallbackAddr = config.PROVIDER_ADDR + fallback + config.PROVIDER_EXTENSION;
+          var fallbackReq = https.get(fallbackAddr, function (res2) {
+            if (res2.statusCode !== 200) {
+              res2.resume();
+              for (var w = 0; w < waiters.length; w++) {
+                onGetGridError(waiters[w].cb, 'Fallback grid also failed (HTTP ' + res2.statusCode + ')');
+              }
+              return;
+            }
+            var chunks = [];
+            res2.on('data', function (chunk) { chunks.push(chunk); });
+            res2.on('end', function () {
+              var text = Buffer.concat(chunks).toString();
+              saveToDisk(fallback, text);
+              evictCacheIfNeeded();
+              _rawGridCache[fallback] = text;
+              console.info('\n\t[GRIDMANAGER] Fallback grid loaded: ' + config.PROVIDER_NAME + ' #' + fallback);
+              for (var w = 0; w < waiters.length; w++) loadOne(waiters[w].s, waiters[w].cb, text);
+            });
+          });
+          fallbackReq.on('error', function (e) {
+            for (var w = 0; w < waiters.length; w++) onGetGridError(waiters[w].cb, e.message);
+          });
+        });
+        return;
+      }
+
+      var bodyChunks = [];
+      res.on('data', function (chunk) { bodyChunks.push(chunk); });
+      res.on('end', function () {
+        console.info('\t[GRIDMANAGER] Grid downloaded, start parsing...\n');
+        var text = Buffer.concat(bodyChunks).toString();
+        saveToDisk(resolvedId, text);
+        console.info('\n\t[GRIDMANAGER] Parsing Done. Now play ' + self._gridInfos.provider + ' ' + self._gridInfos.id + ' - Level ' + self._gridInfos.level);
+        resolveWaiters(text, resolvedId);
+      });
+    });
+
+    req.on('error', function (e) { failWaiters(resolvedId, e.message); });
+  });
 };
 
 GridManager.prototype.resetGrid = function (gridNumber, callback) {

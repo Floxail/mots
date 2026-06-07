@@ -68,11 +68,16 @@ PlayersManager.prototype.getAvailableMonsters = function () {
 };
 
 PlayersManager.prototype.setMonsterToPlayer = function (player, monsterId) {
-  if ((monsterId > (this._monsters.length - 1)) || (this._monsters[monsterId].player != null)) {
+  monsterId = parseInt(monsterId, 10);
+  if (isNaN(monsterId) || monsterId < 0 || monsterId > (this._monsters.length - 1) || this._monsters[monsterId].player != null) {
     console.error('[ERROR] Monster ' + monsterId + ' seems to be unavailable');
     monsterId = 0;
-    while (this._monsters[monsterId].player != null)
+    while (monsterId < this._monsters.length && this._monsters[monsterId].player != null)
       monsterId++;
+    if (monsterId >= this._monsters.length) {
+      console.error('[ERROR] No available monster slot');
+      return;
+    }
   }
 
   player.setMonster(this._monsters[monsterId]);
@@ -90,7 +95,7 @@ PlayersManager.prototype.findPlayerByNick = function (nick) {
 PlayersManager.prototype.getWinner = function () {
   var i,
       bestScore = 0,
-      winnerIndex;
+      winnerIndex = 0;
 
   for (i in this._playersList) {
     if (this._playersList[i].getScore() > bestScore) {

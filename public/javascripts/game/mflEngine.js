@@ -25,10 +25,13 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
       _chat,
       _socket,
       _soloGrid,
-      _soloScore       = 0,
-      _countdownTimer  = null,
-      _wordFoundedHandler = null,
-      _gameListenersReady = false;
+      _soloScore           = 0,
+      _countdownTimer      = null,
+      _wordFoundedHandler  = null,
+      _gameListenersReady  = false,
+      _loginListenersReady = false,
+      _pendingJoinHandler  = null,
+      _pendingErrorHandler = null;
 
   Conf = JSON.parse(Conf);
 
@@ -73,12 +76,15 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
       var raw  = document.getElementById('lobby-grid-input').value.trim();
       var opts = {};
       if (raw && !isNaN(parseInt(raw))) opts.gridNumber = parseInt(raw);
+      clearPendingRoomHandlers();
       _socket.emit('createRoom', opts);
-      _socket.once('roomJoined', function (data) {
+      _socket.once('roomJoined', _pendingJoinHandler = function (data) {
+        _pendingJoinHandler = _pendingErrorHandler = null;
         setURLRoomCode(data.roomId);
         enterLoginPhase();
       });
-      _socket.once('roomError', function (msg) {
+      _socket.once('roomError', _pendingErrorHandler = function (msg) {
+        _pendingJoinHandler = _pendingErrorHandler = null;
         _ui.InfoTooltip(true, '<strong>Erreur :</strong> ' + msg, 4000);
       });
     };
@@ -97,13 +103,23 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
     document.getElementById('lobby-solo-btn').onclick = startSoloMode;
   }
 
+  // Fix #4: remove stale .once handlers before registering new ones to prevent
+  // stacking when the user retries after a failed join attempt.
+  function clearPendingRoomHandlers() {
+    if (_pendingJoinHandler)  { _socket.off('roomJoined', _pendingJoinHandler);  _pendingJoinHandler  = null; }
+    if (_pendingErrorHandler) { _socket.off('roomError',  _pendingErrorHandler); _pendingErrorHandler = null; }
+  }
+
   function joinRoom(roomId) {
+    clearPendingRoomHandlers();
     _socket.emit('joinRoom', roomId);
-    _socket.once('roomJoined', function (data) {
+    _socket.once('roomJoined', _pendingJoinHandler = function (data) {
+      _pendingJoinHandler = _pendingErrorHandler = null;
       setURLRoomCode(data.roomId);
       enterLoginPhase();
     });
-    _socket.once('roomError', function (msg) {
+    _socket.once('roomError', _pendingErrorHandler = function (msg) {
+      _pendingJoinHandler = _pendingErrorHandler = null;
       setURLRoomCode('');
       _ui.InfoTooltip(true, '<strong>Salle introuvable</strong> : ' + msg, 4000);
     });
@@ -141,28 +157,34 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
   function enterLoginPhase() {
     _gameState = enumState.Login;
 
-    _socket.on('game_already_started', function () {
+    // Fix #7: guard against duplicate registration if enterLoginPhase is somehow
+    // called twice on the same socket (e.g. stacked .once handlers before fix #4).
+    if (_loginListenersReady) return;
+    _loginListenersReady = true;
+
+    // Terminal events — .once is correct: they fire at most once per session.
+    _socket.once('game_already_started', function () {
       localStorage.removeItem('mfl_nick');
       showError('Désolé, la partie a déjà commencée !');
     });
 
-    _socket.on('room_closed', function () {
+    _socket.once('room_closed', function () {
       showError('La salle a été fermée pour inactivité.');
     });
 
+    // logos can fire multiple times (other players joining), keep .on.
+    // The _gameState guard prevents acting after login is complete.
     _socket.on('logos', function (availableLogos) {
-      if (_gameState > enumState.Login) return; // already past login
+      if (_gameState > enumState.Login) return;
 
       var savedNick = localStorage.getItem('mfl_nick');
 
       if (availableLogos == null && !savedNick) {
-        // No slot and no saved nick — show error
         document.getElementById('lp-infos').innerHTML = '';
         _ui.InfoTooltip(true, "<strong>Ho non, c'est balot !</strong><br/>Il semblerait qu'il n'y ai plus de place pour le jeu en cours.");
         return;
       }
 
-      // Auto-rejoin if we have a saved nick (refresh / reconnect)
       if (savedNick) {
         _socket.emit('userIsReady', { nick: savedNick, monster: 0 });
         setupGameListeners();
@@ -172,7 +194,6 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
         return;
       }
 
-      // Normal login form
       prepareUserLoginForm(availableLogos);
       _ui.ChangeGameScreen(enumPanels.Login, true);
       document.getElementById('lp-start-btn').onclick = sendPlayerReady;
