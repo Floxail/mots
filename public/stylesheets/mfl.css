@@ -348,6 +348,23 @@ html, body {
   background-image: url('../images/green-bg.png');
 }
 
+/* Word tags in score panel */
+.player-word-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+.word-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: bold;
+  color: #111;
+  font-family: 'abeezeeregular', sans-serif;
+}
+
 
 /* Responsive grid */
 @media screen and (max-width: 1599px) {
