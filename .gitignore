@@ -5,3 +5,12 @@ node_modules
 
 # Claude context file
 CLAUDE.md
+
+# Knowledge graph artefacts
+graphify-out/
+cache/
+
+# Skills & agent config
+.agents/
+.claude/skills/
+skills-lock.json
