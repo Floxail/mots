@@ -70,7 +70,6 @@ define(['cursor'], function (Cursor) {
 
       // Insert description and arrow
       descNode.innerHTML = info.desc[i];
-      descNode.innerHTML = info.desc[i];
       if (info.arrow[i] !== null) {
         descNode.classList.add('arrow' + info.arrow[i].toString());
       }

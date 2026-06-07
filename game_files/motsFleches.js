@@ -88,12 +88,14 @@ GameRoom.prototype.resetGame = function (gridId) {
   self.gameState = enums.ServerState.WaitingForPlayers;
   self._foundWords = [];
   self.lastWordFoundTs = null;
+  self.gridReady = false;
   self.playersManager.resetPlayersForNewGame();
   self.gridManager.resetGrid(gridId, function (grid) {
     if (!grid) {
       console.error('[ERROR] Cannot retreive requested grid [' + gridId + ']');
       self.sendChat('Oups, impossible de récupérer la grille ' + gridId + ' !');
     } else {
+      self.gridReady = true;
       var infos = self.gridManager.getGridInfos();
       self.sendChat('Grille ' + infos.provider + ' ' + infos.id + ' (Niveau ' + infos.level + ') prête !');
       self.broadcast('grid_reset');
@@ -114,7 +116,7 @@ GameRoom.prototype.bonusChecker = function (playerPoints, nbWordsRemaining) {
     bonus.bonusList.push({ title: 'Finish him !', points: 4 });
     bonus.points += 4;
   }
-  if ((now - this.lastWordFoundTs) > 120000) {
+  if (this.lastWordFoundTs !== null && (now - this.lastWordFoundTs) > 120000) {
     bonus.bonusList.push({ title: 'Débloqueur', points: 5 });
     bonus.points += 5;
   }
@@ -183,6 +185,10 @@ GameRoom.prototype.sendGameState = function (socket, player) {
 GameRoom.prototype.checkServerCommand = function (message) {
   if (message[0] !== '!') return false;
   if (this.gameState === enums.ServerState.WaitingForPlayers && message === '!start') {
+    if (!this.gridReady) {
+      this.sendChat('Grille en cours de chargement, réessaie dans un instant.');
+      return true;
+    }
     this.startGame();
     return true;
   }
@@ -300,7 +306,7 @@ exports.startMflServer = function (desiredGrid, httpServer) {
         broadcastRoomList();
       });
 
-      socket.on('userIsReady', function (infos) {
+      socket.once('userIsReady', function (infos) {
         if (!infos || typeof infos.nick !== 'string') return;
         var nick = infos.nick.trim().substring(0, 20);
         if (!nick) return;
@@ -316,6 +322,8 @@ exports.startMflServer = function (desiredGrid, httpServer) {
             socket.playerInstance = rejoiner;
             room.sendChat('<strong>' + nick + '</strong> a rejoint la partie !', undefined, undefined, room.playersManager.getPlayerList());
             room.sendGameState(socket, rejoiner);
+            bindChatHandler(socket, room);
+            bindWordHandler(socket, room, rejoiner);
           } else {
             socket.emit('game_already_started');
             socket.disconnect(true);
@@ -383,7 +391,7 @@ exports.startMflServer = function (desiredGrid, httpServer) {
 
       room.gridManager.retreiveAndParseGrid(gridNum, function (grid) {
         if (!grid) {
-          socket.emit('roomError', 'Impossible de charger la grille');
+          room.broadcast('roomError', 'Impossible de charger la grille');
           rooms.delete(roomId);
           broadcastRoomList();
           return;
