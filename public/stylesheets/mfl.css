@@ -1015,6 +1015,9 @@ html, body {
   #gsc-command-grid  { bottom: 0; }
 }
 
+/* Tab bar — hidden on desktop, shown via mobile media query */
+#tab-bar { display: none; }
+
 /* Stack layout on small screens */
 @media screen and (max-width: 768px) {
   /* Game panel: vertical stack */
@@ -1071,4 +1074,60 @@ html, body {
 
   /* Login panel: smaller title on mobile */
   #login-panel > header { margin: 5% auto; }
+
+  /* Tab bar */
+  #tab-bar {
+    display: flex;
+    flex-shrink: 0;
+    height: 50px;
+    background: #1a1a2e;
+    border-top: 1px solid rgba(127,140,141,0.3);
+    order: 10;
+  }
+  .tab-btn {
+    flex: 1;
+    height: 100%;
+    background: none;
+    border: none;
+    border-top: 3px solid transparent;
+    color: #aaa;
+    font-family: 'abeezeeregular', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    position: relative;
+  }
+  .tab-btn.active {
+    color: #7ec87e;
+    border-top-color: #7ec87e;
+  }
+  .chat-badge {
+    display: none;
+    position: absolute;
+    top: 8px;
+    right: calc(50% - 18px);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e74c3c;
+  }
+  .chat-badge.visible { display: block; }
+
+  /* Hide all panels by default — tab-active shows the right one */
+  #gs-chat, #gs-grid-container, #gs-scores {
+    display: none !important;
+    float: none !important;
+    width: 100% !important;
+  }
+  #gs-chat.tab-active,
+  #gs-grid-container.tab-active,
+  #gs-scores.tab-active {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    overflow: auto;
+  }
+  #gs-chat.tab-active {
+    display: block !important;
+    height: calc(100% - 50px) !important;
+  }
 }

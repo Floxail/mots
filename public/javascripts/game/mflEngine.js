@@ -41,6 +41,7 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
   _scoreManager = new Score();
 
   startLobby();
+  initTabBar();
 
   // ─── Lobby ────────────────────────────────────────────────────────────────
 
@@ -213,6 +214,13 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
     _socket.on('game_over', function (winner) {
       _ui.displayGameOver(winner);
       _chat.congrats(winner);
+    });
+    _socket.on('chat', function() {
+      var chatPanel = document.getElementById('gs-chat');
+      if (chatPanel && !chatPanel.classList.contains('tab-active')) {
+        var badge = document.getElementById('chat-badge');
+        if (badge) badge.classList.add('visible');
+      }
     });
     // Replay previously found words when (re)joining a game in progress.
     // found_words arrives right after grid_event; onStartGame creates _gridManager
@@ -413,6 +421,32 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
   function setURLRoomCode(roomId) {
     if (history.replaceState) {
       history.replaceState(null, '', roomId ? '#' + roomId : window.location.pathname + window.location.search);
+    }
+  }
+
+  function initTabBar() {
+    var bar = document.getElementById('tab-bar');
+    if (!bar) return;
+    bar.querySelectorAll('.tab-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        switchTab(btn.getAttribute('data-tab'));
+      });
+    });
+    switchTab('grid');
+  }
+
+  function switchTab(name) {
+    var panels = { grid: 'gs-grid-container', score: 'gs-scores', chat: 'gs-chat' };
+    Object.keys(panels).forEach(function(t) {
+      var el = document.getElementById(panels[t]);
+      if (el) el.classList.toggle('tab-active', t === name);
+    });
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === name);
+    });
+    if (name === 'chat') {
+      var badge = document.getElementById('chat-badge');
+      if (badge) badge.classList.remove('visible');
     }
   }
 
