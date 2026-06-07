@@ -37,47 +37,52 @@ define(['cursor'], function (Cursor) {
     var frame = document.createElement('div'),
         lineHeight,
         fontSize,
-        descNode;
+        descNode,
+        i;
 
-    // Set class
     frame.className = 'frame description frame' + info.pos;
-    // Set size
     frame.style.width = size + 'px';
     frame.style.height = size + 'px';
-    // Set position
     frame.style.top = (line * size) + 'px';
     frame.style.left = (column * size) + 'px';
 
-    // Set extra style
     frame.setAttribute('data-line', line);
     frame.setAttribute('data-col', column);
     frame.setAttribute('data-pos', info.pos);
 
     if (info.nbLines === 1) {
       lineHeight = size;
-      fontSize = Math.floor(size / 5.4);
+      fontSize = Math.max(10, Math.floor(size / 5.4));
     } else {
       lineHeight = Math.floor(size / info.nbLines);
-      fontSize = Math.max(7, Math.floor(size / 5.5));
+      fontSize = Math.max(10, Math.floor(size / 5.5));
     }
-    
+
     frame.style.lineHeight = lineHeight + 'px';
     frame.style.fontSize = fontSize + 'px';
 
-    // Adding description in frame
-    for (var i = 0; i < info.nbDesc; i++) {
+    var arrowSymbols = ['→', '→↓', '↓', '↓→'];
+    var badgeText = '';
+
+    for (i = 0; i < info.nbDesc; i++) {
       descNode = document.createElement('span');
-
-      // Insert description and arrow
       descNode.innerHTML = info.desc[i];
-      if (info.arrow[i] !== null) {
-        descNode.classList.add('arrow' + info.arrow[i].toString());
-      }
-
+      // No arrowN class — badge replaces the ::after arrows
       frame.appendChild(descNode);
-    };
 
-    return (frame);
+      if (info.arrow[i] !== null && arrowSymbols[info.arrow[i]]) {
+        badgeText += arrowSymbols[info.arrow[i]];
+      }
+    }
+
+    if (badgeText) {
+      var badge = document.createElement('span');
+      badge.className = 'arrow-badge';
+      badge.textContent = badgeText;
+      frame.appendChild(badge);
+    }
+
+    return frame;
   }
 
   function insertLetter(line, column, size, info, index) {
