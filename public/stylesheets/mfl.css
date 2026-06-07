@@ -1129,5 +1129,6 @@ html, body {
   #gs-chat.tab-active {
     display: block !important;
     height: calc(100% - 50px) !important;
+    border-bottom: none;
   }
 }
