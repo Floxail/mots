@@ -6,19 +6,26 @@ define(function () {
 
   var _socket = null,
       _notifyCallback,
+      _chatHandler = null,
       _mesNode = document.getElementById('gsc-messages'),
       _writeNode = document.getElementById('gsc-write'),
       _serverColor = null;
 
   function Chat (socket, notifyPlayerListCallback) {
     // Store usefull object and callback
+    _notifyCallback = notifyPlayerListCallback;
+
+    // Remove previous chat listener if any (prevents duplicates on reconnect)
+    if (_socket && _chatHandler) {
+      _socket.off('chat', _chatHandler);
+    }
     _socket = socket;
-    _notifyCallback = notifyPlayerListCallback
 
     // On init, bind socket to receive messages
-    _socket.on('chat', function (messageObj) {
+    _chatHandler = function (messageObj) {
       treatChatMessage(messageObj);
-    });
+    };
+    _socket.on('chat', _chatHandler);
 
     // Bind onkeyPress of the textarea node to send messages
     _writeNode.onkeypress = function (event) {

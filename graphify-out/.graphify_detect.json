@@ -1,0 +1,58 @@
+{
+  "files": {
+    "code": [
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\.claude\\settings.local.json",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\conf.json",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\game_files\\case.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\game_files\\enums.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\game_files\\gridManager.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\game_files\\motsFleches.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\game_files\\player.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\game_files\\playersLogos.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\game_files\\playersManager.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\package.json",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\javascripts\\game\\UITools.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\javascripts\\game\\chat.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\javascripts\\game\\cursor.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\javascripts\\game\\grid.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\javascripts\\game\\mflEngine.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\javascripts\\game\\score.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\javascripts\\lib\\require.min.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\javascripts\\lib\\text.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\routes\\index.js",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\server.js"
+    ],
+    "document": [
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\README.md"
+    ],
+    "paper": [],
+    "image": [
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\illustrations\\mots-details1.png",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\illustrations\\mots-details2.png",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\fonts\\abeezee\\abeezee-italic-webfont.svg",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\fonts\\abeezee\\abeezee-regular-webfont.svg",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\fonts\\icomoon\\icomoon.svg",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\images\\green-bg.png",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\images\\grey-bg.png",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\images\\grey.png",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\images\\logos\\monster1.png",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\images\\logos\\monster2.png",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\images\\logos\\monster3.png",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\images\\logos\\monster4.png",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\images\\logos\\monster5.png",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\images\\logos\\monster6.png",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\images\\logos\\monster7.png",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\images\\logos\\monster8.png",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\images\\logos\\monster9.png",
+      "C:\\Users\\Floxa\\Downloads\\mots-1.0\\public\\images\\pink-bg.png"
+    ],
+    "video": []
+  },
+  "total_files": 39,
+  "total_words": 111770,
+  "needs_graph": true,
+  "warning": null,
+  "skipped_sensitive": [],
+  "graphifyignore_patterns": 3,
+  "scan_root": "C:\\Users\\Floxa\\Downloads\\mots-1.0"
+}

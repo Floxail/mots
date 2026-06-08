@@ -1,0 +1,4354 @@
+{
+  "nodes": [
+    {
+      "id": "claude_settings_local",
+      "label": "settings.local.json",
+      "file_type": "code",
+      "source_file": ".claude/settings.local.json",
+      "source_location": "L1"
+    },
+    {
+      "id": "claude_settings_local_permissions",
+      "label": "permissions",
+      "file_type": "code",
+      "source_file": ".claude/settings.local.json",
+      "source_location": "L2"
+    },
+    {
+      "id": "claude_settings_local_permissions_allow",
+      "label": "allow",
+      "file_type": "code",
+      "source_file": ".claude/settings.local.json",
+      "source_location": "L3"
+    },
+    {
+      "id": "conf",
+      "label": "conf.json",
+      "file_type": "code",
+      "source_file": "conf.json",
+      "source_location": "L1"
+    },
+    {
+      "id": "conf_server_port",
+      "label": "SERVER_PORT",
+      "file_type": "code",
+      "source_file": "conf.json",
+      "source_location": "L2"
+    },
+    {
+      "id": "conf_socket_addr",
+      "label": "SOCKET_ADDR",
+      "file_type": "code",
+      "source_file": "conf.json",
+      "source_location": "L4"
+    },
+    {
+      "id": "conf_socket_port",
+      "label": "SOCKET_PORT",
+      "file_type": "code",
+      "source_file": "conf.json",
+      "source_location": "L5"
+    },
+    {
+      "id": "conf_grid_provider",
+      "label": "GRID_PROVIDER",
+      "file_type": "code",
+      "source_file": "conf.json",
+      "source_location": "L7"
+    },
+    {
+      "id": "conf_grid_provider_provider_name",
+      "label": "PROVIDER_NAME",
+      "file_type": "code",
+      "source_file": "conf.json",
+      "source_location": "L8"
+    },
+    {
+      "id": "conf_grid_provider_provider_addr",
+      "label": "PROVIDER_ADDR",
+      "file_type": "code",
+      "source_file": "conf.json",
+      "source_location": "L9"
+    },
+    {
+      "id": "conf_grid_provider_provider_extension",
+      "label": "PROVIDER_EXTENSION",
+      "file_type": "code",
+      "source_file": "conf.json",
+      "source_location": "L10"
+    },
+    {
+      "id": "conf_grid_provider_provider_default_grid",
+      "label": "PROVIDER_DEFAULT_GRID",
+      "file_type": "code",
+      "source_file": "conf.json",
+      "source_location": "L11"
+    },
+    {
+      "id": "conf_grid_provider_provider_default_grid_date",
+      "label": "PROVIDER_DEFAULT_GRID_DATE",
+      "file_type": "code",
+      "source_file": "conf.json",
+      "source_location": "L12"
+    },
+    {
+      "id": "conf_grid_provider_provider_first_grid",
+      "label": "PROVIDER_FIRST_GRID",
+      "file_type": "code",
+      "source_file": "conf.json",
+      "source_location": "L13"
+    },
+    {
+      "id": "game_files_case",
+      "label": "case.js",
+      "file_type": "code",
+      "source_file": "game_files/case.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "game_files_case_case",
+      "label": "Case()",
+      "file_type": "code",
+      "source_file": "game_files/case.js",
+      "source_location": "L4"
+    },
+    {
+      "id": "game_files_case_lettercase",
+      "label": "LetterCase()",
+      "file_type": "code",
+      "source_file": "game_files/case.js",
+      "source_location": "L19"
+    },
+    {
+      "id": "game_files_case_descriptioncase",
+      "label": "DescriptionCase()",
+      "file_type": "code",
+      "source_file": "game_files/case.js",
+      "source_location": "L27"
+    },
+    {
+      "id": "game_files_case_emptycase",
+      "label": "EmptyCase()",
+      "file_type": "code",
+      "source_file": "game_files/case.js",
+      "source_location": "L47"
+    },
+    {
+      "id": "game_files_enums",
+      "label": "enums.js",
+      "file_type": "code",
+      "source_file": "game_files/enums.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "game_files_gridmanager",
+      "label": "gridManager.js",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "game_files_gridmanager_evictcacheifneeded",
+      "label": "evictCacheIfNeeded()",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L35"
+    },
+    {
+      "id": "game_files_gridmanager_gridmanager",
+      "label": "GridManager()",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L41"
+    },
+    {
+      "id": "game_files_gridmanager_getnextcase",
+      "label": "getNextCase()",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L58"
+    },
+    {
+      "id": "game_files_gridmanager_insertdescription",
+      "label": "insertDescription()",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L78"
+    },
+    {
+      "id": "game_files_gridmanager_getcasetype",
+      "label": "getCaseType()",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L88"
+    },
+    {
+      "id": "game_files_gridmanager_ongetgriderror",
+      "label": "onGetGridError()",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L97"
+    },
+    {
+      "id": "game_files_gridmanager_parsegrid",
+      "label": "parseGrid()",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L103"
+    },
+    {
+      "id": "game_files_gridmanager_placearrows",
+      "label": "placeArrows()",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L162"
+    },
+    {
+      "id": "game_files_gridmanager_getgridaddress",
+      "label": "getGridAddress()",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L224"
+    },
+    {
+      "id": "game_files_gridmanager_savetodisk",
+      "label": "saveToDisk()",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L348"
+    },
+    {
+      "id": "game_files_gridmanager_loadone",
+      "label": "loadOne()",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L355"
+    },
+    {
+      "id": "game_files_gridmanager_loadfromtext",
+      "label": "loadFromText()",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L361"
+    },
+    {
+      "id": "game_files_gridmanager_resolvewaiters",
+      "label": "resolveWaiters()",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L368"
+    },
+    {
+      "id": "game_files_gridmanager_failwaiters",
+      "label": "failWaiters()",
+      "file_type": "code",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L377"
+    },
+    {
+      "id": "game_files_motsfleches",
+      "label": "motsFleches.js",
+      "file_type": "code",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "game_files_motsfleches_generateroomid",
+      "label": "generateRoomId()",
+      "file_type": "code",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L13"
+    },
+    {
+      "id": "game_files_motsfleches_gameroom",
+      "label": "GameRoom()",
+      "file_type": "code",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L22"
+    },
+    {
+      "id": "game_files_motsfleches_getroomlist",
+      "label": "getRoomList()",
+      "file_type": "code",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L240"
+    },
+    {
+      "id": "game_files_motsfleches_broadcastroomlist",
+      "label": "broadcastRoomList()",
+      "file_type": "code",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L254"
+    },
+    {
+      "id": "game_files_motsfleches_bindchathandler",
+      "label": "bindChatHandler()",
+      "file_type": "code",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L260"
+    },
+    {
+      "id": "game_files_motsfleches_bindwordhandler",
+      "label": "bindWordHandler()",
+      "file_type": "code",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L272"
+    },
+    {
+      "id": "game_files_motsfleches_registerplayerinroom",
+      "label": "registerPlayerInRoom()",
+      "file_type": "code",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L281"
+    },
+    {
+      "id": "game_files_player",
+      "label": "player.js",
+      "file_type": "code",
+      "source_file": "game_files/player.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "game_files_player_player",
+      "label": "Player()",
+      "file_type": "code",
+      "source_file": "game_files/player.js",
+      "source_location": "L3"
+    },
+    {
+      "id": "game_files_playerslogos",
+      "label": "playersLogos.js",
+      "file_type": "code",
+      "source_file": "game_files/playersLogos.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "game_files_playersmanager",
+      "label": "playersManager.js",
+      "file_type": "code",
+      "source_file": "game_files/playersManager.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "game_files_playersmanager_playersmanager",
+      "label": "PlayersManager()",
+      "file_type": "code",
+      "source_file": "game_files/playersManager.js",
+      "source_location": "L8"
+    },
+    {
+      "id": "package",
+      "label": "package.json",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L1"
+    },
+    {
+      "id": "package_name",
+      "label": "name",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L2"
+    },
+    {
+      "id": "package_version",
+      "label": "version",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L3"
+    },
+    {
+      "id": "package_private",
+      "label": "private",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L4"
+    },
+    {
+      "id": "package_scripts",
+      "label": "scripts",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L5"
+    },
+    {
+      "id": "package_scripts_start",
+      "label": "start",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L6"
+    },
+    {
+      "id": "package_engines",
+      "label": "engines",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L8"
+    },
+    {
+      "id": "package_engines_node",
+      "label": "node",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L9"
+    },
+    {
+      "id": "package_dependencies",
+      "label": "dependencies",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L11"
+    },
+    {
+      "id": "package_dependencies_express",
+      "label": "express",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L12"
+    },
+    {
+      "id": "package_dependencies_pug",
+      "label": "pug",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L13"
+    },
+    {
+      "id": "package_dependencies_prompts",
+      "label": "prompts",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L14"
+    },
+    {
+      "id": "package_dependencies_socket_io",
+      "label": "socket.io",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L15"
+    },
+    {
+      "id": "game_uitools",
+      "label": "UITools.js",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/UITools.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "game_uitools_uitools",
+      "label": "UITools()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/UITools.js",
+      "source_location": "L10"
+    },
+    {
+      "id": "game_uitools_injectingameinfopanel",
+      "label": "injectInGameInfoPanel()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/UITools.js",
+      "source_location": "L15"
+    },
+    {
+      "id": "game_uitools_formattime",
+      "label": "formatTime()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/UITools.js",
+      "source_location": "L40"
+    },
+    {
+      "id": "game_uitools_changegrid",
+      "label": "changeGrid()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/UITools.js",
+      "source_location": "L50"
+    },
+    {
+      "id": "game_chat",
+      "label": "chat.js",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/chat.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "game_chat_chat",
+      "label": "Chat()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/chat.js",
+      "source_location": "L14"
+    },
+    {
+      "id": "game_chat_treatchatmessage",
+      "label": "treatChatMessage()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/chat.js",
+      "source_location": "L52"
+    },
+    {
+      "id": "game_cursor",
+      "label": "cursor.js",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "game_cursor_cursor",
+      "label": "Cursor()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L27"
+    },
+    {
+      "id": "game_cursor_ensuremobileinput",
+      "label": "ensureMobileInput()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L43"
+    },
+    {
+      "id": "game_cursor_focusmobileinput",
+      "label": "focusMobileInput()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L83"
+    },
+    {
+      "id": "game_cursor_setcursordirection",
+      "label": "setCursorDirection()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L90"
+    },
+    {
+      "id": "game_cursor_movecursor",
+      "label": "moveCursor()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L112"
+    },
+    {
+      "id": "game_cursor_activatecell",
+      "label": "activateCell()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L154"
+    },
+    {
+      "id": "game_cursor_onclickreceived",
+      "label": "onClickReceived()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L172"
+    },
+    {
+      "id": "game_cursor_onletterpressed",
+      "label": "onLetterPressed()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L176"
+    },
+    {
+      "id": "game_cursor_insertletter",
+      "label": "insertLetter()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L183"
+    },
+    {
+      "id": "game_cursor_removeletter",
+      "label": "removeLetter()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L194"
+    },
+    {
+      "id": "game_grid",
+      "label": "grid.js",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "game_grid_grid",
+      "label": "Grid()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L24"
+    },
+    {
+      "id": "game_grid_insertdescription",
+      "label": "insertDescription()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L36"
+    },
+    {
+      "id": "game_grid_insertletter",
+      "label": "insertLetter()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L83"
+    },
+    {
+      "id": "game_grid_insertemptyframe",
+      "label": "insertEmptyFrame()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L113"
+    },
+    {
+      "id": "game_grid_getframeaxisnumber",
+      "label": "getFrameAxisNumber()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L133"
+    },
+    {
+      "id": "game_grid_findword",
+      "label": "findWord()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L149"
+    },
+    {
+      "id": "game_grid_onnewletterprinted",
+      "label": "onNewLetterPrinted()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L199"
+    },
+    {
+      "id": "game_mflengine",
+      "label": "mflEngine.js",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "game_mflengine_startlobby",
+      "label": "startLobby()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L47"
+    },
+    {
+      "id": "game_mflengine_clearpendingroomhandlers",
+      "label": "clearPendingRoomHandlers()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L108"
+    },
+    {
+      "id": "game_mflengine_joinroom",
+      "label": "joinRoom()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L113"
+    },
+    {
+      "id": "game_mflengine_updatelobbyroomlist",
+      "label": "updateLobbyRoomList()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L128"
+    },
+    {
+      "id": "game_mflengine_enterloginphase",
+      "label": "enterLoginPhase()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L157"
+    },
+    {
+      "id": "game_mflengine_setupgamelisteners",
+      "label": "setupGameListeners()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L205"
+    },
+    {
+      "id": "game_mflengine_prepareuserloginform",
+      "label": "prepareUserLoginForm()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L234"
+    },
+    {
+      "id": "game_mflengine_sendplayerready",
+      "label": "sendPlayerReady()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L257"
+    },
+    {
+      "id": "game_mflengine_onstartgame",
+      "label": "onStartGame()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L287"
+    },
+    {
+      "id": "game_mflengine_resetgame",
+      "label": "resetGame()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L318"
+    },
+    {
+      "id": "game_mflengine_setplayercolor",
+      "label": "setPlayerColor()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L327"
+    },
+    {
+      "id": "game_mflengine_startsolomode",
+      "label": "startSoloMode()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L339"
+    },
+    {
+      "id": "game_mflengine_validatesoloword",
+      "label": "validateSoloWord()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L366"
+    },
+    {
+      "id": "game_mflengine_getroomcodefromurl",
+      "label": "getRoomCodeFromURL()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L401"
+    },
+    {
+      "id": "game_mflengine_seturlroomcode",
+      "label": "setURLRoomCode()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L409"
+    },
+    {
+      "id": "game_mflengine_showerror",
+      "label": "showError()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L415"
+    },
+    {
+      "id": "game_score",
+      "label": "score.js",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/score.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "game_score_score",
+      "label": "Score()",
+      "file_type": "code",
+      "source_file": "public/javascripts/game/score.js",
+      "source_location": "L14"
+    },
+    {
+      "id": "lib_require_min",
+      "label": "require.min.js",
+      "file_type": "code",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "lib_require_min_g",
+      "label": "G()",
+      "file_type": "code",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7"
+    },
+    {
+      "id": "lib_require_min_h",
+      "label": "H()",
+      "file_type": "code",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7"
+    },
+    {
+      "id": "lib_require_min_v",
+      "label": "v()",
+      "file_type": "code",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7"
+    },
+    {
+      "id": "lib_require_min_u",
+      "label": "U()",
+      "file_type": "code",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7"
+    },
+    {
+      "id": "lib_require_min_s",
+      "label": "s()",
+      "file_type": "code",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7"
+    },
+    {
+      "id": "lib_require_min_j",
+      "label": "j()",
+      "file_type": "code",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7"
+    },
+    {
+      "id": "lib_require_min_b",
+      "label": "B()",
+      "file_type": "code",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7"
+    },
+    {
+      "id": "lib_require_min_t",
+      "label": "t()",
+      "file_type": "code",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L8"
+    },
+    {
+      "id": "lib_require_min_da",
+      "label": "da()",
+      "file_type": "code",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L8"
+    },
+    {
+      "id": "lib_require_min_ea",
+      "label": "ea()",
+      "file_type": "code",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L8"
+    },
+    {
+      "id": "lib_require_min_c",
+      "label": "C()",
+      "file_type": "code",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L8"
+    },
+    {
+      "id": "lib_require_min_ha",
+      "label": "ha()",
+      "file_type": "code",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L8"
+    },
+    {
+      "id": "lib_text",
+      "label": "text.js",
+      "file_type": "code",
+      "source_file": "public/javascripts/lib/text.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "routes_index",
+      "label": "index.js",
+      "file_type": "code",
+      "source_file": "routes/index.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "server",
+      "label": "server.js",
+      "file_type": "code",
+      "source_file": "server.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "server_onserverready",
+      "label": "onServerReady()",
+      "file_type": "code",
+      "source_file": "server.js",
+      "source_location": "L65"
+    },
+    {
+      "id": "server_getlocalipaddresses",
+      "label": "getLocalIpAddresses()",
+      "file_type": "code",
+      "source_file": "server.js",
+      "source_location": "L94"
+    },
+    {
+      "id": "readme_motsjs",
+      "label": "Mots.js — README",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_game_concept",
+      "label": "Mots.js Multiplayer Crossword Game",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": "1-9",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "A Node.js-based multiplayer crossword (mots fléchés) game supporting up to 9 players, with grids fetched from the GSO provider at rcijeux.fr. Designed for desktop play, real-time via Socket.IO."
+    },
+    {
+      "id": "readme_gso_provider",
+      "label": "GSO Grid Provider (rcijeux.fr)",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": "5",
+      "source_url": "https://www.rcijeux.fr/drupal_game/gso/mfleches/grids/",
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_bonus_system",
+      "label": "Bonus Points System",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": "46-55",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Four bonus types: Preum's (+4, first word), Finish him (+4, last word), Débloqueur (+5, first word after 2min inactivity), Gros mot (+3, word ≥6 letters). Adds competitive incentive beyond raw letter count."
+    },
+    {
+      "id": "readme_chat_commands",
+      "label": "In-game Chat Commands",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": "39-44",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_buatoom",
+      "label": "Buatoom (Monster Illustrations Artist)",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": "60",
+      "source_url": "https://dribbble.com/buatoom",
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_npm_start",
+      "label": "npm start Launch Command",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": "15-18",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "font_abeezee_italic",
+      "label": "ABeeZee Italic Webfont (SVG)",
+      "file_type": "image",
+      "source_file": "public/fonts/abeezee/abeezee-italic-webfont.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "font_abeezee_regular",
+      "label": "ABeeZee Regular Webfont (SVG)",
+      "file_type": "image",
+      "source_file": "public/fonts/abeezee/abeezee-regular-webfont.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "font_icomoon",
+      "label": "IcoMoon Icon Font (SVG)",
+      "file_type": "image",
+      "source_file": "public/fonts/icomoon/icomoon.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "font_abeezee_family",
+      "label": "ABeeZee Font Family",
+      "file_type": "concept",
+      "source_file": "public/fonts/abeezee/abeezee-regular-webfont.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Rounded, friendly sans-serif typeface used for the game UI. Two weights provided: regular (primary text) and italic. Units-per-em 2048, ascent 1638, descent -410."
+    },
+    {
+      "id": "font_icomoon_icons",
+      "label": "IcoMoon Icon Set",
+      "file_type": "concept",
+      "source_file": "public/fonts/icomoon/icomoon.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Custom icon font generated by IcoMoon tool. Contains directional arrow icons (right, down, combinations) used to render crossword cell direction indicators, plus a tag/label icon and a checkmark circle icon. Units-per-em 512."
+    },
+    {
+      "id": "illustrations_mots_details1_login_screen",
+      "label": "Login Screen / Lobby Panel",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details1_game_title",
+      "label": "Game Title (MOTS.JS)",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details1_pseudo_input",
+      "label": "Pseudo Input Field (Votre pseudo)",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details1_monster_selector",
+      "label": "Monster Selector Row",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details1_jouer_button",
+      "label": "Jouer Button (Join Game)",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details1_scrabble_tiles",
+      "label": "Scrabble-Style Title Tiles",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details1_monster_avatars",
+      "label": "Monster Avatar Options (9 monsters)",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details1_teal_background",
+      "label": "Teal/Turquoise Background Design",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details2_screenshot",
+      "label": "Mots.js Game Screenshot (Details 2)",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details2_crosswordgrid",
+      "label": "Crossword Grid",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details2_scorepanel",
+      "label": "Score Panel (Bottom Bar)",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details2_chatpanel",
+      "label": "Chat Panel (Left Sidebar)",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details2_countdowntimer",
+      "label": "Countdown Timer",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details2_gridinfobanner",
+      "label": "Grid Info Banner",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details2_playeravatar",
+      "label": "Player Avatar (Monster Icon)",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details2_progressbar",
+      "label": "Score Progress Bar",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details2_revealedwords",
+      "label": "Revealed/Solved Words on Grid",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details2_descriptioncases",
+      "label": "Description Cases (Black Cells with Clues)",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details2_lettercases",
+      "label": "Letter Cases (White Input Cells)",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details2_multiplayerstate",
+      "label": "Multiplayer In-Progress State",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "illustrations_mots_details2_colorcodedwords",
+      "label": "Color-Coded Words by Player",
+      "file_type": "image",
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "images_green_bg_background",
+      "label": "Green Background (green-bg.png)",
+      "file_type": "image",
+      "source_file": "public/images/green-bg.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Solid teal/muted green UI panel background with subtle low-poly geometric triangle texture. Used as a colored background for game UI panels.",
+      "color": "teal/muted green",
+      "style": "low-poly geometric",
+      "purpose": "UI panel background"
+    },
+    {
+      "id": "images_grey_bg_background",
+      "label": "Grey-White Background (grey-bg.png)",
+      "file_type": "image",
+      "source_file": "public/images/grey-bg.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Near-white/very light grey UI panel background with faint low-poly geometric triangle texture. Used as a neutral background for game UI panels.",
+      "color": "near-white / very light grey",
+      "style": "low-poly geometric",
+      "purpose": "UI panel background"
+    },
+    {
+      "id": "images_grey_background",
+      "label": "Grey Polygon Background (grey.png)",
+      "file_type": "image",
+      "source_file": "public/images/grey.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Medium grey UI background with a clearly visible low-poly geometric polygon/triangle faceted pattern. Larger and more prominent facets than grey-bg. Used as a textured grey background for game UI.",
+      "color": "medium grey",
+      "style": "low-poly geometric, prominent facets",
+      "purpose": "UI background texture"
+    },
+    {
+      "id": "images_pink_bg_background",
+      "label": "Pink Background (pink-bg.png)",
+      "file_type": "image",
+      "source_file": "public/images/pink-bg.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Soft pink UI panel background with subtle low-poly geometric triangle texture. Used as a colored background for game UI panels.",
+      "color": "soft pink",
+      "style": "low-poly geometric",
+      "purpose": "UI panel background"
+    },
+    {
+      "id": "logos_monster1_avatar",
+      "label": "Monster 1 Avatar (Teal Cat)",
+      "file_type": "image",
+      "source_file": "public/images/logos/monster1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Cute cartoon teal/mint-green cat character with round body, small ears, tail, standing upright with one hand raised to its head in a thoughtful or saluting pose. Friendly, kawaii style.",
+      "color": "teal/mint green",
+      "character_type": "cat",
+      "style": "cute cartoon kawaii",
+      "purpose": "player avatar icon"
+    },
+    {
+      "id": "logos_monster2_avatar",
+      "label": "Monster 2 Avatar (Pink Tentacle Monster)",
+      "file_type": "image",
+      "source_file": "public/images/logos/monster2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Dark pink/magenta monster with a round head, wide grinning mouth, and long dangling tentacle-like limbs. Mischievous or menacing expression. Cartoon style.",
+      "color": "dark pink / magenta",
+      "character_type": "tentacle monster",
+      "style": "cartoon slightly menacing",
+      "purpose": "player avatar icon"
+    },
+    {
+      "id": "logos_monster3_avatar",
+      "label": "Monster 3 Avatar (Yellow Octopus)",
+      "file_type": "image",
+      "source_file": "public/images/logos/monster3.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Cute yellow/golden octopus character with a round body, big eyes, and tentacles. Cheerful and friendly expression. Kawaii cartoon style.",
+      "color": "yellow/golden orange",
+      "character_type": "octopus",
+      "style": "cute cartoon kawaii",
+      "purpose": "player avatar icon"
+    },
+    {
+      "id": "logos_monster4_avatar",
+      "label": "Monster 4 Avatar (Brown Blob Monster)",
+      "file_type": "image",
+      "source_file": "public/images/logos/monster4.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Chubby brown/terracotta round-bodied monster with small arms, stubby legs, and a slight fang visible. Pudgy and endearing cartoon style.",
+      "color": "brown / terracotta",
+      "character_type": "blob monster",
+      "style": "cute chubby cartoon",
+      "purpose": "player avatar icon"
+    },
+    {
+      "id": "logos_monster5_avatar",
+      "label": "Monster 5 Avatar (Green Horned Monster)",
+      "file_type": "image",
+      "source_file": "public/images/logos/monster5.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Large green monster with a wide oval body, three eyes, two white horns on top, and arms raised in a surprised or excited pose. Open mouth showing teeth. Cartoonish fun design.",
+      "color": "olive/mid green",
+      "character_type": "horned monster",
+      "style": "cartoon fun",
+      "purpose": "player avatar icon"
+    },
+    {
+      "id": "logos_monster6_avatar",
+      "label": "Monster 6 Avatar (Red Round Monster)",
+      "file_type": "image",
+      "source_file": "public/images/logos/monster6.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Round bright red/orange-red monster with a big open smile showing white teeth, arms raised wide in a joyful or excited pose. Simple cheerful cartoon design.",
+      "color": "bright red / orange-red",
+      "character_type": "round monster",
+      "style": "cartoon cheerful",
+      "purpose": "player avatar icon"
+    },
+    {
+      "id": "logos_monster7_avatar",
+      "label": "Monster 7 Avatar (Dark Grey Fuzzy Creature)",
+      "file_type": "image",
+      "source_file": "public/images/logos/monster7.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Small dark grey fuzzy/fluffy creature with tiny legs, small eyes, and a timid or sleepy expression. Resembles a dark furball or baby creature. Cute understated design.",
+      "color": "dark grey / charcoal",
+      "character_type": "fuzzy creature",
+      "style": "cute minimal cartoon",
+      "purpose": "player avatar icon"
+    },
+    {
+      "id": "logos_monster8_avatar",
+      "label": "Monster 8 Avatar (Purple Round Monster)",
+      "file_type": "image",
+      "source_file": "public/images/logos/monster8.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Round purple/violet monster with a wide dark body, small horns, and hands on hips in a confident or sassy pose. Dark and slightly imposing but cartoonish design.",
+      "color": "purple / violet",
+      "character_type": "round monster",
+      "style": "cartoon confident",
+      "purpose": "player avatar icon"
+    },
+    {
+      "id": "logos_monster9_avatar",
+      "label": "Monster 9 Avatar (Dark Squid/Cthulhu Monster)",
+      "file_type": "image",
+      "source_file": "public/images/logos/monster9.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Dark black/very dark brown elongated oval-bodied creature with red eyes and multiple tentacles hanging below. Resembles a squid or Cthulhu-like entity. Ominous cartoon design.",
+      "color": "near-black / very dark brown",
+      "character_type": "squid/cthulhu monster",
+      "style": "cartoon ominous",
+      "purpose": "player avatar icon"
+    }
+  ],
+  "edges": [
+    {
+      "source": "claude_settings_local",
+      "target": "claude_settings_local_permissions",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".claude/settings.local.json",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "claude_settings_local_permissions",
+      "target": "claude_settings_local_permissions_allow",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".claude/settings.local.json",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "claude_settings_local_permissions_allow",
+      "target": "ref_skill_code_review",
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": ".claude/settings.local.json",
+      "source_location": "L3",
+      "weight": 1.0,
+      "context": "import"
+    },
+    {
+      "source": "claude_settings_local_permissions_allow",
+      "target": "ref_bash_test_path",
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": ".claude/settings.local.json",
+      "source_location": "L3",
+      "weight": 1.0,
+      "context": "import"
+    },
+    {
+      "source": "conf",
+      "target": "conf_server_port",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "conf.json",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "conf",
+      "target": "conf_socket_addr",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "conf.json",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "conf",
+      "target": "conf_socket_port",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "conf.json",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "conf",
+      "target": "conf_grid_provider",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "conf.json",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "conf_grid_provider",
+      "target": "conf_grid_provider_provider_name",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "conf.json",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "conf_grid_provider",
+      "target": "conf_grid_provider_provider_addr",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "conf.json",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "conf_grid_provider",
+      "target": "conf_grid_provider_provider_extension",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "conf.json",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "conf_grid_provider",
+      "target": "conf_grid_provider_provider_default_grid",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "conf.json",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "conf_grid_provider",
+      "target": "conf_grid_provider_provider_default_grid_date",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "conf.json",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "conf_grid_provider",
+      "target": "conf_grid_provider_provider_first_grid",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "conf.json",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_case",
+      "target": "util",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/case.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_case",
+      "target": "game_files_enums",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/case.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_case",
+      "target": "game_files_case_case",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/case.js",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_case",
+      "target": "game_files_case_lettercase",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/case.js",
+      "source_location": "L19",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_case",
+      "target": "game_files_case_descriptioncase",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/case.js",
+      "source_location": "L27",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_case",
+      "target": "game_files_case_emptycase",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/case.js",
+      "source_location": "L47",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "https",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "vm",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "fs",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "path",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "conf",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "conf_grid_provider",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_enums",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_case",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_gridmanager_evictcacheifneeded",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L35",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_gridmanager_gridmanager",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L41",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_gridmanager_getnextcase",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L58",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_gridmanager_insertdescription",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L78",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_gridmanager_getcasetype",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L88",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_gridmanager_ongetgriderror",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L97",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_gridmanager_parsegrid",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L103",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_gridmanager_placearrows",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L162",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_gridmanager_getgridaddress",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L224",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_gridmanager_savetodisk",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L348",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_gridmanager_loadone",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L355",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_gridmanager_loadfromtext",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L361",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_gridmanager_resolvewaiters",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L368",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager",
+      "target": "game_files_gridmanager_failwaiters",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L377",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager_insertdescription",
+      "target": "game_files_gridmanager_getnextcase",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L79",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager_parsegrid",
+      "target": "game_files_gridmanager_ongetgriderror",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L118",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager_parsegrid",
+      "target": "game_files_gridmanager_getcasetype",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L138",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager_parsegrid",
+      "target": "game_files_gridmanager_insertdescription",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L155",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager_parsegrid",
+      "target": "game_files_gridmanager_placearrows",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L158",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager_loadone",
+      "target": "game_files_gridmanager_parsegrid",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L356",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager_loadfromtext",
+      "target": "game_files_gridmanager_evictcacheifneeded",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L362",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager_loadfromtext",
+      "target": "game_files_gridmanager_loadone",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L364",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager_resolvewaiters",
+      "target": "game_files_gridmanager_evictcacheifneeded",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L369",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager_resolvewaiters",
+      "target": "game_files_gridmanager_loadone",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L373",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_gridmanager_failwaiters",
+      "target": "game_files_gridmanager_ongetgriderror",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/gridManager.js",
+      "source_location": "L380",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches",
+      "target": "game_files_enums",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches",
+      "target": "conf",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches",
+      "target": "game_files_gridmanager",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches",
+      "target": "game_files_playersmanager",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches",
+      "target": "game_files_motsfleches_generateroomid",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches",
+      "target": "game_files_motsfleches_gameroom",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L22",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches",
+      "target": "socket_io",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L233",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches",
+      "target": "game_files_motsfleches_getroomlist",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L240",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches",
+      "target": "game_files_motsfleches_broadcastroomlist",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L254",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches",
+      "target": "game_files_motsfleches_bindchathandler",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L260",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches",
+      "target": "game_files_motsfleches_bindwordhandler",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L272",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches",
+      "target": "game_files_motsfleches_registerplayerinroom",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L281",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches_broadcastroomlist",
+      "target": "game_files_motsfleches_getroomlist",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L255",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches_registerplayerinroom",
+      "target": "game_files_motsfleches_broadcastroomlist",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L304",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches_registerplayerinroom",
+      "target": "game_files_motsfleches_bindchathandler",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L330",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_motsfleches_registerplayerinroom",
+      "target": "game_files_motsfleches_bindwordhandler",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/motsFleches.js",
+      "source_location": "L351",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_player",
+      "target": "game_files_enums",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/player.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_player",
+      "target": "game_files_player_player",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/player.js",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_playersmanager",
+      "target": "util",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/playersManager.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_playersmanager",
+      "target": "events",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/playersManager.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_playersmanager",
+      "target": "game_files_player",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/playersManager.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_playersmanager",
+      "target": "game_files_enums",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/playersManager.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_playersmanager",
+      "target": "game_files_playerslogos",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/playersManager.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "game_files_playersmanager",
+      "target": "game_files_playersmanager_playersmanager",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "game_files/playersManager.js",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "package",
+      "target": "package_name",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "package",
+      "target": "package_version",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "package",
+      "target": "package_private",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "package",
+      "target": "package_scripts",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "package_scripts",
+      "target": "package_scripts_start",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "package",
+      "target": "package_engines",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "package_engines",
+      "target": "package_engines_node",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "package",
+      "target": "package_dependencies",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "package_dependencies",
+      "target": "package_dependencies_express",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "package_dependencies_express",
+      "target": "express",
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L12",
+      "weight": 1.0,
+      "context": "import"
+    },
+    {
+      "source": "package_dependencies",
+      "target": "package_dependencies_pug",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "package_dependencies_pug",
+      "target": "pug",
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L13",
+      "weight": 1.0,
+      "context": "import"
+    },
+    {
+      "source": "package_dependencies",
+      "target": "package_dependencies_prompts",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "package_dependencies_prompts",
+      "target": "prompts",
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L14",
+      "weight": 1.0,
+      "context": "import"
+    },
+    {
+      "source": "package_dependencies",
+      "target": "package_dependencies_socket_io",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "package_dependencies_socket_io",
+      "target": "socket_io",
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L15",
+      "weight": 1.0,
+      "context": "import"
+    },
+    {
+      "source": "game_uitools",
+      "target": "game_uitools_uitools",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/UITools.js",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "game_uitools",
+      "target": "game_uitools_injectingameinfopanel",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/UITools.js",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "game_uitools",
+      "target": "game_uitools_formattime",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/UITools.js",
+      "source_location": "L40",
+      "weight": 1.0
+    },
+    {
+      "source": "game_uitools",
+      "target": "game_uitools_changegrid",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/UITools.js",
+      "source_location": "L50",
+      "weight": 1.0
+    },
+    {
+      "source": "game_chat",
+      "target": "game_chat_chat",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/chat.js",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "game_chat",
+      "target": "game_chat_treatchatmessage",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/chat.js",
+      "source_location": "L52",
+      "weight": 1.0
+    },
+    {
+      "source": "game_chat_chat",
+      "target": "game_chat_treatchatmessage",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/chat.js",
+      "source_location": "L26",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor",
+      "target": "game_cursor_cursor",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L27",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor",
+      "target": "game_cursor_ensuremobileinput",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L43",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor",
+      "target": "game_cursor_focusmobileinput",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L83",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor",
+      "target": "game_cursor_setcursordirection",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L90",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor",
+      "target": "game_cursor_movecursor",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L112",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor",
+      "target": "game_cursor_activatecell",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L154",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor",
+      "target": "game_cursor_onclickreceived",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L172",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor",
+      "target": "game_cursor_onletterpressed",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L176",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor",
+      "target": "game_cursor_insertletter",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L183",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor",
+      "target": "game_cursor_removeletter",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L194",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor_ensuremobileinput",
+      "target": "game_cursor_insertletter",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L66",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor_ensuremobileinput",
+      "target": "game_cursor_removeletter",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L73",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor_ensuremobileinput",
+      "target": "game_cursor_movecursor",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L77",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor_focusmobileinput",
+      "target": "game_cursor_ensuremobileinput",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L84",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor_activatecell",
+      "target": "game_cursor_setcursordirection",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L157",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor_activatecell",
+      "target": "game_cursor_focusmobileinput",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L158",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor_onclickreceived",
+      "target": "game_cursor_activatecell",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L173",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor_onletterpressed",
+      "target": "game_cursor_insertletter",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L178",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor_onletterpressed",
+      "target": "game_cursor_removeletter",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L179",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor_onletterpressed",
+      "target": "game_cursor_movecursor",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L180",
+      "weight": 1.0
+    },
+    {
+      "source": "game_cursor_insertletter",
+      "target": "game_cursor_movecursor",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/cursor.js",
+      "source_location": "L191",
+      "weight": 1.0
+    },
+    {
+      "source": "game_grid",
+      "target": "game_grid_grid",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "game_grid",
+      "target": "game_grid_insertdescription",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L36",
+      "weight": 1.0
+    },
+    {
+      "source": "game_grid",
+      "target": "game_grid_insertletter",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L83",
+      "weight": 1.0
+    },
+    {
+      "source": "game_grid",
+      "target": "game_grid_insertemptyframe",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L113",
+      "weight": 1.0
+    },
+    {
+      "source": "game_grid",
+      "target": "game_grid_getframeaxisnumber",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L133",
+      "weight": 1.0
+    },
+    {
+      "source": "game_grid",
+      "target": "game_grid_findword",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L149",
+      "weight": 1.0
+    },
+    {
+      "source": "game_grid",
+      "target": "game_grid_onnewletterprinted",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L199",
+      "weight": 1.0
+    },
+    {
+      "source": "game_grid_findword",
+      "target": "game_grid_getframeaxisnumber",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L153",
+      "weight": 1.0
+    },
+    {
+      "source": "game_grid_onnewletterprinted",
+      "target": "game_grid_findword",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/grid.js",
+      "source_location": "L208",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_startlobby",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L47",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_clearpendingroomhandlers",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L108",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_joinroom",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L113",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_updatelobbyroomlist",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L128",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_enterloginphase",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L157",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_setupgamelisteners",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L205",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_prepareuserloginform",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L234",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_sendplayerready",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L257",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_onstartgame",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L287",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_resetgame",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L318",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_setplayercolor",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L327",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_startsolomode",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L339",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_validatesoloword",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L366",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_getroomcodefromurl",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L401",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_seturlroomcode",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L409",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine",
+      "target": "game_mflengine_showerror",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L415",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_startlobby",
+      "target": "game_mflengine_showerror",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L49",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_startlobby",
+      "target": "game_mflengine_getroomcodefromurl",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L59",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_startlobby",
+      "target": "game_mflengine_joinroom",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L60",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_startlobby",
+      "target": "game_mflengine_clearpendingroomhandlers",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L79",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_startlobby",
+      "target": "game_mflengine_seturlroomcode",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L83",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_startlobby",
+      "target": "game_mflengine_enterloginphase",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L84",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_joinroom",
+      "target": "game_mflengine_clearpendingroomhandlers",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L114",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_joinroom",
+      "target": "game_mflengine_seturlroomcode",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L118",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_joinroom",
+      "target": "game_mflengine_enterloginphase",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L119",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_updatelobbyroomlist",
+      "target": "game_mflengine_joinroom",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L151",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_enterloginphase",
+      "target": "game_mflengine_showerror",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L168",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_enterloginphase",
+      "target": "game_mflengine_setupgamelisteners",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L190",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_enterloginphase",
+      "target": "game_mflengine_prepareuserloginform",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L197",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_sendplayerready",
+      "target": "game_mflengine_setupgamelisteners",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L272",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_sendplayerready",
+      "target": "game_mflengine_setplayercolor",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L280",
+      "weight": 1.0
+    },
+    {
+      "source": "game_mflengine_startsolomode",
+      "target": "game_mflengine_showerror",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/mflEngine.js",
+      "source_location": "L362",
+      "weight": 1.0
+    },
+    {
+      "source": "game_score",
+      "target": "game_score_score",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/game/score.js",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min",
+      "target": "lib_require_min_g",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min",
+      "target": "lib_require_min_h",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min",
+      "target": "lib_require_min_v",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min",
+      "target": "lib_require_min_u",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min",
+      "target": "lib_require_min_s",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min",
+      "target": "lib_require_min_j",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min",
+      "target": "lib_require_min_b",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min",
+      "target": "lib_require_min_v",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min",
+      "target": "lib_require_min_t",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min",
+      "target": "lib_require_min_da",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min",
+      "target": "lib_require_min_ea",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min",
+      "target": "lib_require_min_c",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min",
+      "target": "lib_require_min_ha",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_j",
+      "target": "lib_require_min_s",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_b",
+      "target": "lib_require_min_s",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_v",
+      "target": "lib_require_min_b",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_v",
+      "target": "lib_require_min_s",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_v",
+      "target": "lib_require_min_h",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_v",
+      "target": "lib_require_min_g",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_ea",
+      "target": "lib_require_min_v",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_ha",
+      "target": "lib_require_min_j",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L16",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_ha",
+      "target": "lib_require_min_t",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L16",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_ha",
+      "target": "lib_require_min_g",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L18",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_ha",
+      "target": "lib_require_min_b",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_ha",
+      "target": "lib_require_min_s",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_ha",
+      "target": "lib_require_min_c",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_ha",
+      "target": "lib_require_min_v",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L22",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_ha",
+      "target": "lib_require_min_h",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_ha",
+      "target": "lib_require_min_ea",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_ha",
+      "target": "lib_require_min_u",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L27",
+      "weight": 1.0
+    },
+    {
+      "source": "server",
+      "target": "express",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "server.js",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "server",
+      "target": "routes_index",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "server.js",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "server",
+      "target": "http",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "server.js",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "server",
+      "target": "path",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "server.js",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "server",
+      "target": "os",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "server.js",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "server",
+      "target": "prompts",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "server.js",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "server",
+      "target": "conf",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "server.js",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "server",
+      "target": "game_files_motsfleches",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "server.js",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "server",
+      "target": "game_files_gridmanager",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "server.js",
+      "source_location": "L31",
+      "weight": 1.0
+    },
+    {
+      "source": "server",
+      "target": "server_onserverready",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "server.js",
+      "source_location": "L65",
+      "weight": 1.0
+    },
+    {
+      "source": "server",
+      "target": "server_getlocalipaddresses",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "server.js",
+      "source_location": "L94",
+      "weight": 1.0
+    },
+    {
+      "source": "server_onserverready",
+      "target": "server_getlocalipaddresses",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "server.js",
+      "source_location": "L68",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_v",
+      "target": "lib_require_min_c",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_u",
+      "target": "lib_require_min_c",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_require_min_b",
+      "target": "lib_require_min_c",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "public/javascripts/lib/require.min.js",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "server_onserverready",
+      "target": "package_dependencies_prompts",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "server.js",
+      "source_location": "L75",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_motsjs",
+      "target": "readme_game_concept",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "1-9",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_motsjs",
+      "target": "readme_gso_provider",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "5",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_motsjs",
+      "target": "readme_bonus_system",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "46-55",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_motsjs",
+      "target": "readme_chat_commands",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "39-44",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_motsjs",
+      "target": "readme_buatoom",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "60",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_motsjs",
+      "target": "readme_npm_start",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "15-18",
+      "weight": 1.0
+    },
+    {
+      "source": "font_abeezee_italic",
+      "target": "font_abeezee_family",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/fonts/abeezee/abeezee-italic-webfont.svg",
+      "source_location": "6",
+      "weight": 1.0
+    },
+    {
+      "source": "font_abeezee_regular",
+      "target": "font_abeezee_family",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/fonts/abeezee/abeezee-regular-webfont.svg",
+      "source_location": "6",
+      "weight": 1.0
+    },
+    {
+      "source": "font_icomoon",
+      "target": "font_icomoon_icons",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/fonts/icomoon/icomoon.svg",
+      "source_location": "4-15",
+      "weight": 1.0
+    },
+    {
+      "source": "font_abeezee_family",
+      "target": "readme_game_concept",
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "public/fonts/abeezee/abeezee-regular-webfont.svg",
+      "source_location": null,
+      "weight": 0.75
+    },
+    {
+      "source": "font_icomoon_icons",
+      "target": "readme_game_concept",
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "public/fonts/icomoon/icomoon.svg",
+      "source_location": null,
+      "weight": 0.85
+    },
+    {
+      "source": "readme_game_concept",
+      "target": "readme_gso_provider",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "5",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_bonus_system",
+      "target": "readme_game_concept",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "46-55",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_chat_commands",
+      "target": "readme_game_concept",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "39-44",
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details1_login_screen",
+      "target": "illustrations_mots_details1_game_title",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": "top-center",
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details1_login_screen",
+      "target": "illustrations_mots_details1_pseudo_input",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": "center",
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details1_login_screen",
+      "target": "illustrations_mots_details1_monster_selector",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": "center",
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details1_login_screen",
+      "target": "illustrations_mots_details1_jouer_button",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": "bottom-center",
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details1_game_title",
+      "target": "illustrations_mots_details1_scrabble_tiles",
+      "relation": "rendered_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": "top-center",
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details1_monster_selector",
+      "target": "illustrations_mots_details1_monster_avatars",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": "center-row",
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details1_login_screen",
+      "target": "illustrations_mots_details1_teal_background",
+      "relation": "styled_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": "full",
+      "weight": 0.8
+    },
+    {
+      "source": "illustrations_mots_details1_pseudo_input",
+      "target": "illustrations_mots_details1_jouer_button",
+      "relation": "precedes",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details1_monster_selector",
+      "target": "illustrations_mots_details1_jouer_button",
+      "relation": "precedes",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details1_monster_avatars",
+      "target": "illustrations_mots_details1_monster_selector",
+      "relation": "is_part_of",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": "center",
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details1_login_screen",
+      "target": "illustrations_mots_details1_monster_avatars",
+      "relation": "allows_player_to_choose",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details1_scrabble_tiles",
+      "target": "illustrations_mots_details1_teal_background",
+      "relation": "visually_contrasts_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "illustrations/mots-details1.png",
+      "source_location": null,
+      "weight": 0.7
+    },
+    {
+      "source": "illustrations_mots_details2_screenshot",
+      "target": "illustrations_mots_details2_crosswordgrid",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_screenshot",
+      "target": "illustrations_mots_details2_scorepanel",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_screenshot",
+      "target": "illustrations_mots_details2_chatpanel",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_screenshot",
+      "target": "illustrations_mots_details2_countdowntimer",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_screenshot",
+      "target": "illustrations_mots_details2_gridinfobanner",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_scorepanel",
+      "target": "illustrations_mots_details2_playeravatar",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_scorepanel",
+      "target": "illustrations_mots_details2_progressbar",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_crosswordgrid",
+      "target": "illustrations_mots_details2_revealedwords",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_crosswordgrid",
+      "target": "illustrations_mots_details2_descriptioncases",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_crosswordgrid",
+      "target": "illustrations_mots_details2_lettercases",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_revealedwords",
+      "target": "illustrations_mots_details2_colorcodedwords",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_screenshot",
+      "target": "illustrations_mots_details2_multiplayerstate",
+      "relation": "depicts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_multiplayerstate",
+      "target": "illustrations_mots_details2_colorcodedwords",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_countdowntimer",
+      "target": "illustrations_mots_details2_multiplayerstate",
+      "relation": "part_of",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_gridinfobanner",
+      "target": "illustrations_mots_details2_crosswordgrid",
+      "relation": "describes",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_playeravatar",
+      "target": "illustrations_mots_details2_colorcodedwords",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_progressbar",
+      "target": "illustrations_mots_details2_scorepanel",
+      "relation": "part_of",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "illustrations_mots_details2_chatpanel",
+      "target": "illustrations_mots_details2_multiplayerstate",
+      "relation": "supports",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "illustrations/mots-details2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "images_green_bg_background",
+      "target": "images_grey_bg_background",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "public/images",
+      "source_location": null,
+      "weight": 0.8
+    },
+    {
+      "source": "images_green_bg_background",
+      "target": "images_grey_background",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "public/images",
+      "source_location": null,
+      "weight": 0.7
+    },
+    {
+      "source": "images_green_bg_background",
+      "target": "images_pink_bg_background",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "public/images",
+      "source_location": null,
+      "weight": 0.9
+    },
+    {
+      "source": "images_grey_bg_background",
+      "target": "images_pink_bg_background",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "public/images",
+      "source_location": null,
+      "weight": 0.9
+    },
+    {
+      "source": "images_grey_background",
+      "target": "images_grey_bg_background",
+      "relation": "variant_of",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "public/images",
+      "source_location": null,
+      "weight": 0.7
+    },
+    {
+      "source": "logos_monster1_avatar",
+      "target": "logos_monster2_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster1_avatar",
+      "target": "logos_monster3_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster1_avatar",
+      "target": "logos_monster4_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster1_avatar",
+      "target": "logos_monster5_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster1_avatar",
+      "target": "logos_monster6_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster1_avatar",
+      "target": "logos_monster7_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster1_avatar",
+      "target": "logos_monster8_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster1_avatar",
+      "target": "logos_monster9_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster2_avatar",
+      "target": "logos_monster3_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster2_avatar",
+      "target": "logos_monster4_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster2_avatar",
+      "target": "logos_monster5_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster2_avatar",
+      "target": "logos_monster6_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster2_avatar",
+      "target": "logos_monster7_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster2_avatar",
+      "target": "logos_monster8_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster2_avatar",
+      "target": "logos_monster9_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster3_avatar",
+      "target": "logos_monster4_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster3_avatar",
+      "target": "logos_monster5_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster3_avatar",
+      "target": "logos_monster6_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster3_avatar",
+      "target": "logos_monster7_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster3_avatar",
+      "target": "logos_monster8_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster3_avatar",
+      "target": "logos_monster9_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster4_avatar",
+      "target": "logos_monster5_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster4_avatar",
+      "target": "logos_monster6_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster4_avatar",
+      "target": "logos_monster7_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster4_avatar",
+      "target": "logos_monster8_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster4_avatar",
+      "target": "logos_monster9_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster5_avatar",
+      "target": "logos_monster6_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster5_avatar",
+      "target": "logos_monster7_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster5_avatar",
+      "target": "logos_monster8_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster5_avatar",
+      "target": "logos_monster9_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster6_avatar",
+      "target": "logos_monster7_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster6_avatar",
+      "target": "logos_monster8_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster6_avatar",
+      "target": "logos_monster9_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster7_avatar",
+      "target": "logos_monster8_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster7_avatar",
+      "target": "logos_monster9_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "logos_monster8_avatar",
+      "target": "logos_monster9_avatar",
+      "relation": "same_collection_as",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "abeezee_font_variants",
+      "label": "ABeeZee Font Variants (Regular + Italic)",
+      "nodes": [
+        "font_abeezee_regular",
+        "font_abeezee_italic",
+        "font_abeezee_family"
+      ],
+      "relation": "implement",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/fonts/abeezee/abeezee-regular-webfont.svg"
+    },
+    {
+      "id": "game_ui_fonts",
+      "label": "Game UI Typography Assets",
+      "nodes": [
+        "font_abeezee_regular",
+        "font_abeezee_italic",
+        "font_icomoon",
+        "readme_game_concept"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md"
+    },
+    {
+      "id": "player_avatar_set",
+      "label": "Player Avatar Set",
+      "nodes": [
+        "logos_monster1_avatar",
+        "logos_monster2_avatar",
+        "logos_monster3_avatar",
+        "logos_monster4_avatar",
+        "logos_monster5_avatar",
+        "logos_monster6_avatar",
+        "logos_monster7_avatar",
+        "logos_monster8_avatar",
+        "logos_monster9_avatar"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images/logos"
+    },
+    {
+      "id": "ui_background_set",
+      "label": "UI Background Texture Set",
+      "nodes": [
+        "images_green_bg_background",
+        "images_grey_bg_background",
+        "images_grey_background",
+        "images_pink_bg_background"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/images"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

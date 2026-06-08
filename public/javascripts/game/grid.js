@@ -37,52 +37,101 @@ define(['cursor'], function (Cursor) {
     var frame = document.createElement('div'),
         lineHeight,
         fontSize,
-        descNode;
+        descNode,
+        i;
 
-    // Set class
     frame.className = 'frame description frame' + info.pos;
-    // Set size
     frame.style.width = size + 'px';
     frame.style.height = size + 'px';
-    // Set position
     frame.style.top = (line * size) + 'px';
     frame.style.left = (column * size) + 'px';
 
-    // Set extra style
     frame.setAttribute('data-line', line);
     frame.setAttribute('data-col', column);
     frame.setAttribute('data-pos', info.pos);
 
     if (info.nbLines === 1) {
       lineHeight = size;
-      fontSize = Math.floor(size / 5.4);
+      fontSize = Math.max(9, Math.floor(size / 5.7));
     } else {
-      lineHeight = Math.floor(size / info.nbLines);
-      fontSize = Math.max(7, Math.floor(size / 5.5));
+      lineHeight = Math.floor(size / info.nbLines * 0.88);
+      fontSize = Math.max(9, Math.floor(size / 5.8));
     }
-    
+
     frame.style.lineHeight = lineHeight + 'px';
     frame.style.fontSize = fontSize + 'px';
 
-    // Adding description in frame
-    for (var i = 0; i < info.nbDesc; i++) {
+    for (i = 0; i < info.nbDesc; i++) {
       descNode = document.createElement('span');
-
-      // Insert description and arrow
       descNode.innerHTML = info.desc[i];
-      if (info.arrow[i] !== null) {
-        descNode.classList.add('arrow' + info.arrow[i].toString());
-        // If the TOP span of a 2-definition cell has a downward arrow (2=Bottom, 3=BottomRight),
-        // anchor its :after to the cell bottom instead of the span bottom
-        if (i === 0 && info.nbDesc === 2 && (info.arrow[i] === 2 || info.arrow[i] === 3)) {
-          descNode.classList.add('arrow-cell-bottom');
-        }
-      }
-
       frame.appendChild(descNode);
-    };
+    }
 
-    return (frame);
+    return frame;
+  }
+
+  // dir: 0=Right, 1=RightBottom, 2=Bottom, 3=BottomRight
+  function createDescriptionArrows(line, col, size, info) {
+    var arrows = [];
+    var arrowSize = Math.max(5, Math.floor(size / 7));
+    var arrowLong = Math.round(arrowSize * 1.4);
+    var el;
+
+    for (var i = 0; i < info.nbDesc; i++) {
+      var dir = info.arrow[i];
+      if (dir === null || dir === undefined) continue;
+
+      var spanCenterY = line * size + ((i + 0.5) / info.nbDesc) * size;
+      var spanCenterX = col  * size + size / 2;
+      var spanBottomY = line * size + ((i + 1)   / info.nbDesc) * size;
+
+      if (dir === 0) {
+        // → : at left edge of right letter cell, pointing right, centered in span
+        el = document.createElement('i');
+        el.className  = 'grid-arrow';
+        el.style.left = ((col + 1) * size) + 'px';
+        el.style.top  = Math.round(spanCenterY - arrowSize) + 'px';
+        el.style.borderTop    = arrowSize + 'px solid transparent';
+        el.style.borderBottom = arrowSize + 'px solid transparent';
+        el.style.borderLeft   = arrowLong + 'px solid #e8c840';
+        arrows.push(el);
+
+      } else if (dir === 2) {
+        // ↓ : at top edge of bottom letter cell, pointing down, centered in column
+        el = document.createElement('i');
+        el.className  = 'grid-arrow';
+        el.style.top  = ((line + 1) * size) + 'px';
+        el.style.left = Math.round(spanCenterX - arrowSize) + 'px';
+        el.style.borderLeft  = arrowSize + 'px solid transparent';
+        el.style.borderRight = arrowSize + 'px solid transparent';
+        el.style.borderTop   = arrowLong + 'px solid #e8c840';
+        arrows.push(el);
+
+      } else if (dir === 1) {
+        // →↓ : single arrow at RIGHT EDGE of span, pointing DOWN (corner indicator)
+        el = document.createElement('i');
+        el.className  = 'grid-arrow';
+        el.style.left = ((col + 1) * size) + 'px';
+        el.style.top  = Math.round(spanBottomY - arrowLong) + 'px';
+        el.style.borderLeft  = arrowSize + 'px solid transparent';
+        el.style.borderRight = arrowSize + 'px solid transparent';
+        el.style.borderTop   = arrowLong + 'px solid #e8c840';
+        arrows.push(el);
+
+      } else if (dir === 3) {
+        // ↓→ : single arrow at BOTTOM EDGE of span, pointing RIGHT (corner indicator)
+        el = document.createElement('i');
+        el.className  = 'grid-arrow';
+        el.style.left = Math.round((col + 1) * size - arrowLong) + 'px';
+        el.style.top  = Math.round(spanBottomY) + 'px';
+        el.style.borderTop    = arrowSize + 'px solid transparent';
+        el.style.borderBottom = arrowSize + 'px solid transparent';
+        el.style.borderLeft   = arrowLong + 'px solid #e8c840';
+        arrows.push(el);
+      }
+    }
+
+    return arrows;
   }
 
   function insertLetter(line, column, size, info, index) {
@@ -242,6 +291,7 @@ define(['cursor'], function (Cursor) {
 
         // Display it
         node = document.querySelector('.frame' + index);
+        if (!node) { index += jump; continue; }
         node.style.cssText += '-webkit-transition-delay: ' + animationDelay + 'ms; transition-delay: ' + animationDelay + 'ms; color: ' + wordObj.color;
         node.classList.add('reveal' + wordObj.axis);
         node.innerHTML = _grid.cases[index].letter;
@@ -265,13 +315,13 @@ define(['cursor'], function (Cursor) {
         nbFrames = _grid.cases.length,
         i;
 
-    // First we have to retreive the min size to display the grid
+    // Compute frame size from the container's smaller dimension.
+    // On mobile the container may be very narrow so we enforce a minimum of
+    // 30 px per cell and let the container scroll horizontally if needed.
     limit = (container.offsetWidth < container.offsetHeight) ? container.offsetWidth : container.offsetHeight;
-    // console.log('Plus petit cote: ' + limit);
 
-    // Determine frame size
     frameSize = (_grid.nbLines > _grid.nbColumns) ? _grid.nbLines : _grid.nbColumns;
-    frameSize = Math.floor(limit / frameSize);
+    frameSize = Math.max(30, Math.floor(limit / frameSize));
     // console.log('Taille de case: ' + frameSize);
 
     // For each frame
@@ -283,8 +333,11 @@ define(['cursor'], function (Cursor) {
       // Insert frame
       if (_grid.cases[i].type == CaseType.Letter)
         container.appendChild(insertLetter(line, col, frameSize, _grid.cases[i], i));
-      else if (_grid.cases[i].type == CaseType.Description)
+      else if (_grid.cases[i].type == CaseType.Description) {
         container.appendChild(insertDescription(line, col, frameSize, _grid.cases[i]));
+        var descArrows = createDescriptionArrows(line, col, frameSize, _grid.cases[i]);
+        for (var a = 0; a < descArrows.length; a++) container.appendChild(descArrows[a]);
+      }
       else
         container.appendChild(insertEmptyFrame(line, col, frameSize, _grid.cases[i]));
 
