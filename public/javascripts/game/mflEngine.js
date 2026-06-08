@@ -207,7 +207,9 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
     if (_gameListenersReady) return;
     _gameListenersReady = true;
 
-    _chat = new Chat(_socket, _scoreManager.UpdatePlayerList);
+    _chat = new Chat(_socket, _scoreManager.UpdatePlayerList, function (cmd) {
+      if (cmd === 'clear' && _gridManager) _gridManager.clearUnvalidated();
+    });
     _socket.on('grid_event', onStartGame);
     _socket.on('grid_reset', resetGame);
     _socket.on('score_update', _scoreManager.RefreshScore);

@@ -7,13 +7,15 @@ define(function () {
   var _socket = null,
       _notifyCallback,
       _chatHandler = null,
+      _localCommandCallback = null,
       _mesNode = document.getElementById('gsc-messages'),
       _writeNode = document.getElementById('gsc-write'),
       _serverColor = null;
 
-  function Chat (socket, notifyPlayerListCallback) {
+  function Chat (socket, notifyPlayerListCallback, localCommandCallback) {
     // Store usefull object and callback
     _notifyCallback = notifyPlayerListCallback;
+    _localCommandCallback = localCommandCallback || null;
 
     // Remove previous chat listener if any (prevents duplicates on reconnect)
     if (_socket && _chatHandler) {
@@ -32,10 +34,12 @@ define(function () {
 
       // If the user press enter, send message
       if (event.keyCode == 13) {
-        if (_writeNode.value != '')
+        var msg = _writeNode.value.trim();
+        if (msg === '!clear' && _localCommandCallback) {
+          _localCommandCallback('clear');
+        } else if (msg !== '') {
           _socket.emit('chat', _writeNode.value);
-        
-        // Then refresh textarea node
+        }
         _writeNode.value = '';
         return (false);
       }
