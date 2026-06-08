@@ -194,6 +194,7 @@ function placeArrows(grid) {
         case 'p':
         case 'q':
         case 'r':
+        case 's':
           grid.cases[i].arrow[0] = enumArrow.Right;
           grid.cases[i].arrow[1] = enumArrow.BottomRight;
           break;
@@ -202,11 +203,12 @@ function placeArrows(grid) {
           grid.cases[i].arrow[0] = enumArrow.RightBottom;
           grid.cases[i].arrow[1] = enumArrow.BottomRight;
           break;
-        case 's':
         case 't':
-        case 'u':
           grid.cases[i].arrow[0] = enumArrow.Bottom;
           grid.cases[i].arrow[1] = enumArrow.BottomRight;
+        case 'u':
+          grid.cases[i].arrow[0] = enumArrow.BottomRight;
+          grid.cases[i].arrow[1] = enumArrow.RightBottom;
           break;
         default: {
           var colIdx = i % grid.nbLines;

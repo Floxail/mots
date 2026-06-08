@@ -7,9 +7,11 @@ define(function () {
   var DELAY_BETWEEN_BONUSES     = 200;
 
   // playerID -> hex color string (populated by UpdatePlayerList)
-  var _playerColors = {};
+  var _playerColors    = {};
   // playerID -> array of word strings (populated by trackWord)
-  var _playerWords  = {};
+  var _playerWords     = {};
+  // playerID -> progress % (populated by RefreshScore, applied when rebuilding DOM)
+  var _playerProgress  = {};
 
 
   /*
@@ -48,7 +50,7 @@ define(function () {
         _playerColors[playerList[i].id] = playerList[i].monster.color;
         if (!_playerWords[playerList[i].id]) _playerWords[playerList[i].id] = [];
         scoreNode.innerHTML += '<article id="player' + playerList[i].id + '" class="playerScore bloc' + nbPlayers + '">' +
-          '<div class="score-bar" style="background-color: ' + playerList[i].monster.color + '">' +
+          '<div class="score-bar" style="background-color: ' + playerList[i].monster.color + '; height: ' + (_playerProgress[playerList[i].id] || 0) + '%">' +
           '<img src="' + playerList[i].monster.path + '"></div>' +
           '<footer>' +
           '<h3>' + playerList[i].nick + '</h3>' +
@@ -93,6 +95,7 @@ define(function () {
         i;
 
     // Update player progress bar
+    _playerProgress[scoreObj.playerID] = scoreObj.progress;
     document.querySelector('#player' + scoreObj.playerID + ' > div').style.height = scoreObj.progress + '%';
 
     // Update score and nb words
@@ -133,8 +136,9 @@ define(function () {
     var scoreNodes = document.querySelectorAll('.playerScore'),
         size, i;
 
-    _playerColors = {};
-    _playerWords = {};
+    _playerColors   = {};
+    _playerWords    = {};
+    _playerProgress = {};
 
     for (i = 0, size = scoreNodes.length; i < size; i++) {
       scoreNodes[i].querySelector('div').style.height = '0%';
