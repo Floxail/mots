@@ -72,14 +72,17 @@ async function onServerReady() {
     console.log('\n\n\tGame server ready (cloud mode)\n\n');
   }
   else if (addresses.length > 1) {
-    var response = await prompts({
-      type: 'select',
-      name: 'value',
-      message: 'Choose the IP address to use',
-      choices: addresses,
-    });
-
-    console.log(`\n\n\tWaiting for players at http://${addresses[response.value]}:${_port}\n\n`);
+    if (process.stdin.isTTY) {
+      var response = await prompts({
+        type: 'select',
+        name: 'value',
+        message: 'Choose the IP address to use',
+        choices: addresses,
+      });
+      console.log(`\n\n\tWaiting for players at http://${addresses[response.value]}:${_port}\n\n`);
+    } else {
+      console.log(`\n\n\tWaiting for players at http://${addresses[0]}:${_port}\n\n`);
+    }
   }
   else {
     console.log(`\n\n\tWaiting for players at http://${addresses[0]}:${_port}\n\n`);
