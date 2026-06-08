@@ -233,7 +233,7 @@ GameRoom.prototype.checkServerCommand = function (message, socket) {
     var number  = parseInt(message.substr(6));
     var gridNum = isNaN(number) ? 0 : number;
 
-    if (this.gameState === enums.ServerState.OnGame) {
+    if (this.gameState === enums.ServerState.OnGame && this.gridManager.getNbRemainingWords() > 0) {
       var self = this;
       var initiator = socket ? socket.playerInstance : null;
 
