@@ -48,7 +48,7 @@ PendingVote.prototype.castVote = function (playerId, value) {
     if (this.votes[this.playerIds[i]] === false) no++;
   }
   if (yes > total / 2)  { this.cancel(); this._onAccept(yes, total); }
-  else if (no >= total / 2) { this.cancel(); this._onReject('rejected'); }
+  else if (no > total / 2) { this.cancel(); this._onReject('rejected'); }
 };
 
 // ─── GameRoom ─────────────────────────────────────────────────────────────────
@@ -85,6 +85,7 @@ GameRoom.prototype._startInactivityTimer = function () {
 
 GameRoom.prototype.destroy = function () {
   clearInterval(this._inactivityTimer);
+  if (this._pendingVote) { this._pendingVote.cancel(); this._pendingVote = null; }
   this.broadcast('room_closed');
   // Disconnect all sockets in this room
   var roomSockets = this._io.sockets.adapter.rooms.get(this.id);
