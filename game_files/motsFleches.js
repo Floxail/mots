@@ -7,6 +7,8 @@ var MAX_PLAYERS          = 9;
 var SERVER_CHAT_COLOR    = '#c0392b';
 var TIME_BEFORE_START    = 5;
 var ROOM_INACTIVITY_MS   = 60 * 60 * 1000; // 60 minutes before room cleanup
+var VOTE_TIMEOUT_MS      = 30 * 1000;       // 30 secondes pour voter
+var KICK_INACTIVITY_MS   = 10 * 60 * 1000;  // 10 min d'inactivité avant kick
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -129,6 +131,7 @@ GameRoom.prototype.bonusChecker = function (playerPoints, nbWordsRemaining) {
 
 GameRoom.prototype.checkWord = function (player, wordObj) {
   this.touchActivity();
+  player.touchActivity();
   var points = this.gridManager.checkPlayerWord(wordObj);
   if (points >= 0) {
     wordObj.color = player.getColor();
@@ -182,7 +185,7 @@ GameRoom.prototype.sendGameState = function (socket, player) {
   }
 };
 
-GameRoom.prototype.checkServerCommand = function (message) {
+GameRoom.prototype.checkServerCommand = function (message, socket) {
   if (message[0] !== '!') return false;
   if (this.gameState === enums.ServerState.WaitingForPlayers && message === '!start') {
     if (!this.gridReady) {
@@ -264,8 +267,9 @@ exports.startMflServer = function (desiredGrid, httpServer) {
       if (typeof message !== 'string') return;
       message = message.trim().substring(0, 200);
       if (!message) return;
-      if (room.checkServerCommand(message) === false) {
-        var p = socket.playerInstance;
+      var p = socket.playerInstance;
+      if (p) p.touchActivity();
+      if (room.checkServerCommand(message, socket) === false) {
         if (p) room.sendChat(message, p.getNick(), p.getColor());
       }
     });
@@ -319,6 +323,7 @@ exports.startMflServer = function (desiredGrid, httpServer) {
           var rejoiner = room.playersManager.findPlayerByNick(nick);
           if (rejoiner) {
             rejoiner.updateSocket(socket);
+            rejoiner.touchActivity();
             socket.playerInstance = rejoiner;
             room.sendChat('<strong>' + nick + '</strong> a rejoint la partie !', undefined, undefined, room.playersManager.getPlayerList());
             room.sendGameState(socket, rejoiner);
@@ -348,6 +353,7 @@ exports.startMflServer = function (desiredGrid, httpServer) {
         if (rejoiner) {
           // Reconnect existing player
           rejoiner.updateSocket(socket);
+          rejoiner.touchActivity();
           socket.playerInstance = rejoiner;
           room.sendChat('<strong>' + nick + '</strong> a rejoint la partie !', undefined, undefined, room.playersManager.getPlayerList());
           room.sendGameState(socket, rejoiner);
