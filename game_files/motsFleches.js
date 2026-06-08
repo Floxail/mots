@@ -295,6 +295,8 @@ GameRoom.prototype.checkServerCommand = function (message, socket) {
       return true;
     }
 
+    var kickedSocket = target._socket;
+    if (kickedSocket) kickedSocket.playerInstance = null;
     target.kick('inactivité');
     this.playersManager.removePlayer(target);
     this.sendChat('🚪 ' + targetNick + ' a été expulsé pour inactivité (10 min sans activité)');
@@ -304,6 +306,8 @@ GameRoom.prototype.checkServerCommand = function (message, socket) {
       this.gameState = enums.ServerState.WaitingForPlayers;
       this._foundWords = [];
       this.lastWordFoundTs = null;
+      this.gridReady = false;
+      this.playersManager.resetPlayersForNewGame();
       this.broadcast('grid_reset');
     }
 
