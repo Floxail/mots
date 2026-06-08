@@ -61,11 +61,14 @@ define(['cursor'], function (Cursor) {
     frame.style.lineHeight = lineHeight + 'px';
     frame.style.fontSize = fontSize + 'px';
 
+    var fullParts = [];
     for (i = 0; i < info.nbDesc; i++) {
       descNode = document.createElement('span');
       descNode.innerHTML = info.desc[i];
       frame.appendChild(descNode);
+      fullParts.push(info.desc[i]);
     }
+    frame.setAttribute('data-desc', fullParts.join(' · '));
 
     return frame;
   }
@@ -182,6 +185,26 @@ define(['cursor'], function (Cursor) {
     frame.setAttribute('data-pos', info.pos);
 
     return (frame);
+  }
+
+  function showDescPopup(text) {
+    var popup = document.getElementById('desc-popup');
+    if (!popup) {
+      popup = document.createElement('div');
+      popup.id = 'desc-popup';
+      popup.addEventListener('click', function (e) { e.stopPropagation(); });
+      document.body.appendChild(popup);
+      document.body.addEventListener('click', function () {
+        var p = document.getElementById('desc-popup');
+        if (p) p.classList.remove('visible');
+      });
+    }
+    if (popup.classList.contains('visible') && popup.textContent === text) {
+      popup.classList.remove('visible');
+    } else {
+      popup.textContent = text;
+      popup.classList.add('visible');
+    }
   }
 
   function getFrameAxisNumber(index, axis) {
@@ -342,6 +365,15 @@ define(['cursor'], function (Cursor) {
         container.appendChild(insertEmptyFrame(line, col, frameSize, _grid.cases[i]));
 
     };
+
+    // Bind description tap-to-popup for small screens
+    var descFrames = container.querySelectorAll('.description');
+    for (var d = 0; d < descFrames.length; d++) {
+      descFrames[d].addEventListener('click', function (e) {
+        showDescPopup(e.currentTarget.getAttribute('data-desc'));
+        e.stopPropagation();
+      });
+    }
 
     // Bind events after a short delay to be sure all new DOM content are injected
     window.setTimeout(function () {

@@ -37,6 +37,19 @@ define(function () {
         var msg = _writeNode.value.trim();
         if (msg === '!clear' && _localCommandCallback) {
           _localCommandCallback('clear');
+        } else if (msg === '!info') {
+          var infoBox = document.createElement('article');
+          infoBox.classList.add('server-message');
+          infoBox.style.color = '#7fb3c8';
+          infoBox.innerHTML = '<strong>Commandes disponibles :</strong><br>'
+            + '<code>!start</code> — Lance la partie (salle d\'attente)<br>'
+            + '<code>!grid N</code> — Change de grille (vote si partie en cours)<br>'
+            + '<code>!oui</code> / <code>!non</code> — Vote pour/contre !grid<br>'
+            + '<code>!kick pseudo</code> — Expulse un joueur inactif (10 min)<br>'
+            + '<code>!clear</code> — Efface tes lettres non validées<br>'
+            + '<code>!info</code> — Affiche cette aide';
+          _mesNode.appendChild(infoBox);
+          _mesNode.scrollTop = _mesNode.scrollHeight;
         } else if (msg !== '') {
           _socket.emit('chat', _writeNode.value);
         }
