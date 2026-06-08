@@ -9,6 +9,7 @@ function Player (socket, uid) {
       score:      0,
       nbWords:    0
     };
+  this.lastActivity = Date.now();
 };
 
 Player.prototype.getNick = function () { return (this._playerTinyObject.nick); };
@@ -35,6 +36,15 @@ Player.prototype.updateSocket = function (newSocket) {
 Player.prototype.resetPlayerInfos = function () {
   this._playerTinyObject.score = 0;
   this._playerTinyObject.nbWords = 0;
+};
+
+Player.prototype.touchActivity = function () {
+  this.lastActivity = Date.now();
+};
+
+Player.prototype.kick = function (reason) {
+  this._socket.emit('kicked', { reason: reason || 'inactivité' });
+  this._socket.disconnect(true);
 };
 
 module.exports = Player;
