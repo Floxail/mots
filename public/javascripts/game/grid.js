@@ -68,7 +68,7 @@ define(['cursor'], function (Cursor) {
       frame.appendChild(descNode);
       fullParts.push(info.desc[i]);
     }
-    frame.setAttribute('data-desc', fullParts.join(' · '));
+    frame.setAttribute('data-desc', fullParts.join(' | '));
 
     return frame;
   }
@@ -199,10 +199,11 @@ define(['cursor'], function (Cursor) {
         if (p) p.classList.remove('visible');
       });
     }
-    if (popup.classList.contains('visible') && popup.textContent === text) {
+    if (popup.classList.contains('visible') && popup.getAttribute('data-current') === text) {
       popup.classList.remove('visible');
     } else {
-      popup.textContent = text;
+      popup.innerHTML = text;
+      popup.setAttribute('data-current', text);
       popup.classList.add('visible');
     }
   }
