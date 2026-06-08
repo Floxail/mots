@@ -272,6 +272,43 @@ GameRoom.prototype.checkServerCommand = function (message, socket) {
     }
     return true;
   }
+  if (message.indexOf('!kick ') === 0) {
+    var targetNick = message.substr(6).trim();
+    var kicker = socket ? socket.playerInstance : null;
+    if (!kicker) return true;
+
+    if (kicker.getNick() === targetNick) {
+      this.sendToSocket(socket, '⚠ Vous ne pouvez pas vous expulser vous-même');
+      return true;
+    }
+
+    var target = this.playersManager.findPlayerByNick(targetNick);
+    if (!target) {
+      this.sendToSocket(socket, '⚠ Joueur introuvable : ' + targetNick);
+      return true;
+    }
+
+    var inactiveMs = Date.now() - (target.lastActivity || 0);
+    if (inactiveMs < KICK_INACTIVITY_MS) {
+      var remaining = Math.ceil((KICK_INACTIVITY_MS - inactiveMs) / 60000);
+      this.sendToSocket(socket, '⚠ ' + targetNick + ' n\'est pas inactif depuis suffisamment longtemps (' + remaining + ' min restantes)');
+      return true;
+    }
+
+    target.kick('inactivité');
+    this.playersManager.removePlayer(target);
+    this.sendChat('🚪 ' + targetNick + ' a été expulsé pour inactivité (10 min sans activité)');
+
+    if (this.gameState === enums.ServerState.OnGame && this.playersManager.getNumberOfPlayers() === 0) {
+      this.sendChat('Partie annulée — plus aucun joueur');
+      this.gameState = enums.ServerState.WaitingForPlayers;
+      this._foundWords = [];
+      this.lastWordFoundTs = null;
+      this.broadcast('grid_reset');
+    }
+
+    return true;
+  }
   if (message === '!oui' || message === '!non') {
     if (this._pendingVote && socket && socket.playerInstance) {
       this._pendingVote.castVote(socket.playerInstance.getID(), message === '!oui');
