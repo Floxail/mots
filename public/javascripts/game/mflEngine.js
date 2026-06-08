@@ -1,251 +1,460 @@
 /*
-*   Game Engine
+*   Game Engine — handles lobby, multiplayer rooms, and solo mode
 */
 require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], function (Conf, UITools, GridManager, Chat, Score) {
 
   var enumState = {
-    Login: 0,
-    Waiting: 1,
-    OnGame: 2
+    Lobby:   0,
+    Login:   1,
+    Waiting: 2,
+    OnGame:  3,
+    Solo:    4
   };
 
   var enumPanels = {
+    Lobby: 'lobby-panel',
     Login: 'login-panel',
-    Game: 'game-panel',
+    Game:  'game-panel',
     Error: 'error-panel'
   };
 
-  var _gameState = enumState.Login,
+  var _gameState       = enumState.Lobby,
       _gridManager,
       _scoreManager,
       _ui,
       _chat,
       _socket,
-      _grid;
+      _soloGrid,
+      _soloScore           = 0,
+      _countdownTimer      = null,
+      _wordFoundedHandler  = null,
+      _gameListenersReady  = false,
+      _loginListenersReady = false,
+      _pendingJoinHandler  = null,
+      _pendingErrorHandler = null;
 
   Conf = JSON.parse(Conf);
 
+  // ─── Bootstrap ────────────────────────────────────────────────────────────
 
-  function startClient () {
-    if (typeof io == 'undefined') {
-      document.getElementById('ep-text').innerHTML = 'Cannot retreive socket.io file at the address ' + Conf.SOCKET_ADDR + '<br/><br/>Please provide a valid address.';
-      _ui.ChangeGameScreen(enumPanels.Error, true);
-      console.log('Cannot reach socket.io file !');
+  _ui           = new UITools();
+  _scoreManager = new Score();
+
+  startLobby();
+  initTabBar();
+
+  // ─── Lobby ────────────────────────────────────────────────────────────────
+
+  function startLobby() {
+    if (typeof io === 'undefined') {
+      showError('Impossible de charger socket.io.<br/>Vérifiez l\'adresse du serveur.');
       return;
     }
 
-    // Instanciate usefull classes
-    _ui = new UITools();
-    _scoreManager = new Score();
+    var socketUrl = Conf.SOCKET_ADDR + (Conf.SOCKET_PORT !== 80 && Conf.SOCKET_PORT !== 443 ? ':' + Conf.SOCKET_PORT : '');
+    _socket = io.connect(socketUrl, { reconnect: false });
 
-    // document.getElementById('gs-loader-text').innerHTML = 'Connecting to the server...';
-    _socket = io.connect((Conf.SOCKET_ADDR + ':' + Conf.SOCKET_PORT), { reconnect: false });
-    _socket.on('connect', function() {
-      
-      console.log('Connection established :)');
-      
-      // Bind server disconnect event
-      _socket.on('disconnect', function (reason) {
-        document.getElementById('ep-text').innerHTML = 'Connection au serveur perdue';
-        _ui.ChangeGameScreen(enumPanels.Error, true);
-        console.log('Connection with the server lost: ' + reason);
-      });
+    _socket.on('connect', function () {
+      console.log('Socket connecté');
+      // Auto-join if URL contains a room code in the hash (#ABCD) or query (?room=ABCD)
+      var roomCode = getRoomCodeFromURL();
+      if (roomCode) joinRoom(roomCode);
+    });
 
-      // Bind game already started event
-      _socket.on('game_already_started', function () {
-        localStorage.removeItem('mfl_nick');
-        document.getElementById('ep-text').innerHTML = 'Désolé, la partie a déjà commencée !';
-        _ui.ChangeGameScreen(enumPanels.Error, true);
-      });
+    _socket.on('roomList', updateLobbyRoomList);
 
-      // Bind login event
-      _socket.on('logos', function (availableLogos) {
-        if (_gameState == enumState.Login) {
-          if (availableLogos == null) {
-            // Try silent rejoin if we have a stored nick from a previous session
-            var savedNick = localStorage.getItem('mfl_nick');
-            if (savedNick) {
-              _socket.emit('userIsReady', { nick: savedNick, monster: 0 });
-              // Bind game events now so we can receive grid_event on successful rejoin
-              _chat = new Chat(_socket, _scoreManager.UpdatePlayerList);
-              _socket.on('grid_event', onStartGame);
-              _socket.on('grid_reset', resetGame);
-              _socket.on('score_update', _scoreManager.RefreshScore);
-              _socket.on('game_over', function (winner) {
-                _ui.displayGameOver(winner);
-                _chat.congrats(winner);
-              });
-              _ui.ChangeGameScreen(enumPanels.Game, true);
-              _gameState = enumState.Waiting;
-              _ui.bindServerCommandButtons(_socket);
-            } else {
-              document.getElementById('lp-infos').innerHTML = '';
-              _ui.InfoTooltip(true, "<strong>Ho non, c'est balot !</strong><br/>Il semblerait qu'il n'y ai plus de place pour le jeu en cours.");
-            }
-          }
-          else
-            prepareUserLoginForm(availableLogos);
-        }
+    _socket.on('disconnect', function () {
+      if (_gameState > enumState.Lobby) showError('Connexion au serveur perdue');
+    });
+
+    _socket.on('error', function () {
+      showError('Impossible de se connecter au serveur.');
+    });
+
+    // Lobby button bindings
+    document.getElementById('lobby-create-btn').onclick = function () {
+      localStorage.removeItem('mfl_nick');
+      var raw  = document.getElementById('lobby-grid-input').value.trim();
+      var opts = {};
+      if (raw && !isNaN(parseInt(raw))) opts.gridNumber = parseInt(raw);
+      clearPendingRoomHandlers();
+      _socket.emit('createRoom', opts);
+      _socket.once('roomJoined', _pendingJoinHandler = function (data) {
+        _pendingJoinHandler = _pendingErrorHandler = null;
+        setURLRoomCode(data.roomId);
+        enterLoginPhase();
       });
-      
-      // Display login screen and bind start button
+      _socket.once('roomError', _pendingErrorHandler = function (msg) {
+        _pendingJoinHandler = _pendingErrorHandler = null;
+        _ui.InfoTooltip(true, '<strong>Erreur :</strong> ' + msg, 4000);
+      });
+    };
+
+    document.getElementById('lobby-join-btn').onclick = function () {
+      localStorage.removeItem('mfl_nick');
+      var code = document.getElementById('lobby-code-input').value.trim().toUpperCase();
+      if (!code) { _ui.InfoTooltip(true, 'Entrez un code de salle', 3000); return; }
+      joinRoom(code);
+    };
+
+    document.getElementById('lobby-code-input').onkeydown = function (e) {
+      if (e.key === 'Enter') document.getElementById('lobby-join-btn').click();
+    };
+
+    document.getElementById('lobby-solo-btn').onclick = startSoloMode;
+  }
+
+  // Fix #4: remove stale .once handlers before registering new ones to prevent
+  // stacking when the user retries after a failed join attempt.
+  function clearPendingRoomHandlers() {
+    if (_pendingJoinHandler)  { _socket.off('roomJoined', _pendingJoinHandler);  _pendingJoinHandler  = null; }
+    if (_pendingErrorHandler) { _socket.off('roomError',  _pendingErrorHandler); _pendingErrorHandler = null; }
+  }
+
+  function joinRoom(roomId) {
+    clearPendingRoomHandlers();
+    _socket.emit('joinRoom', roomId);
+    _socket.once('roomJoined', _pendingJoinHandler = function (data) {
+      _pendingJoinHandler = _pendingErrorHandler = null;
+      setURLRoomCode(data.roomId);
+      enterLoginPhase();
+    });
+    _socket.once('roomError', _pendingErrorHandler = function (msg) {
+      _pendingJoinHandler = _pendingErrorHandler = null;
+      setURLRoomCode('');
+      _ui.InfoTooltip(true, '<strong>Salle introuvable</strong> : ' + msg, 4000);
+    });
+  }
+
+  function updateLobbyRoomList(rooms) {
+    var container = document.getElementById('lobby-room-list');
+    if (!rooms || rooms.length === 0) {
+      container.innerHTML = '<p class="lobby-empty">Aucune salle disponible — créez-en une !</p>';
+      return;
+    }
+    var html = '';
+    rooms.forEach(function (room) {
+      var stateCls   = room.gameState === 2 ? 'room-in-game' : 'room-waiting';
+      var stateLabel = room.gameState === 2 ? 'En cours' : 'En attente';
+      var gridLabel  = room.gridInfo
+        ? 'Grille ' + room.gridInfo.id + ' (niv. ' + room.gridInfo.level + ')'
+        : '<em>Chargement…</em>';
+      html += '<div class="lobby-room-item">';
+      html += '<span class="room-code">' + room.id + '</span>';
+      html += '<span class="room-grid">' + gridLabel + '</span>';
+      html += '<span class="room-status ' + stateCls + '">' + stateLabel + '</span>';
+      html += '<span class="room-players">' + room.playerCount + '/9 joueurs</span>';
+      html += '<button class="room-join-btn" data-id="' + room.id + '">Rejoindre</button>';
+      html += '</div>';
+    });
+    container.innerHTML = html;
+    container.querySelectorAll('.room-join-btn').forEach(function (btn) {
+      btn.onclick = function () { localStorage.removeItem('mfl_nick'); joinRoom(btn.getAttribute('data-id')); };
+    });
+  }
+
+  // ─── Login phase (after room joined) ──────────────────────────────────────
+
+  function enterLoginPhase() {
+    _gameState = enumState.Login;
+
+    // Fix #7: guard against duplicate registration if enterLoginPhase is somehow
+    // called twice on the same socket (e.g. stacked .once handlers before fix #4).
+    if (_loginListenersReady) return;
+    _loginListenersReady = true;
+
+    // Terminal events — .once is correct: they fire at most once per session.
+    _socket.once('game_already_started', function () {
+      localStorage.removeItem('mfl_nick');
+      showError('Désolé, la partie a déjà commencée !');
+    });
+
+    _socket.once('room_closed', function () {
+      showError('La salle a été fermée pour inactivité.');
+    });
+
+    // logos can fire multiple times (other players joining), keep .on.
+    // The _gameState guard prevents acting after login is complete.
+    _socket.on('logos', function (availableLogos) {
+      if (_gameState > enumState.Login) return;
+
+      var savedNick = localStorage.getItem('mfl_nick');
+
+      if (availableLogos == null && !savedNick) {
+        document.getElementById('lp-infos').innerHTML = '';
+        _ui.InfoTooltip(true, "<strong>Ho non, c'est balot !</strong><br/>Il semblerait qu'il n'y ai plus de place pour le jeu en cours.");
+        return;
+      }
+
+      if (savedNick) {
+        _socket.emit('userIsReady', { nick: savedNick, monster: 0 });
+        setupGameListeners();
+        _ui.ChangeGameScreen(enumPanels.Game, true);
+        _gameState = enumState.Waiting;
+        _ui.bindServerCommandButtons(_socket);
+        return;
+      }
+
+      prepareUserLoginForm(availableLogos);
       _ui.ChangeGameScreen(enumPanels.Login, true);
       document.getElementById('lp-start-btn').onclick = sendPlayerReady;
-
     });
-
-    _socket.on('error', function() {
-      document.querySelector('body').innerHTML += 'Fail to connect the WebSocket to the server.<br/><br/>Please check the WS address.';
-      _ui.ChangeGameScreen(enumPanels.Error, true);
-      console.log('Cannot connect the web_socket');
-    });
-    
   }
 
-  function prepareUserLoginForm(logoList) {
-    var logosNodes = '',
-        i,
-        nbLogos = logoList.length;
+  // ─── Shared game listener setup ───────────────────────────────────────────
 
-    // Insert all available monster logo in login form
-    for (i = 0; i < nbLogos; i++) {
-      if (logosNodes.player == null)
-        logosNodes += '<img class="lp-logos-monster" src="' + logoList[i].path + '" style="border-color: ' + logoList[i].color + '" data-monster-id="' + logoList[i].id + '">';
-    };
-    document.getElementById('lp-logos').innerHTML = logosNodes;
+  function setupGameListeners() {
+    if (_gameListenersReady) return;
+    _gameListenersReady = true;
 
-    // Bind select event
-    logosNodes = document.querySelectorAll('.lp-logos-monster');
-    nbLogos = logosNodes.length;
-    for (i = 0; i < nbLogos; i++) {
-      logosNodes[i].onclick = function (event) {
-        var oldSelection = document.querySelector('.myMonster');
-
-        // Unset last selection if any and set the new monster
-        if (oldSelection)
-          oldSelection.classList.remove('myMonster');
-        event.target.classList.add('myMonster');
-
-        // Show the color !
-        document.getElementById('lp-nick').style.borderColor = event.target.style.borderColor;
-      }
-    };
-  }
-
-  function sendPlayerReady () {
-    var nick = document.getElementById('lp-nick').value,
-        monsterNode = document.querySelector('.myMonster'),
-        monster;
-
-    // If nick is empty or if it has the default value, 
-    if ((nick == '') || (monsterNode == null)) {
-      _ui.InfoTooltip(true, 'Vous devez choisir un <strong>pseudo</strong> et un <strong> petit monstre</strong> !', 4000);
-      return (false);
-    }
-    
-    monster = parseInt(monsterNode.getAttribute('data-monster-id'), 10);
-
-    // Unbind button event to prevent "space click"
-    document.getElementById('lp-start-btn').onclick = function() { return false; };
-
-    // Connect chat
     _chat = new Chat(_socket, _scoreManager.UpdatePlayerList);
-
-    // Bind grid event, meaning the game is about to start !
     _socket.on('grid_event', onStartGame);
-    // Bind also grid reset, to play more than one game :p
     _socket.on('grid_reset', resetGame);
-
-    // Save nick for potential rejoin after page refresh
-    localStorage.setItem('mfl_nick', nick);
-
-    // Send player infos to the server
-    _socket.emit('userIsReady', { 'nick': nick, 'monster': monster } );
-    
-    // Bind score update
     _socket.on('score_update', _scoreManager.RefreshScore);
-  
-    // Finally bind game over event
     _socket.on('game_over', function (winner) {
       _ui.displayGameOver(winner);
       _chat.congrats(winner);
     });
-
-    // Show game screen and change state
-    _ui.ChangeGameScreen(enumPanels.Game, true);
-    _gameState = enumState.Waiting;
-
-    // Bind command buttons
-    _ui.bindServerCommandButtons(_socket);
-
-    // Set player's color
-    setPlayerColor(monsterNode.style.borderColor);
-
-    return (false);
+    _socket.on('chat', function() {
+      var chatPanel = document.getElementById('gs-chat');
+      if (chatPanel && !chatPanel.classList.contains('tab-active')) {
+        var badge = document.getElementById('chat-badge');
+        if (badge) badge.classList.add('visible');
+      }
+    });
+    // Replay previously found words when (re)joining a game in progress.
+    // found_words arrives right after grid_event; onStartGame creates _gridManager
+    // synchronously but DisplayGrid may not have run yet — use a short delay.
+    _socket.on('found_words', function (words) {
+      function replay() {
+        if (!_gridManager) return;
+        for (var i = 0; i < words.length; i++) {
+          _gridManager.RevealWord(words[i]);
+          _scoreManager.trackWord(words[i]);
+        }
+      }
+      // Small delay to ensure grid DOM is rendered before revealing
+      setTimeout(replay, 300);
+    });
   }
 
-  function onStartGame(gridEvent) {
-    var startTimer;
+  // ─── Login form ───────────────────────────────────────────────────────────
 
-    // Instanciate grid manager and provide the validation callback
+  function prepareUserLoginForm(logoList) {
+    var logosNodes = '',
+        i,
+        nbLogos    = logoList.length;
+
+    for (i = 0; i < nbLogos; i++) {
+      if (logosNodes.player == null)
+        logosNodes += '<img class="lp-logos-monster" src="' + logoList[i].path + '" style="border-color: ' + logoList[i].color + '" data-monster-id="' + logoList[i].id + '">';
+    }
+    document.getElementById('lp-logos').innerHTML = logosNodes;
+
+    logosNodes = document.querySelectorAll('.lp-logos-monster');
+    nbLogos    = logosNodes.length;
+    for (i = 0; i < nbLogos; i++) {
+      logosNodes[i].onclick = function (event) {
+        var oldSelection = document.querySelector('.myMonster');
+        if (oldSelection) oldSelection.classList.remove('myMonster');
+        event.target.classList.add('myMonster');
+        document.getElementById('lp-nick').style.borderColor = event.target.style.borderColor;
+      };
+    }
+  }
+
+  function sendPlayerReady() {
+    var nick        = document.getElementById('lp-nick').value,
+        monsterNode = document.querySelector('.myMonster'),
+        monster;
+
+    if ((nick == '') || (monsterNode == null)) {
+      _ui.InfoTooltip(true, 'Vous devez choisir un <strong>pseudo</strong> et un <strong>petit monstre</strong> !', 4000);
+      return false;
+    }
+
+    monster = parseInt(monsterNode.getAttribute('data-monster-id'), 10);
+
+    // Prevent double-submit
+    document.getElementById('lp-start-btn').onclick = function () { return false; };
+
+    setupGameListeners();
+
+    localStorage.setItem('mfl_nick', nick);
+    _socket.emit('userIsReady', { 'nick': nick, 'monster': monster });
+
+    _ui.ChangeGameScreen(enumPanels.Game, true);
+    _gameState = enumState.Waiting;
+    _ui.bindServerCommandButtons(_socket);
+    setPlayerColor(monsterNode.style.borderColor);
+
+    return false;
+  }
+
+  // ─── Multiplayer game ─────────────────────────────────────────────────────
+
+  function onStartGame(gridEvent) {
+    // Clear any leftover countdown from a previous round
+    if (_countdownTimer) { window.clearInterval(_countdownTimer); _countdownTimer = null; }
+
     _gridManager = new GridManager(gridEvent.grid, function (wordObj) {
       _socket.emit('wordValidation', wordObj);
     });
 
-    // Display timer before game start
+    // Replace the word_founded listener so it points to the new grid
+    if (_wordFoundedHandler) _socket.off('word_founded', _wordFoundedHandler);
+    _wordFoundedHandler = function (wordObj) {
+      _gridManager.RevealWord(wordObj);
+      _scoreManager.trackWord(wordObj);
+    };
+    _socket.on('word_founded', _wordFoundedHandler);
+
     if (gridEvent.timer > 0) {
       _ui.InfoTooltip(true, '<strong>Tenez-vous prêt !</strong><br/>Début des hostilités dans <strong>' + (gridEvent.timer--) + '</strong>');
-      startTimer = window.setInterval(function () {
+      _countdownTimer = window.setInterval(function () {
         _ui.InfoTooltip(true, '<strong>Tenez-vous prêt !</strong><br/>Début des hostilités dans <strong>' + (gridEvent.timer--) + '</strong>');
-        
-        // When the timer is over
         if (gridEvent.timer < 0) {
-          // Clear timer
-          window.clearInterval(startTimer);
-
-          // Display grid !!
+          window.clearInterval(_countdownTimer);
+          _countdownTimer = null;
           _gridManager.DisplayGrid();
           _ui.displayGridInformations(gridEvent.grid.infos);
-
-          // Remove tooltip
           _ui.InfoTooltip(false, 'Bonne chance !');
         }
       }, 1000);
-    }
-    else {
+    } else {
       _gridManager.DisplayGrid();
       _ui.displayGridInformations(gridEvent.grid.infos);
     }
-
-    // Bind get word event
-    _socket.on('word_founded', _gridManager.RevealWord);
   }
 
   function resetGame() {
+    // Stop any running countdown and hide the banner immediately
+    if (_countdownTimer) { window.clearInterval(_countdownTimer); _countdownTimer = null; }
+    _ui.InfoTooltip(false);
     _ui.resetGridInformations();
     _scoreManager.resetScores();
-    if (_gridManager)
-      _gridManager.resetGrid();
+    if (_gridManager) _gridManager.resetGrid();
   }
 
   function setPlayerColor(color) {
-    var color = _ui.getRGBComponents(color),
-        css = '.focusCell { -moz-box-shadow: inset 0px 0px 30px 4px rgba(' + color + ',0.2);box-shadow: inset 0px 0px 30px 4px rgba(' + color + ',0.2);border-color: rgba(' + color + ',0.4); } .goRight:before, .goDown:before { color: rgb(' + color + '); }',
+    var rgb   = _ui.getRGBComponents(color),
+        css   = '.focusCell { -moz-box-shadow: inset 0px 0px 30px 4px rgba(' + rgb + ',0.2);box-shadow: inset 0px 0px 30px 4px rgba(' + rgb + ',0.2);border-color: rgba(' + rgb + ',0.4); } .goRight:before, .goDown:before { color: rgb(' + rgb + '); }',
         style = document.createElement('style');
-
     style.type = 'text/css';
-    
-    if (style.styleSheet)
-      style.styleSheet.cssText = css;
-    else
-      style.appendChild(document.createTextNode(css));
-
+    if (style.styleSheet) style.styleSheet.cssText = css;
+    else style.appendChild(document.createTextNode(css));
     document.head.appendChild(style);
   }
 
+  // ─── Solo mode ────────────────────────────────────────────────────────────
 
-  // Load ressources and Start the client !
-  console.log('Client started');
-  startClient();
-  
+  function startSoloMode() {
+    _gameState = enumState.Solo;
+    _soloScore = 0;
+
+    _ui.ChangeGameScreen(enumPanels.Game, true);
+
+    // Hide chat panel and chat tab — not needed in solo
+    document.getElementById('gs-chat').style.display = 'none';
+    var chatTabBtn = document.querySelector('.tab-btn[data-tab="chat"]');
+    if (chatTabBtn) chatTabBtn.style.display = 'none';
+    document.getElementById('gs-scores').innerHTML =
+      '<div id="solo-score"><span class="solo-label">Score</span><span class="solo-value">0</span></div>';
+
+    fetch('/api/grid')
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (fullGrid) {
+        _soloGrid    = fullGrid;
+        _gridManager = new GridManager(fullGrid, validateSoloWord);
+        _gridManager.DisplayGrid();
+        _ui.displayGridInformations(fullGrid.infos);
+      })
+      .catch(function (e) {
+        showError('Impossible de charger la grille solo : ' + e.message);
+      });
+  }
+
+  function validateSoloWord(wordObj) {
+    // fullGrid has .value on every LetterCase — validate locally
+    var jump  = wordObj.axis === 0 ? 1 : _soloGrid.nbLines;
+    var index = wordObj.start;
+    var points = 0;
+    var i;
+
+    for (i = 0; i < wordObj.word.length; i++) {
+      if (wordObj.word[i] !== _soloGrid.cases[index].value) return; // wrong letter
+      if (_soloGrid.cases[index].available) points++;
+      index += jump;
+    }
+
+    // Mark as solved in the shared grid object
+    index = wordObj.start;
+    for (i = 0; i < wordObj.word.length; i++) {
+      _soloGrid.cases[index].available = false;
+      index += jump;
+    }
+    _soloGrid.nbWords--;
+
+    wordObj.color = '#27A096';
+    _gridManager.RevealWord(wordObj);
+
+    _soloScore += points;
+    var el = document.querySelector('#solo-score .solo-value');
+    if (el) el.textContent = _soloScore;
+
+    if (_soloGrid.nbWords <= 0) {
+      _ui.displayGameOver({ nick: 'Solo', monster: { path: 'images/logos/monster1.png', color: '#27A096' } });
+    }
+  }
+
+  // ─── URL helpers ──────────────────────────────────────────────────────────
+
+  function getRoomCodeFromURL() {
+    var hash = window.location.hash.substring(1).toUpperCase();
+    if (/^[A-Z0-9]{4}$/.test(hash)) return hash;
+    var match = window.location.search.match(/[?&]room=([A-Z0-9]{4})/i);
+    if (match) return match[1].toUpperCase();
+    return null;
+  }
+
+  function setURLRoomCode(roomId) {
+    if (history.replaceState) {
+      history.replaceState(null, '', roomId ? '#' + roomId : window.location.pathname + window.location.search);
+    }
+  }
+
+  function initTabBar() {
+    var bar = document.getElementById('tab-bar');
+    if (!bar) return;
+    bar.querySelectorAll('.tab-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        switchTab(btn.getAttribute('data-tab'));
+      });
+    });
+    switchTab('grid');
+  }
+
+  function switchTab(name) {
+    var panels = { grid: 'gs-grid-container', score: 'gs-scores', chat: 'gs-chat' };
+    Object.keys(panels).forEach(function(t) {
+      var el = document.getElementById(panels[t]);
+      if (el) el.classList.toggle('tab-active', t === name);
+    });
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === name);
+    });
+    if (name === 'chat') {
+      var badge = document.getElementById('chat-badge');
+      if (badge) badge.classList.remove('visible');
+    }
+  }
+
+  function showError(msg) {
+    document.getElementById('ep-text').innerHTML = msg;
+    _ui.ChangeGameScreen(enumPanels.Error, true);
+  }
+
 });

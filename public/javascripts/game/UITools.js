@@ -22,14 +22,18 @@ define(function () {
         };
 
     // Find an available space within empty spaces (fuck the ads !!!)
-    if (emptyNodes) {
+    if (emptyNodes.length > 0) {
       square.x = emptyNodes[0].offsetLeft;
       square.y = emptyNodes[0].offsetTop;
       square.width = emptyNodes[emptyNodes.length - 1].offsetLeft + emptyNodes[emptyNodes.length - 1].offsetWidth - square.x;
       square.height = emptyNodes[emptyNodes.length - 1].offsetTop + emptyNodes[emptyNodes.length - 1].offsetHeight - square.y;
 
       // Now put the info panel on the grid
-      document.getElementById('gs-grid-container').innerHTML += '<div id="ig-infos" style="left: ' + square.x + 'px; top: ' + square.y + 'px; width: ' + square.width + 'px; height: ' + square.height + 'px;"><header></header><time></time><footer></footer></div>';
+      var igInfos = document.createElement('div');
+      igInfos.id = 'ig-infos';
+      igInfos.style.cssText = 'left: ' + square.x + 'px; top: ' + square.y + 'px; width: ' + square.width + 'px; height: ' + square.height + 'px;';
+      igInfos.innerHTML = '<header></header><time></time><footer></footer>';
+      document.getElementById('gs-grid-container').appendChild(igInfos);
     }
   }
 
@@ -154,8 +158,37 @@ define(function () {
     var timeNode,
         time = 0;
 
-    // First inject the game info panel
+    // Display grid infos below the grid
+    var container = document.getElementById('gs-grid-container');
+    var oldBar = document.getElementById('gs-grid-infos');
+    if (oldBar) oldBar.parentNode.removeChild(oldBar);
+
+    // Calculate grid bottom from actual frame positions
+    var frames = container.querySelectorAll('.frame');
+    var gridBottom = 0;
+    for (var f = 0; f < frames.length; f++) {
+      var bottom = frames[f].offsetTop + frames[f].offsetHeight;
+      if (bottom > gridBottom) gridBottom = bottom;
+    }
+
+    var gridDate = infos.date ? new Date(infos.date) : new Date();
+    var dateStr = gridDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    var levelStars = '';
+    for (var s = 0; s < infos.level; s++) levelStars += '★';
+
+    var bar = document.createElement('div');
+    bar.id = 'gs-grid-infos';
+    bar.style.top = (gridBottom + 6) + 'px';
+    bar.innerHTML = '<span class="grid-info-date">' + dateStr + '</span>'
+      + '<span class="grid-info-id">Grille n°' + infos.id + '</span>'
+      + '<span class="grid-info-level">Difficulté : ' + levelStars + ' (' + infos.level + ')</span>';
+    container.appendChild(bar);
+
+    // Inject the in-game info panel (timer, level) inside empty cells
     injectInGameInfoPanel();
+
+    // If the grid has no empty cells the panel could not be injected — skip timer
+    if (!document.getElementById('ig-infos')) return;
 
     // Retreive time node and inject timer
     timeNode = document.querySelector('#ig-infos > time');
@@ -180,9 +213,11 @@ define(function () {
     if (_gameTimer != null)
       window.clearInterval(_gameTimer);
 
+    if (!document.getElementById('ig-infos')) return;
+
     // Set game over class
     document.querySelector('#ig-infos > header').classList.add('game-over');
-    
+
     // Put winner picture
     gamePanel.innerHTML += '<img id="winner-pic" src="' + winner.monster.path + '" alt="winner picture" />';
     window.setTimeout(function() {
@@ -196,6 +231,8 @@ define(function () {
   UITools.prototype.resetGridInformations = function () {
     if (_gameTimer != null)
       window.clearInterval(_gameTimer);
+    var gridInfosBar = document.getElementById('gs-grid-infos');
+    if (gridInfosBar) gridInfosBar.parentNode.removeChild(gridInfosBar);
   };
 
   /*

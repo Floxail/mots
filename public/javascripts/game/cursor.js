@@ -1,64 +1,104 @@
 /*
-*   The cursor is used to focus a special frame and write in it
+*   The cursor is used to focus a special frame and write in it.
+*   Mobile support: a hidden <input> captures keyboard input so the native
+*   iOS/Android keyboard opens when a letter cell is tapped.
 */
 define(function () {
 
   var enumDirections = {
-    Left: 37,
-    Up: 38,
+    Left:  37,
+    Up:    38,
     Right: 39,
-    Down: 40
+    Down:  40
   };
 
   var _grid,
       _letterUpdateCallback,
       _nbLines,
       _nbCols,
-      _focusCell = null;
-      _focusDirection = null;
-  
+      _focusCell      = null,
+      _focusDirection = null,
+      _mobileInput    = null; // hidden <input> for native mobile keyboard
+
+
   /*
   *   Constructor
-  *   @param: {Object}    gridObj               Grid instance given by the server
-  *   @param: {Function}  letterUpdateCallback  Function to call when we update a letter frame (insert new letter or delete current one)
   */
   function Cursor(gridObj, letterUpdateCallback) {
-    // Getting Grid
-    _grid = gridObj.cases;
-    _nbLines = gridObj.nbLines;
-    _nbCols = gridObj.nbColumns
-
-    // Retreive callback
+    _grid                 = gridObj.cases;
+    _nbLines              = gridObj.nbLines;
+    _nbCols               = gridObj.nbColumns;
     _letterUpdateCallback = letterUpdateCallback;
   }
 
 
-  /*-------------------------
-      
-      Private functions
-  
-  -------------------------*/
+  /*-----------------------------------------------------------------------
+      Private helpers
+  -----------------------------------------------------------------------*/
 
   /*
-  *   Set the cursor direction
-  *   @param: {Int}  direction   [Optional] If this parameter is setted, force the direction. Else just toggle the current direction
+  * Create (once) the hidden <input> used to capture keyboard on mobile.
+  * autocapitalize="characters" nudges iOS to open the all-caps keyboard.
   */
+  function ensureMobileInput() {
+    if (_mobileInput) return;
+
+    _mobileInput                 = document.createElement('input');
+    _mobileInput.type            = 'text';
+    _mobileInput.autocomplete    = 'off';
+    _mobileInput.autocorrect     = 'off';
+    _mobileInput.autocapitalize  = 'characters';
+    _mobileInput.setAttribute('inputmode', 'text');
+    _mobileInput.style.cssText   =
+      'position:fixed;top:-200px;left:0;opacity:0;width:1px;height:1px;' +
+      'border:none;padding:0;margin:0;font-size:16px;'; // font-size≥16 avoids iOS zoom
+    document.body.appendChild(_mobileInput);
+
+    // Character typed on mobile keyboard
+    _mobileInput.addEventListener('input', function () {
+      if (!_focusCell) { _mobileInput.value = ''; return; }
+      var val = _mobileInput.value.toUpperCase();
+      _mobileInput.value = '';
+      if (!val) return;
+      // Take only the last character in case of autocorrect inserting multiple
+      var ch = val.charAt(val.length - 1);
+      var code = ch.charCodeAt(0);
+      if (code >= 65 && code <= 90) insertLetter(code);
+    });
+
+    // Backspace / delete on mobile keyboard
+    _mobileInput.addEventListener('keydown', function (e) {
+      if (!_focusCell) return;
+      if (e.keyCode === 8 || e.keyCode === 46) {
+        removeLetter();
+        e.preventDefault();
+      }
+      if (e.keyCode >= 37 && e.keyCode <= 40) {
+        moveCursor(e.keyCode);
+        e.preventDefault();
+      }
+    });
+  }
+
+  function focusMobileInput() {
+    ensureMobileInput();
+    _mobileInput.value = '';
+    _mobileInput.focus();
+  }
+
+
   function setCursorDirection(direction) {
-    // If no direction given, toggle current direction
     if (!direction) {
       if (_focusDirection == enumDirections.Right) {
         _focusCell.classList.remove('goRight');
         _focusCell.classList.add('goDown');
         _focusDirection = enumDirections.Down;
-      }
-      else {
+      } else {
         _focusCell.classList.remove('goDown');
         _focusCell.classList.add('goRight');
         _focusDirection = enumDirections.Right;
       }
-    }
-    // Else change direction to the one needed then apply right style
-    else {
+    } else {
       _focusDirection = (_focusDirection == enumDirections.Right) ? enumDirections.Down : enumDirections.Right;
       _focusCell.classList.remove('goRight');
       _focusCell.classList.remove('goDown');
@@ -69,23 +109,14 @@ define(function () {
     }
   }
 
-  /*
-  *   Move the cursor to the next case according to the direction
-  *   @param: {Int}  direction   [Optional] If this parameter is setted, force the direction. Else just follow the cursor one.
-  *   @return: {Bool}  True if the cursor has moved, else false
-  */
   function moveCursor(direction) {
     var frameNumber = parseInt(_focusCell.getAttribute('data-pos')),
-        index = 0;
+        index       = 0;
 
-    // Retreive direction if not specified
-    if (direction == undefined)
-      direction = _focusDirection;
+    if (direction == undefined) direction = _focusDirection;
 
-    // According to the direction, check if the next frame is available
     switch (direction) {
       case enumDirections.Left:
-        // The first frame will always be a description frame
         index = frameNumber - 1;
         break;
       case enumDirections.Right:
@@ -97,139 +128,102 @@ define(function () {
       case enumDirections.Down:
         index = ((frameNumber + _nbLines) >= _grid.length) ? 0 : (frameNumber + _nbLines);
         break;
-
       default:
-        console.log('[ERROR] [Cursor.moveCursor] Unknow direction ' + direction);
+        console.log('[ERROR] [Cursor.moveCursor] Unknown direction ' + direction);
     }
 
-    // If the next frame is a letter frame, movo on it
     if (_grid[index].type == 2) {
-      // Release old frame
       _focusCell.classList.remove('goRight');
       _focusCell.classList.remove('goDown');
       _focusCell.classList.remove('focusCell');
 
-      // Focus new frame
       _focusCell = document.querySelector('.frame' + index);
       _focusCell.classList.add('focusCell');
       if (direction == enumDirections.Left || direction == enumDirections.Right) {
         _focusDirection = enumDirections.Right;
         _focusCell.classList.add('goRight');
-      }
-      else {
+      } else {
         _focusDirection = enumDirections.Down;
         _focusCell.classList.add('goDown');
       }
-
-      return (true);
+      return true;
     }
-    // Else do nothing
-    else
-      return (false);
+    return false;
   }
 
-
-  function onClickReceived(event) {
+  function activateCell(target) {
     if (_focusCell != null) {
-      // If the player clicked the same frame, just toggle the cursor direction
-      if (_focusCell == event.target) {
+      if (_focusCell == target) {
         setCursorDirection();
+        focusMobileInput();
         return;
       }
       _focusCell.classList.remove('goRight');
       _focusCell.classList.remove('goDown');
       _focusCell.classList.remove('focusCell');
     }
-
-    // Remember the cell, focus it and set default direction
-    _focusCell = event.target;
+    _focusCell = target;
     _focusCell.classList.add('focusCell');
     _focusCell.classList.add('goRight');
     _focusDirection = enumDirections.Right;
+    focusMobileInput();
   }
 
-  /*
-  * When a letter is pressed on the grid
-  */
+  function onClickReceived(event) {
+    activateCell(event.target);
+  }
+
   function onLetterPressed(event) {
     var key = event.keyCode;
-
-    // If a letter is pressed
-    if ((key >= 65) && (key <= 90)) {
-      insertLetter(key);
-    }
-
-    // If backspace / escape / del is pressed
-    if ((key == 8) || (key == 27) || (key == 46)) {
-      removeLetter();
-      event.preventDefault();
-    }
-
-    // If an arrow is pressed
-    if ((key >= 37) && (key <= 40))
-      moveCursor(key);
-
+    if ((key >= 65) && (key <= 90)) insertLetter(key);
+    if ((key == 8) || (key == 27) || (key == 46)) { removeLetter(); event.preventDefault(); }
+    if ((key >= 37) && (key <= 40)) moveCursor(key);
   }
 
-
-  /*
-  * Insert a letter in the grid
-  */
   function insertLetter(letter) {
     var character = String.fromCharCode(letter),
-        pos = parseInt(_focusCell.getAttribute('data-pos'));
+        pos       = parseInt(_focusCell.getAttribute('data-pos'));
 
-    // Print letter on grid if we can
     if ((_focusCell != null) && (_grid[pos].available == true)) {
       _focusCell.innerHTML = character;
-    
-      // Notify grid that a new letter is inserted
       _letterUpdateCallback(pos, character);
     }
-
-    // Go to the next frame
     moveCursor(_focusDirection);
   }
 
   function removeLetter() {
     var pos = parseInt(_focusCell.getAttribute('data-pos'));
-
     if (_grid[pos].available == true) {
       _focusCell.innerHTML = '';
-      
-      // Notify grid that the letter has been removed
       _letterUpdateCallback(parseInt(_focusCell.getAttribute('data-pos')), null);
     }
   }
 
 
-
-  /*-------------------------
-      
+  /*-----------------------------------------------------------------------
       Public methods
-  
-  -------------------------*/
+  -----------------------------------------------------------------------*/
 
-  /*
-  * Register to click and keyboard events
-  */
   Cursor.prototype.RegisterEvents = function () {
     var letterCases = document.querySelectorAll('.letter'),
-        size,
+        size        = letterCases.length,
         i;
 
-    // For each letter case
-    size = letterCases.length;
     for (i = 0; i < size; i++) {
-      // Register click event for cursor
+      // Desktop: click + keyboard
       letterCases[i].addEventListener('click', onClickReceived, false);
-      // Register keydown event to get letter
       letterCases[i].addEventListener('keydown', onLetterPressed, false);
-    };
 
+      // Mobile: touchend activates the cell and opens the native keyboard.
+      // preventDefault() stops the 300 ms ghost click on iOS.
+      letterCases[i].addEventListener('touchend', function (e) {
+        e.preventDefault();
+        activateCell(e.currentTarget);
+      }, { passive: false });
+    }
   };
 
 
   return (Cursor);
-  
+
 });

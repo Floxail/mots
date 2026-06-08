@@ -2,7 +2,7 @@ var util          = require('util'),
     EventEmitter  = require('events').EventEmitter,
     Player        = require('./player'),
     enums         = require('./enums'),
-    Monsters      = require('./playersLogos').Monsters;
+    PlayersLogos  = require('./playersLogos');
 
 
 function PlayersManager () {
@@ -10,6 +10,10 @@ function PlayersManager () {
   // Instance state (not module-level variables)
   this._playersList     = [];
   this._currentPlayerId = 0;
+  // Each room gets its own copy of the monsters list so rooms don't conflict
+  this._monsters = PlayersLogos.Monsters.map(function (m) {
+    return { id: m.id, path: m.path, color: m.color, player: null };
+  });
 }
 
 util.inherits(PlayersManager, EventEmitter);
@@ -53,26 +57,31 @@ PlayersManager.prototype.getNumberOfPlayers = function () {
 PlayersManager.prototype.getAvailableMonsters = function () {
   var availableMonsters = [],
       i,
-      nbLogos = Monsters.length;
+      nbLogos = this._monsters.length;
 
   for (i = 0; i < nbLogos; i++) {
-    if (Monsters[i].player == null)
-      availableMonsters.push(Monsters[i]);
+    if (this._monsters[i].player == null)
+      availableMonsters.push(this._monsters[i]);
   }
 
   return (availableMonsters);
 };
 
 PlayersManager.prototype.setMonsterToPlayer = function (player, monsterId) {
-  if ((monsterId > (Monsters.length - 1)) || (Monsters[monsterId].player != null)) {
+  monsterId = parseInt(monsterId, 10);
+  if (isNaN(monsterId) || monsterId < 0 || monsterId > (this._monsters.length - 1) || this._monsters[monsterId].player != null) {
     console.error('[ERROR] Monster ' + monsterId + ' seems to be unavailable');
     monsterId = 0;
-    while (Monsters[monsterId].player != null)
+    while (monsterId < this._monsters.length && this._monsters[monsterId].player != null)
       monsterId++;
+    if (monsterId >= this._monsters.length) {
+      console.error('[ERROR] No available monster slot');
+      return;
+    }
   }
 
-  player.setMonster(Monsters[monsterId]);
-  Monsters[monsterId].player = player.getID();
+  player.setMonster(this._monsters[monsterId]);
+  this._monsters[monsterId].player = player.getID();
 };
 
 PlayersManager.prototype.findPlayerByNick = function (nick) {
@@ -86,7 +95,7 @@ PlayersManager.prototype.findPlayerByNick = function (nick) {
 PlayersManager.prototype.getWinner = function () {
   var i,
       bestScore = 0,
-      winnerIndex;
+      winnerIndex = 0;
 
   for (i in this._playersList) {
     if (this._playersList[i].getScore() > bestScore) {
@@ -106,8 +115,8 @@ PlayersManager.prototype.resetPlayersForNewGame = function () {
   }
 
   // Reset all monster assignments so they become available again
-  for (i = 0; i < Monsters.length; i++) {
-    Monsters[i].player = null;
+  for (i = 0; i < this._monsters.length; i++) {
+    this._monsters[i].player = null;
   }
 };
 

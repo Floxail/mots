@@ -5,6 +5,7 @@ html
 
     <link href="/images/favicon.ico" rel="icon" type="image/ico" />
     <meta charset='utf-8'>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Mots.js</title>
 
     <link href="stylesheets/mfl.css" media="screen" rel="stylesheet" type="text/css" />
@@ -13,10 +14,39 @@ html
 
   body.
 
-    <!-- Loading page -->
-    <div id="loading-panel" class='ui ui-displayed'>
+    <!-- Lobby panel — shown first, lets players create/join a room or go solo -->
+    <div id="lobby-panel" class='ui ui-displayed'>
+      <header>
+        <div class="lp-case lp-title">M</div><div class="lp-case lp-title">O</div><div class="lp-case lp-title">T</div><div class="lp-case lp-title">S</div><div class="lp-case lp-title">.</div><div class="lp-case lp-title">J</div><div class="lp-case lp-title">S</div>
+      </header>
 
+      <section id="lobby-section">
+
+        <div id="lobby-rooms">
+          <div id="lobby-room-list"><em class="lobby-connecting">Connexion au serveur...</em></div>
+        </div>
+
+        <div id="lobby-actions">
+          <div class="lobby-group">
+            <input type="number" id="lobby-grid-input" placeholder="N° de grille (vide = du jour)" min="1">
+            <input type="button" id="lobby-create-btn" value="Créer une salle">
+          </div>
+
+          <p class="lobby-sep">— ou rejoindre —</p>
+
+          <div class="lobby-group">
+            <input type="text" id="lobby-code-input" placeholder="Code de salle (ex: AB3C)" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="characters">
+            <input type="button" id="lobby-join-btn" value="Rejoindre">
+          </div>
+
+          <p class="lobby-sep">— ou —</p>
+
+          <input type="button" id="lobby-solo-btn" value="Jouer en solo">
+        </div>
+
+      </section>
     </div>
+
 
     <!-- Login page -->
     <div id="login-panel" class='ui'>
@@ -25,8 +55,7 @@ html
       </header>
 
       <section id="lp-infos">
-        <!-- <label>Votre pseudo ></label> -->
-        <input type="text" id="lp-nick" value="" placeholder="Votre pseudo">
+        <input type="text" id="lp-nick" value="" placeholder="Votre pseudo" autocomplete="off">
 
         <div id="lp-logos"></div>
 
@@ -49,6 +78,12 @@ html
       <section id="gs-grid-container"></section>
 
       <section id="gs-scores"></section>
+
+      <div id="tab-bar">
+        <button class="tab-btn" data-tab="grid">Grille</button>
+        <button class="tab-btn" data-tab="score">Scores</button>
+        <button class="tab-btn" data-tab="chat">Chat <span id="chat-badge" class="chat-badge"></span></button>
+      </div>
 
     </div>
 

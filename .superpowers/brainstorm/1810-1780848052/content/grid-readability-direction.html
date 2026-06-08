@@ -1,0 +1,205 @@
+<h2>Grille : quel problème en priorité ?</h2>
+<p class="subtitle">Choisis ce qui te dérange le plus dans la grille actuelle. Multi-select OK.</p>
+
+<style>
+.mockup-grid {
+  display: inline-grid;
+  border: 2px solid #555;
+  gap: 1px;
+  background: #555;
+  font-family: monospace;
+  margin: 8px 0;
+}
+.cell {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: bold;
+}
+.cell-letter { background: #fff; color: #222; }
+.cell-letter.found-p1 { background: #a8d8a8; color: #222; }
+.cell-letter.found-p2 { background: #a8c4f0; color: #222; }
+.cell-letter.found-p3 { background: #f0c8a8; color: #222; }
+.cell-black { background: #222; color: #fff; font-size: 9px; text-align: center; line-height: 1.2; padding: 2px; }
+.cell-empty { background: #333; }
+
+.mockup-score {
+  font-size: 12px;
+  background: #1a1a2e;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #eee;
+  margin-top: 6px;
+}
+.player-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+.swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+</style>
+
+<div class="options" data-multiselect>
+
+  <div class="option" data-choice="contrast" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Contraste &amp; lisibilité des cases</h3>
+      <p>Cases lettres trop petites ou peu contrastées. Difficile de lire les définitions dans les cases noires.</p>
+      <div class="mockup" style="padding:8px">
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <div>
+            <div class="label" style="font-size:10px;margin-bottom:4px">Actuel</div>
+            <div class="mockup-grid" style="grid-template-columns:repeat(4,36px)">
+              <div class="cell cell-black" style="font-size:8px">→ Chat<br>↓ Film</div>
+              <div class="cell cell-letter">M</div>
+              <div class="cell cell-letter">O</div>
+              <div class="cell cell-letter">T</div>
+              <div class="cell cell-letter">C</div>
+              <div class="cell cell-letter found-p1">A</div>
+              <div class="cell cell-letter">P</div>
+              <div class="cell cell-letter">O</div>
+              <div class="cell cell-empty"></div>
+              <div class="cell cell-letter">I</div>
+              <div class="cell cell-black" style="font-size:8px">→ Mer</div>
+              <div class="cell cell-letter">N</div>
+            </div>
+          </div>
+          <div>
+            <div class="label" style="font-size:10px;margin-bottom:4px">Amélioré</div>
+            <div class="mockup-grid" style="grid-template-columns:repeat(4,42px)">
+              <div class="cell cell-black" style="width:42px;height:42px;font-size:9px">→ Chat<br>↓ Film</div>
+              <div class="cell cell-letter" style="width:42px;height:42px;font-size:15px">M</div>
+              <div class="cell cell-letter" style="width:42px;height:42px;font-size:15px">O</div>
+              <div class="cell cell-letter" style="width:42px;height:42px;font-size:15px">T</div>
+              <div class="cell cell-letter" style="width:42px;height:42px;font-size:15px">C</div>
+              <div class="cell cell-letter found-p1" style="width:42px;height:42px;font-size:15px">A</div>
+              <div class="cell cell-letter" style="width:42px;height:42px;font-size:15px">P</div>
+              <div class="cell cell-letter" style="width:42px;height:42px;font-size:15px">O</div>
+              <div class="cell cell-empty" style="width:42px;height:42px"></div>
+              <div class="cell cell-letter" style="width:42px;height:42px;font-size:15px">I</div>
+              <div class="cell cell-black" style="width:42px;height:42px;font-size:9px">→ Mer</div>
+              <div class="cell cell-letter" style="width:42px;height:42px;font-size:15px">N</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="player-words" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Voir qui a trouvé quoi</h3>
+      <p>Les mots trouvés s'affichent en couleur mais difficile de savoir précisément la contribution de chaque joueur sur la grille.</p>
+      <div class="mockup" style="padding:8px">
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <div>
+            <div class="label" style="font-size:10px;margin-bottom:4px">Actuel — couleurs sur grille seulement</div>
+            <div class="mockup-grid" style="grid-template-columns:repeat(4,36px)">
+              <div class="cell cell-black" style="font-size:8px">→ Chat</div>
+              <div class="cell cell-letter found-p1">C</div>
+              <div class="cell cell-letter found-p1">H</div>
+              <div class="cell cell-letter found-p1">A</div>
+              <div class="cell cell-black" style="font-size:8px">→ Film</div>
+              <div class="cell cell-letter found-p2">F</div>
+              <div class="cell cell-letter found-p2">I</div>
+              <div class="cell cell-letter found-p2">L</div>
+              <div class="cell cell-black" style="font-size:8px">↓ Mer</div>
+              <div class="cell cell-letter">M</div>
+              <div class="cell cell-letter">E</div>
+              <div class="cell cell-letter">R</div>
+            </div>
+            <div class="mockup-score">
+              <div class="player-row"><span class="swatch" style="background:#a8d8a8"></span> Player1 — 12 pts · 3 mots</div>
+              <div class="player-row"><span class="swatch" style="background:#a8c4f0"></span> Player2 — 8 pts · 2 mots</div>
+            </div>
+          </div>
+          <div>
+            <div class="label" style="font-size:10px;margin-bottom:4px">Amélioré — liste mots par joueur</div>
+            <div class="mockup-grid" style="grid-template-columns:repeat(4,36px)">
+              <div class="cell cell-black" style="font-size:8px">→ Chat</div>
+              <div class="cell cell-letter found-p1">C</div>
+              <div class="cell cell-letter found-p1">H</div>
+              <div class="cell cell-letter found-p1">A</div>
+              <div class="cell cell-black" style="font-size:8px">→ Film</div>
+              <div class="cell cell-letter found-p2">F</div>
+              <div class="cell cell-letter found-p2">I</div>
+              <div class="cell cell-letter found-p2">L</div>
+              <div class="cell cell-black" style="font-size:8px">↓ Mer</div>
+              <div class="cell cell-letter">M</div>
+              <div class="cell cell-letter">E</div>
+              <div class="cell cell-letter">R</div>
+            </div>
+            <div class="mockup-score">
+              <div class="player-row"><span class="swatch" style="background:#a8d8a8"></span> Player1 — 12 pts · <em>CHAT, ARBRE, SOL</em></div>
+              <div class="player-row"><span class="swatch" style="background:#a8c4f0"></span> Player2 — 8 pts · <em>FILM, ROSE</em></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="arrows" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Flèches &amp; définitions illisibles</h3>
+      <p>Les flèches dans les cases noires sont confuses. Les définitions débordent ou sont trop petites.</p>
+      <div class="mockup" style="padding:8px">
+        <div style="display:flex;gap:16px;align-items:center">
+          <div>
+            <div class="label" style="font-size:10px;margin-bottom:4px">Actuel</div>
+            <div class="mockup-grid" style="grid-template-columns:repeat(2,50px)">
+              <div class="cell cell-black" style="width:50px;height:50px;font-size:8px;line-height:1.1">→ Animal<br>↓ Liquide froid</div>
+              <div class="cell cell-letter" style="width:50px;height:50px">E</div>
+              <div class="cell cell-letter" style="width:50px;height:50px">A</div>
+              <div class="cell cell-letter" style="width:50px;height:50px">U</div>
+            </div>
+          </div>
+          <div>
+            <div class="label" style="font-size:10px;margin-bottom:4px">Amélioré — tooltip au hover</div>
+            <div class="mockup-grid" style="grid-template-columns:repeat(2,50px)">
+              <div class="cell cell-black" style="width:50px;height:50px;font-size:10px;position:relative" title="→ Animal&#10;↓ Liquide froid">
+                <span style="font-size:14px">→↓</span>
+                <span style="position:absolute;bottom:2px;right:2px;font-size:8px;opacity:0.6">···</span>
+              </div>
+              <div class="cell cell-letter" style="width:50px;height:50px">E</div>
+              <div class="cell cell-letter" style="width:50px;height:50px">A</div>
+              <div class="cell cell-letter" style="width:50px;height:50px">U</div>
+            </div>
+            <div style="font-size:10px;color:#aaa;margin-top:4px">Tooltip au survol = texte complet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="responsive" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Le jeu ne marche pas sur mobile/tablette</h3>
+      <p>La grille déborde, les boutons sont trop petits, le chat est inaccessible sur petit écran.</p>
+      <div class="mockup" style="padding:8px">
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <div style="width:80px;background:#111;border-radius:8px;padding:6px;font-size:9px;color:#aaa">
+            <div style="background:#333;height:20px;margin-bottom:4px;border-radius:3px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:8px">🔠 Grille déborde →</div>
+            <div style="display:grid;grid-template-columns:repeat(6,10px);gap:1px;background:#555;margin-bottom:4px">
+              <div style="background:#fff;height:10px"></div><div style="background:#222;height:10px"></div><div style="background:#fff;height:10px"></div><div style="background:#fff;height:10px"></div><div style="background:#fff;height:10px"></div><div style="background:#fff;height:10px;opacity:0.3">…</div>
+            </div>
+            <div style="background:#1a1a2e;height:30px;border-radius:3px;font-size:8px;display:flex;align-items:center;justify-content:center">Chat caché</div>
+          </div>
+          <div style="width:100px;background:#111;border-radius:8px;padding:6px;font-size:9px;color:#aaa">
+            <div style="margin-bottom:3px;font-size:8px;color:#4caf50">✓ Vue adaptée</div>
+            <div style="display:grid;grid-template-columns:repeat(4,20px);gap:1px;background:#555;margin-bottom:4px">
+              <div style="background:#fff;height:20px"></div><div style="background:#222;height:20px"></div><div style="background:#fff;height:20px"></div><div style="background:#fff;height:20px"></div>
+              <div style="background:#a8d8a8;height:20px"></div><div style="background:#fff;height:20px"></div><div style="background:#222;height:20px"></div><div style="background:#fff;height:20px"></div>
+            </div>
+            <div style="background:#1a1a2e;height:20px;border-radius:3px;font-size:8px;display:flex;align-items:center;justify-content:center">Scores ↕</div>
+            <div style="background:#0d1117;height:15px;border-radius:3px;margin-top:2px;font-size:8px;display:flex;align-items:center;justify-content:center">Chat ↕</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

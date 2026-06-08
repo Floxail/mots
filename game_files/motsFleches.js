@@ -3,352 +3,428 @@ var enums           = require('./enums'),
     GridManager     = require('./gridManager'),
     PlayersManager  = require('./playersManager');
 
-// Defines
-var MAX_PLAYERS   = 9;
-var SERVER_CHAT_COLOR = '#c0392b';
-var TIME_BEFORE_START = 5;
+var MAX_PLAYERS          = 9;
+var SERVER_CHAT_COLOR    = '#c0392b';
+var TIME_BEFORE_START    = 5;
+var ROOM_INACTIVITY_MS   = 60 * 60 * 1000; // 60 minutes before room cleanup
 
-// Parameters
-var _playersManager,
-    _gridManager,
-    _io,
-    _gameState,
-    _lastWordFoudTimestamp;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function startGame() {
-  var Grid  = _gridManager.getGrid(),
-      delay;
-
-  delay = (_playersManager.getNumberOfPlayers() > 1) ? TIME_BEFORE_START : 0;
-
-  // Change game state
-  _gameState = enums.ServerState.OnGame;
-
-  // Send grid to clients
-  _io.sockets.emit('grid_event', { grid: Grid, timer: delay } );
+function generateRoomId() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I ambiguity
+  var id = '';
+  for (var i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id;
 }
 
-function resetGame(gridID) {
-  var infos;
+// ─── GameRoom ─────────────────────────────────────────────────────────────────
 
-  // Reset game state
-  _gameState = enums.ServerState.WaitingForPlayers;
-
-  // Reset players
-  _playersManager.resetPlayersForNewGame();
-
-  // Reset the grid
-  _gridManager.resetGrid(gridID, function (grid) {
-    if (grid == null) {
-      // If an error occurs, exit
-      console.error('[ERROR] Cannot retreive requested grid [' + gridID + ']');
-      sendChatMessage('Oups, impossible de récupérer la grille ' + gridID + '!');
-    }
-    else {
-      infos = _gridManager.getGridInfos();
-      sendChatMessage('Grille ' + infos.provider + ' ' + infos.id + ' (Niveau ' + infos.level + ') prête !');
-
-      // Send reset order to clients, then start game automatically
-      _io.sockets.emit('grid_reset');
-      startGame();
-    }
-  });
+function GameRoom(id, io, onInactive) {
+  this.id              = id;
+  this._io             = io;
+  this.gridManager     = new GridManager();
+  this.playersManager  = new PlayersManager();
+  this.gameState       = enums.ServerState.WaitingForPlayers;
+  this.lastWordFoundTs = null;
+  this.gridReady       = false;
+  this._foundWords     = []; // {word, axis, start, color} for replay on rejoin
+  this._lastActivity   = Date.now();
+  this._onInactive     = onInactive || null;
+  this._inactivityTimer = null;
+  this._startInactivityTimer();
 }
 
-function playerLog (socket, nick, monsterId) {
-  var gridInfos = _gridManager.getGridInfos();
-  var player = socket.playerInstance;
+GameRoom.prototype.touchActivity = function () {
+  this._lastActivity = Date.now();
+};
 
-  if (!player) {
-    console.error('No PlayerInstance on socket');
-    return;
+GameRoom.prototype._startInactivityTimer = function () {
+  var self = this;
+  this._inactivityTimer = setInterval(function () {
+    if (Date.now() - self._lastActivity >= ROOM_INACTIVITY_MS) {
+      console.log('[SERVER] Room ' + self.id + ' — closed after 60 min of inactivity');
+      self.destroy();
+    }
+  }, 60 * 1000); // check every minute
+};
+
+GameRoom.prototype.destroy = function () {
+  clearInterval(this._inactivityTimer);
+  this.broadcast('room_closed');
+  // Disconnect all sockets in this room
+  var roomSockets = this._io.sockets.adapter.rooms.get(this.id);
+  if (roomSockets) {
+    roomSockets.forEach(function (socketId) {
+      var s = this._io.sockets.sockets.get(socketId);
+      if (s) s.disconnect(true);
+    }.bind(this));
   }
+  if (this._onInactive) this._onInactive(this.id);
+};
 
-  // Set new player parameters
-  player.setNick(nick);
-  _playersManager.setMonsterToPlayer(player, monsterId);
-  // Refresh monster list for unready players
-  _io.sockets.emit('logos', _playersManager.getAvailableMonsters());
+GameRoom.prototype.broadcast = function (event, data) {
+  this._io.to(this.id).emit(event, data);
+};
 
-  // Bind found word event
-  socket.on('wordValidation', function (wordObj) {
-    // Validate word object structure
-    if (!wordObj || typeof wordObj.word !== 'string' || typeof wordObj.start !== 'number' || (wordObj.axis !== 0 && wordObj.axis !== 1)) return;
-    if (wordObj.word.length === 0 || wordObj.word.length > 50) return;
-    checkWord(player, wordObj);
+GameRoom.prototype.sendChat = function (message, sender, color, playerList) {
+  if (sender === undefined) { sender = 'server'; color = SERVER_CHAT_COLOR; }
+  this.touchActivity();
+  this.broadcast('chat', { message: message, from: sender, color: color, players: playerList });
+};
+
+GameRoom.prototype.sendToSocket = function (socket, message) {
+  socket.emit('chat', { message: message, from: 'server', color: SERVER_CHAT_COLOR });
+};
+
+GameRoom.prototype.startGame = function () {
+  var grid  = this.gridManager.getGrid();
+  var delay = this.playersManager.getNumberOfPlayers() > 1 ? TIME_BEFORE_START : 0;
+  this.gameState = enums.ServerState.OnGame;
+  this.broadcast('grid_event', { grid: grid, timer: delay });
+};
+
+GameRoom.prototype.resetGame = function (gridId) {
+  var self = this;
+  self.gameState = enums.ServerState.WaitingForPlayers;
+  self._foundWords = [];
+  self.lastWordFoundTs = null;
+  self.gridReady = false;
+  self.playersManager.resetPlayersForNewGame();
+  self.gridManager.resetGrid(gridId, function (grid) {
+    if (!grid) {
+      console.error('[ERROR] Cannot retreive requested grid [' + gridId + ']');
+      self.sendChat('Oups, impossible de récupérer la grille ' + gridId + ' !');
+    } else {
+      self.gridReady = true;
+      var infos = self.gridManager.getGridInfos();
+      self.sendChat('Grille ' + infos.provider + ' ' + infos.id + ' (Niveau ' + infos.level + ') prête !');
+      self.broadcast('grid_reset');
+      self.startGame();
+    }
   });
+};
 
-  // Notify everyone about the new client
-  sendChatMessage( nick + ' a rejoint la partie !<br/>' + _playersManager.getNumberOfPlayers() + ' joueurs connectés', undefined, undefined, _playersManager.getPlayerList());
+GameRoom.prototype.bonusChecker = function (playerPoints, nbWordsRemaining) {
+  var bonus = { points: 0, bonusList: [] };
+  var now = Date.now();
 
-  // Send grid informations to the player
-  sendPlayerMessage(socket, 'Grille actuelle: ' + gridInfos.provider + ' ' + gridInfos.id + ' (Niveau ' + gridInfos.level + ')');
-}
-
-function bonusChecker(playerPoints, nbWordsRemaining) {
-  var bonus = {
-    points: 0,
-    bonusList: []
-  },
-  now = new Date().getTime();
-
-  // If it's the first word, add 4 bonus points
-  if (_lastWordFoudTimestamp == null) {
-    bonus.bonusList.push( { title: "Preum's !", points: 4 } );
+  if (this.lastWordFoundTs == null) {
+    bonus.bonusList.push({ title: "Preum's !", points: 4 });
     bonus.points += 4;
   }
-
-  // If it's the last word
   if (nbWordsRemaining <= 0) {
-    bonus.bonusList.push( { title: 'Finish him !', points: 4 } );
+    bonus.bonusList.push({ title: 'Finish him !', points: 4 });
     bonus.points += 4;
   }
-
-  // If it's the first word since the last 2 minutes, 5 points
-  if ((now - _lastWordFoudTimestamp) > 120000) {
-    bonus.bonusList.push( { title: 'Débloqueur', points: 5 } );
+  if (this.lastWordFoundTs !== null && (now - this.lastWordFoundTs) > 120000) {
+    bonus.bonusList.push({ title: 'Débloqueur', points: 5 });
     bonus.points += 5;
   }
-
-  // If it's a big word, add 3 points
   if (playerPoints >= 6) {
-    bonus.bonusList.push( { title: 'Gros mot !', points: 3 } );
+    bonus.bonusList.push({ title: 'Gros mot !', points: 3 });
     bonus.points += 3;
   }
+  return bonus;
+};
 
-  return (bonus);
-}
-
-function checkWord(player, wordObj) {
-  var points,
-      bonuses;
-
-  // Check word
-  points = _gridManager.checkPlayerWord(wordObj);
-
-  // If the players has some points, it's mean it's the right word ! Notify players about it
+GameRoom.prototype.checkWord = function (player, wordObj) {
+  this.touchActivity();
+  var points = this.gridManager.checkPlayerWord(wordObj);
   if (points >= 0) {
-
-    // Notify all clients about this word
     wordObj.color = player.getColor();
-    _io.sockets.emit('word_founded', wordObj);
-
-    // Notify chat about the found word
-    sendChatMessage('<strong>' + player.getNick() + '</strong> a trouvé <strong>' + wordObj.word + '</strong> (+' + points + ' pts) !');
-
-    // Check for bonuses
-    bonuses = bonusChecker(points, _gridManager.getNbRemainingWords());
-
-    // Remember time this last word had been found
-    _lastWordFoudTimestamp = new Date().getTime();
-
-    // Update player score and notify clients
+    this._foundWords.push({ word: wordObj.word, axis: wordObj.axis, start: wordObj.start, color: wordObj.color });
+    this.broadcast('word_founded', wordObj);
+    var bonuses = this.bonusChecker(points, this.gridManager.getNbRemainingWords());
+    this.lastWordFoundTs = Date.now();
     player.updateScore(points + bonuses.points);
-    _io.sockets.emit('score_update', { playerID: player.getID(), score: player.getScore(), words: player.getNbWords(), progress: _gridManager.getAccomplishmentRate(player.getScore(), _playersManager.getNumberOfPlayers()), bonus: bonuses.bonusList } );
 
-    if (_gridManager.getNbRemainingWords() <= 0) {
-      console.log('[SERVER] Game over ! Sending player\'s notification...');
-      _io.sockets.emit('game_over', _playersManager.getWinner().getPlayerObject());
+    var chatMsg = '<strong>' + player.getNick() + '</strong> a trouvé <strong>' + wordObj.word + '</strong> (+' + points + ' pts)';
+    if (bonuses.bonusList.length > 0) {
+      for (var b = 0; b < bonuses.bonusList.length; b++) {
+        chatMsg += ' 🏆 <em>' + bonuses.bonusList[b].title + '</em> (+' + bonuses.bonusList[b].points + ')';
+      }
+    }
+    chatMsg += ' !';
+    this.sendChat(chatMsg);
+
+    this.broadcast('score_update', {
+      playerID: player.getID(),
+      score:    player.getScore(),
+      words:    player.getNbWords(),
+      progress: this.gridManager.getAccomplishmentRate(player.getScore(), this.playersManager.getNumberOfPlayers()),
+      bonus:    bonuses.bonusList
+    });
+
+    if (this.gridManager.getNbRemainingWords() <= 0) {
+      console.log('[SERVER] Room ' + this.id + ' — game over!');
+      this.broadcast('game_over', this.playersManager.getWinner().getPlayerObject());
     }
   }
-}
+};
 
-function checkServerCommand(message) {
-  var number;
-
-  // If it's not a server command
-  if (message[0] != '!')
-    return (false);
-
-  // Check the start command
-  if ((_gameState == enums.ServerState.WaitingForPlayers) && (message == '!start')) {
-    startGame();
-    return (true);
+// Send full game state to a (re)joining socket: grid, found words, all scores
+GameRoom.prototype.sendGameState = function (socket, player) {
+  socket.emit('grid_event', { grid: this.gridManager.getGrid(), timer: 0 });
+  if (this._foundWords.length > 0) {
+    socket.emit('found_words', this._foundWords);
   }
-
-  // Check the change grid command
-  if (message.indexOf('!grid') >= 0) {
-    // Retreive grid number and reset game parameters
-    number = parseInt(message.substr(6));
-    resetGame(number);
-    return (true);
+  // Send score_update for every player so the panel is fully populated
+  var players = this.playersManager.getPlayerList();
+  var nbPlayers = this.playersManager.getNumberOfPlayers();
+  for (var i = 0; i < players.length; i++) {
+    socket.emit('score_update', {
+      playerID: players[i].id,
+      score:    players[i].score,
+      words:    players[i].nbWords,
+      progress: this.gridManager.getAccomplishmentRate(players[i].score, nbPlayers),
+      bonus:    []
+    });
   }
+};
 
-  return (false);
-}
-
-function sendChatMessage(Message, sender, color, playerList) {
-  if (sender === undefined) {
-    sender = 'server';
-    color = SERVER_CHAT_COLOR;
+GameRoom.prototype.checkServerCommand = function (message) {
+  if (message[0] !== '!') return false;
+  if (this.gameState === enums.ServerState.WaitingForPlayers && message === '!start') {
+    if (!this.gridReady) {
+      this.sendChat('Grille en cours de chargement, réessaie dans un instant.');
+      return true;
+    }
+    this.startGame();
+    return true;
   }
+  if (message.indexOf('!grid') === 0) {
+    var number = parseInt(message.substr(6));
+    this.resetGame(isNaN(number) ? 0 : number);
+    return true;
+  }
+  return false;
+};
 
-  _io.sockets.emit('chat', { message: Message, from: sender, color: color, players: playerList } );
-}
+GameRoom.prototype.playerLog = function (socket, nick, monsterId) {
+  var self   = this;
+  var player = socket.playerInstance;
+  if (!player) { console.error('No PlayerInstance on socket'); return; }
 
-function sendPlayerMessage(socket, Message) {
-  socket.emit('chat', { message: Message, from: 'server', color: SERVER_CHAT_COLOR });
-}
+  var gridInfos = this.gridManager.getGridInfos();
+  player.setNick(nick);
+  this.playersManager.setMonsterToPlayer(player, monsterId);
+
+  // Refresh available monsters for everyone in this room
+  this.broadcast('logos', this.playersManager.getAvailableMonsters());
+
+  // Bind word validation for this player
+  socket.on('wordValidation', function (wordObj) {
+    if (!wordObj || typeof wordObj.word !== 'string' || typeof wordObj.start !== 'number') return;
+    if (wordObj.axis !== 0 && wordObj.axis !== 1) return;
+    if (wordObj.word.length === 0 || wordObj.word.length > 50) return;
+    self.checkWord(player, wordObj);
+  });
+
+  this.sendChat(
+    nick + ' a rejoint la partie !<br/>' + this.playersManager.getNumberOfPlayers() + ' joueurs connectés',
+    undefined, undefined,
+    this.playersManager.getPlayerList()
+  );
+  this.sendToSocket(socket, 'Grille actuelle : ' + gridInfos.provider + ' ' + gridInfos.id + ' (Niveau ' + gridInfos.level + ')');
+};
 
 
-/**
- *  Start mfl server.
- */
+// ─── Server entry point ───────────────────────────────────────────────────────
+
 exports.startMflServer = function (desiredGrid, httpServer) {
-  // Instanciate io module with proper parameters
   var { Server } = require('socket.io');
-  _io = new Server(httpServer, {
-    cors: { origin: '*' }
-  });
+  var io = new Server(httpServer, { cors: { origin: '*' } });
 
-  // Retreive the grid
-  _gridManager = new GridManager();
-  _gridManager.retreiveAndParseGrid(desiredGrid, function (grid) {
-    if (grid == null) {
-      // If an error occurs, exit
-      console.error('[ERROR] Cannot retreive grid. Abort server.');
-      process.exit(1);
-    }
-  });
+  var rooms = new Map(); // roomId → GameRoom
 
-  // Create playersManager instance and register events
-  _playersManager = new PlayersManager();
-  _playersManager.on('players-ready', function () {
-  });
+  // ── Helpers ──
 
+  function getRoomList() {
+    var list = [];
+    rooms.forEach(function (room) {
+      list.push({
+        id:          room.id,
+        playerCount: room.playersManager.getNumberOfPlayers(),
+        gameState:   room.gameState,
+        gridReady:   room.gridReady,
+        gridInfo:    room.gridReady ? room.gridManager.getGridInfos() : null
+      });
+    });
+    return list;
+  }
 
-  // On new client connection
-  _io.sockets.on('connection', function (socket) {
+  function broadcastRoomList() {
+    io.emit('roomList', getRoomList());
+  }
 
-    // If it remains slots in the room, add player and bind events
-    if ((_gameState == enums.ServerState.WaitingForPlayers) && (_playersManager.getNumberOfPlayers() < MAX_PLAYERS)) {
+  // ── Per-socket game logic ──
 
-      // Add new player
-      var player = _playersManager.addNewPlayer(socket);
+  function bindChatHandler(socket, room) {
+    socket.on('chat', function (message) {
+      if (typeof message !== 'string') return;
+      message = message.trim().substring(0, 200);
+      if (!message) return;
+      if (room.checkServerCommand(message) === false) {
+        var p = socket.playerInstance;
+        if (p) room.sendChat(message, p.getNick(), p.getColor());
+      }
+    });
+  }
 
-      // Store player instance directly on the socket
+  function bindWordHandler(socket, room, player) {
+    socket.on('wordValidation', function (wordObj) {
+      if (!wordObj || typeof wordObj.word !== 'string' || typeof wordObj.start !== 'number') return;
+      if (wordObj.axis !== 0 && wordObj.axis !== 1) return;
+      if (wordObj.word.length === 0 || wordObj.word.length > 50) return;
+      room.checkWord(player, wordObj);
+    });
+  }
+
+  function registerPlayerInRoom(socket, room) {
+    room.touchActivity();
+    var isWaiting   = room.gameState === enums.ServerState.WaitingForPlayers;
+    var hasSlot     = room.playersManager.getNumberOfPlayers() < MAX_PLAYERS;
+
+    // ── Normal pre-game join ──
+    if (isWaiting && hasSlot) {
+      var player = room.playersManager.addNewPlayer(socket);
       socket.playerInstance = player;
 
-      // Register to socket events
       socket.on('disconnect', function () {
-        var player = socket.playerInstance;
-        if (player) {
-          // Only remove from list if game hasn't started (allow rejoin during game)
-          if (_gameState == enums.ServerState.WaitingForPlayers) {
-            sendChatMessage( player.getNick() + ' a quitté la partie');
-            _playersManager.removePlayer(player);
-          } else {
-            sendChatMessage( player.getNick() + ' s\'est déconnecté (peut revenir avec le même pseudo)');
+        var p = socket.playerInstance;
+        if (!p) return;
+        if (room.gameState === enums.ServerState.WaitingForPlayers) {
+          room.sendChat(p.getNick() + ' a quitté la partie');
+          room.playersManager.removePlayer(p);
+          if (room.playersManager.getNumberOfPlayers() === 0) {
+            clearInterval(room._inactivityTimer);
+            rooms.delete(room.id);
           }
+        } else {
+          room.sendChat(p.getNick() + ' s\'est déconnecté (peut revenir avec le même pseudo)');
         }
+        broadcastRoomList();
       });
 
-      socket.on('userIsReady', function (infos) {
-        // Validate nick
+      socket.once('userIsReady', function (infos) {
         if (!infos || typeof infos.nick !== 'string') return;
         var nick = infos.nick.trim().substring(0, 20);
-        if (nick.length === 0) return;
+        if (!nick) return;
 
-        if (_gameState == enums.ServerState.WaitingForPlayers) {
-          // Normal lobby join
-          playerLog(socket, nick, infos.monster);
+        if (room.gameState === enums.ServerState.WaitingForPlayers) {
+          room.playerLog(socket, nick, infos.monster);
+          broadcastRoomList();
         } else {
-          // Game in progress — check if this nick belongs to a disconnected player
-          var rejoiningPlayer = _playersManager.findPlayerByNick(nick);
-          if (rejoiningPlayer) {
-            rejoiningPlayer.updateSocket(socket);
-            socket.playerInstance = rejoiningPlayer;
-            // Send player list in chat so client rebuilds the score panel first
-            sendChatMessage('<strong>' + nick + '</strong> a rejoint la partie !', undefined, undefined, _playersManager.getPlayerList());
-            // Resend current grid state and score after the chat (client processes events in order)
-            socket.emit('grid_event', { grid: _gridManager.getGrid(), timer: 0 });
-            socket.emit('score_update', { playerID: rejoiningPlayer.getID(), score: rejoiningPlayer.getScore(), words: rejoiningPlayer.getNbWords(), progress: _gridManager.getAccomplishmentRate(rejoiningPlayer.getScore(), _playersManager.getNumberOfPlayers()), bonus: [] });
+          // Started while player was on login screen
+          var rejoiner = room.playersManager.findPlayerByNick(nick);
+          if (rejoiner) {
+            rejoiner.updateSocket(socket);
+            socket.playerInstance = rejoiner;
+            room.sendChat('<strong>' + nick + '</strong> a rejoint la partie !', undefined, undefined, room.playersManager.getPlayerList());
+            room.sendGameState(socket, rejoiner);
+            bindChatHandler(socket, room);
+            bindWordHandler(socket, room, rejoiner);
           } else {
-            // No matching player — game is full/started
             socket.emit('game_already_started');
             socket.disconnect(true);
           }
         }
       });
 
-      socket.on('chat', function (message) {
-        // Validate message
-        if (typeof message !== 'string') return;
-        message = message.trim().substring(0, 200);
-        if (message.length === 0) return;
+      bindChatHandler(socket, room);
+      socket.emit('logos', room.playersManager.getAvailableMonsters());
 
-        // If it's a message for the server, treat it
-        // Else broadcast the message to everyone
-        if (checkServerCommand(message) == false) {
-          var player = socket.playerInstance;
-          if (player)
-            sendChatMessage(message, player.getNick(), player.getColor());
-        }
-      });
-
-      // Send to the player availables logos
-      socket.emit('logos', _playersManager.getAvailableMonsters());
-    }
-    // Else: game in progress — allow rejoin OR new player if slots remain
-    else {
-      // Send logos if there's still room, null if full
-      socket.emit('logos', _playersManager.getNumberOfPlayers() < MAX_PLAYERS ? _playersManager.getAvailableMonsters() : null);
+    // ── Game already in progress — allow rejoin or late join ──
+    } else {
+      socket.emit('logos', hasSlot ? room.playersManager.getAvailableMonsters() : null);
 
       socket.once('userIsReady', function (infos) {
         if (!infos || typeof infos.nick !== 'string') return;
         var nick = infos.nick.trim().substring(0, 20);
-        if (nick.length === 0) return;
+        if (!nick) return;
 
-        var rejoiningPlayer = _playersManager.findPlayerByNick(nick);
-        if (rejoiningPlayer) {
-          // Reconnect an existing player
-          rejoiningPlayer.updateSocket(socket);
-          socket.playerInstance = rejoiningPlayer;
-          // Send player list in chat so client rebuilds the score panel first
-          sendChatMessage('<strong>' + nick + '</strong> a rejoint la partie !', undefined, undefined, _playersManager.getPlayerList());
-          socket.emit('grid_event', { grid: _gridManager.getGrid(), timer: 0 });
-          socket.emit('score_update', { playerID: rejoiningPlayer.getID(), score: rejoiningPlayer.getScore(), words: rejoiningPlayer.getNbWords(), progress: _gridManager.getAccomplishmentRate(rejoiningPlayer.getScore(), _playersManager.getNumberOfPlayers()), bonus: [] });
+        var rejoiner = room.playersManager.findPlayerByNick(nick);
 
-          socket.on('chat', function (message) {
-            if (typeof message !== 'string') return;
-            message = message.trim().substring(0, 200);
-            if (message.length === 0) return;
-            if (checkServerCommand(message) == false) {
-              var p = socket.playerInstance;
-              if (p) sendChatMessage(message, p.getNick(), p.getColor());
-            }
-          });
-          socket.on('wordValidation', function (wordObj) {
-            if (!wordObj || typeof wordObj.word !== 'string' || typeof wordObj.start !== 'number' || (wordObj.axis !== 0 && wordObj.axis !== 1)) return;
-            if (wordObj.word.length === 0 || wordObj.word.length > 50) return;
-            checkWord(rejoiningPlayer, wordObj);
-          });
-        } else if (_playersManager.getNumberOfPlayers() < MAX_PLAYERS) {
-          // New player joining a game already in progress
-          var player = _playersManager.addNewPlayer(socket);
+        if (rejoiner) {
+          // Reconnect existing player
+          rejoiner.updateSocket(socket);
+          socket.playerInstance = rejoiner;
+          room.sendChat('<strong>' + nick + '</strong> a rejoint la partie !', undefined, undefined, room.playersManager.getPlayerList());
+          room.sendGameState(socket, rejoiner);
+          bindChatHandler(socket, room);
+          bindWordHandler(socket, room, rejoiner);
+
+        } else if (room.playersManager.getNumberOfPlayers() < MAX_PLAYERS) {
+          // New player joining a game already underway
+          var player = room.playersManager.addNewPlayer(socket);
           socket.playerInstance = player;
-          playerLog(socket, nick, infos.monster);
-          // Send the current grid state so they can play immediately
-          socket.emit('grid_event', { grid: _gridManager.getGrid(), timer: 0 });
-          socket.on('chat', function (message) {
-            if (typeof message !== 'string') return;
-            message = message.trim().substring(0, 200);
-            if (message.length === 0) return;
-            if (checkServerCommand(message) == false) {
-              var p = socket.playerInstance;
-              if (p) sendChatMessage(message, p.getNick(), p.getColor());
-            }
-          });
+          room.playerLog(socket, nick, infos.monster);
+          room.sendGameState(socket, player);
+          bindChatHandler(socket, room);
+          broadcastRoomList();
+
         } else {
           socket.emit('game_already_started');
         }
       });
     }
+  }
 
+  // ── Socket.IO connection handler ──
+
+  io.on('connection', function (socket) {
+    // Immediately send current room list so the lobby can populate
+    socket.emit('roomList', getRoomList());
+
+    socket.on('createRoom', function (options) {
+      var roomId = generateRoomId();
+      while (rooms.has(roomId)) roomId = generateRoomId();
+
+      var room = new GameRoom(roomId, io, function (id) {
+        rooms.delete(id);
+        broadcastRoomList();
+      });
+      rooms.set(roomId, room);
+
+      var gridNum = (options && options.gridNumber !== undefined && !isNaN(parseInt(options.gridNumber)))
+        ? parseInt(options.gridNumber) : (desiredGrid || 0);
+
+      room.gridManager.retreiveAndParseGrid(gridNum, function (grid) {
+        if (!grid) {
+          room.broadcast('roomError', 'Impossible de charger la grille');
+          rooms.delete(roomId);
+          broadcastRoomList();
+          return;
+        }
+        room.gridReady = true;
+        broadcastRoomList();
+      });
+
+      socket.join(roomId);
+      socket.roomId = roomId;
+      socket.emit('roomJoined', { roomId: roomId });
+      registerPlayerInRoom(socket, room);
+      broadcastRoomList();
+    });
+
+    socket.on('joinRoom', function (roomId) {
+      if (typeof roomId !== 'string') return;
+      roomId = roomId.toUpperCase().trim().substring(0, 8);
+      var room = rooms.get(roomId);
+      if (!room) {
+        socket.emit('roomError', 'Salle "' + roomId + '" introuvable');
+        return;
+      }
+      socket.join(roomId);
+      socket.roomId = roomId;
+      socket.emit('roomJoined', { roomId: roomId });
+      registerPlayerInRoom(socket, room);
+    });
+
+    socket.on('getRoomList', function () {
+      socket.emit('roomList', getRoomList());
+    });
   });
 
-
-  // Set game state and print ready message
-  _gameState = enums.ServerState.WaitingForPlayers;
-  console.log('Game started and waiting for players.');
+  console.log('Game server started — waiting for connections.');
 };
