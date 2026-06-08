@@ -19,6 +19,38 @@ function generateRoomId() {
   return id;
 }
 
+// ─── PendingVote ──────────────────────────────────────────────────────────────
+
+function PendingVote(type, target, playerIds, onAccept, onReject) {
+  var self = this;
+  this.type      = type;
+  this.target    = target;
+  this.votes     = {};
+  this.playerIds = playerIds; // snapshot des IDs joueurs au moment du vote
+  this._onAccept = onAccept;
+  this._onReject = onReject;
+  this._timer    = setTimeout(function () { self._onReject('timeout'); }, VOTE_TIMEOUT_MS);
+}
+
+PendingVote.prototype.cancel = function () {
+  clearTimeout(this._timer);
+};
+
+PendingVote.prototype.castVote = function (playerId, value) {
+  if (this.votes[playerId] !== undefined) return; // déjà voté
+  if (this.playerIds.indexOf(playerId) === -1) return; // pas participant
+  this.votes[playerId] = value;
+
+  var total = this.playerIds.length;
+  var yes = 0, no = 0;
+  for (var i = 0; i < this.playerIds.length; i++) {
+    if (this.votes[this.playerIds[i]] === true)  yes++;
+    if (this.votes[this.playerIds[i]] === false) no++;
+  }
+  if (yes > total / 2)  { this.cancel(); this._onAccept(yes, total); }
+  else if (no >= total / 2) { this.cancel(); this._onReject('rejected'); }
+};
+
 // ─── GameRoom ─────────────────────────────────────────────────────────────────
 
 function GameRoom(id, io, onInactive) {
@@ -33,6 +65,7 @@ function GameRoom(id, io, onInactive) {
   this._lastActivity   = Date.now();
   this._onInactive     = onInactive || null;
   this._inactivityTimer = null;
+  this._pendingVote    = null;
   this._startInactivityTimer();
 }
 
@@ -196,8 +229,52 @@ GameRoom.prototype.checkServerCommand = function (message, socket) {
     return true;
   }
   if (message.indexOf('!grid') === 0) {
-    var number = parseInt(message.substr(6));
-    this.resetGame(isNaN(number) ? 0 : number);
+    var number  = parseInt(message.substr(6));
+    var gridNum = isNaN(number) ? 0 : number;
+
+    if (this.gameState === enums.ServerState.OnGame) {
+      var self = this;
+      var initiator = socket ? socket.playerInstance : null;
+
+      if (this._pendingVote) {
+        if (socket) this.sendToSocket(socket, '⚠ Un vote est déjà en cours');
+        return true;
+      }
+
+      var allIds = this.playersManager.getPlayerList().map(function (p) { return p.id; });
+
+      this._pendingVote = new PendingVote('grid', gridNum, allIds,
+        function (yes, total) {
+          self._pendingVote = null;
+          self.sendChat('✅ Vote accepté (' + yes + '/' + total + ') — changement de grille…');
+          self.resetGame(gridNum);
+        },
+        function (reason) {
+          self._pendingVote = null;
+          if (reason === 'timeout') {
+            self.sendChat('⏱ Vote expiré — grille inchangée');
+          } else {
+            self.sendChat('❌ Vote refusé');
+          }
+        }
+      );
+
+      var initiatorNick = initiator ? initiator.getNick() : 'Quelqu\'un';
+      this.sendChat('⚡ Vote lancé par ' + initiatorNick + ' : grille #' + gridNum + ' — tapez !oui ou !non (30s)');
+
+      if (initiator) {
+        this._pendingVote.castVote(initiator.getID(), true);
+      }
+
+    } else {
+      this.resetGame(gridNum);
+    }
+    return true;
+  }
+  if (message === '!oui' || message === '!non') {
+    if (this._pendingVote && socket && socket.playerInstance) {
+      this._pendingVote.castVote(socket.playerInstance.getID(), message === '!oui');
+    }
     return true;
   }
   return false;
