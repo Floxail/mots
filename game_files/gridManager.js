@@ -187,6 +187,7 @@ function placeArrows(grid) {
         case 'k':
         case 'l':
         case 'm':
+        case 'n':
           grid.cases[i].arrow[0] = enumArrow.RightBottom;
           grid.cases[i].arrow[1] = enumArrow.Bottom;
           break;

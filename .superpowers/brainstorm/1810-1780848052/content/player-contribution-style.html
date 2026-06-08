@@ -1,0 +1,141 @@
+<h2>Comment afficher la contribution de chaque joueur ?</h2>
+<p class="subtitle">Grille actuelle : mots en couleur sur la grille + score total. Choisis l'amélioration.</p>
+
+<style>
+.mini-grid {
+  display: inline-grid;
+  border: 2px solid #444;
+  gap: 1px;
+  background: #444;
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: bold;
+}
+.c { width:30px; height:30px; display:flex; align-items:center; justify-content:center; }
+.cl { background:#e8e8e8; color:#111; }
+.cl.p1 { background:#7ec87e; color:#111; }
+.cl.p2 { background:#6ab0e8; color:#111; }
+.cl.p3 { background:#e8a86a; color:#111; }
+.cl.dim { background:#c8c8c8; color:#999; }
+.cb { background:#1e1e1e; color:#bbb; font-size:8px; text-align:center; line-height:1.2; padding:2px; }
+.ce { background:#2a2a2a; }
+.score-panel {
+  background:#12121e;
+  border-radius:6px;
+  padding:10px 14px;
+  font-size:12px;
+  color:#eee;
+  min-width:160px;
+}
+.p-row { display:flex; align-items:center; gap:6px; margin:5px 0; }
+.dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.word-tag {
+  display:inline-block;
+  padding:1px 6px;
+  border-radius:10px;
+  font-size:10px;
+  font-weight:bold;
+  margin:2px;
+  color:#111;
+}
+.bar-wrap { background:#2a2a3e; border-radius:3px; height:6px; margin-top:2px; }
+.bar { height:6px; border-radius:3px; }
+</style>
+
+<div class="options">
+
+  <div class="option" data-choice="word-list" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Liste des mots dans le panneau score</h3>
+      <p>Panel score montre <em>quels mots</em> chaque joueur a trouvés, pas juste le total de points.</p>
+      <div class="mockup" style="padding:10px">
+        <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+          <div class="mini-grid" style="grid-template-columns:repeat(4,30px)">
+            <div class="c cb">→Chat<br>↓Film</div><div class="c cl p1">C</div><div class="c cl p1">H</div><div class="c cl p1">A</div>
+            <div class="c cl p2">F</div><div class="c cl p2">I</div><div class="c cb">→Mer</div><div class="c cl">M</div>
+            <div class="c cl p1">A</div><div class="c cl p1">R</div><div class="c cl p1">B</div><div class="c cl p1">R</div>
+            <div class="c ce"></div><div class="c cl">E</div><div class="c cl">A</div><div class="c cl">U</div>
+          </div>
+          <div class="score-panel">
+            <div class="p-row"><div class="dot" style="background:#7ec87e"></div><strong>Player1</strong> · 15pts</div>
+            <div style="margin-left:16px">
+              <span class="word-tag" style="background:#7ec87e">CHAT</span>
+              <span class="word-tag" style="background:#7ec87e">ARBRE</span>
+            </div>
+            <div class="bar-wrap" style="margin:4px 0 8px 16px"><div class="bar" style="width:70%;background:#7ec87e"></div></div>
+            <div class="p-row"><div class="dot" style="background:#6ab0e8"></div><strong>Player2</strong> · 6pts</div>
+            <div style="margin-left:16px">
+              <span class="word-tag" style="background:#6ab0e8">FI</span>
+            </div>
+            <div class="bar-wrap" style="margin:4px 0 0 16px"><div class="bar" style="width:25%;background:#6ab0e8"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="hover-reveal" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Hover joueur → ses mots s'illuminent</h3>
+      <p>Survol d'un joueur dans le score panel → ses cases sur la grille s'illuminent, les autres s'estompent.</p>
+      <div class="mockup" style="padding:10px">
+        <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-size:10px;color:#aaa;margin-bottom:4px">Survol de Player1 →</div>
+            <div class="mini-grid" style="grid-template-columns:repeat(4,30px)">
+              <div class="c cb">→Chat<br>↓Film</div><div class="c cl p1">C</div><div class="c cl p1">H</div><div class="c cl p1">A</div>
+              <div class="c cl dim">F</div><div class="c cl dim">I</div><div class="c cb">→Mer</div><div class="c cl">M</div>
+              <div class="c cl p1">A</div><div class="c cl p1">R</div><div class="c cl p1">B</div><div class="c cl p1">R</div>
+              <div class="c ce"></div><div class="c cl">E</div><div class="c cl">A</div><div class="c cl">U</div>
+            </div>
+          </div>
+          <div class="score-panel">
+            <div class="p-row" style="background:#7ec87e20;border-radius:4px;padding:4px;cursor:pointer">
+              <div class="dot" style="background:#7ec87e"></div><strong>Player1</strong> · 15pts · 2 mots
+            </div>
+            <div class="bar-wrap" style="margin:4px 0 8px"><div class="bar" style="width:70%;background:#7ec87e"></div></div>
+            <div class="p-row"><div class="dot" style="background:#6ab0e8"></div><strong>Player2</strong> · 6pts · 1 mot</div>
+            <div class="bar-wrap" style="margin:4px 0 0"><div class="bar" style="width:25%;background:#6ab0e8"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="both" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Les deux : liste + hover</h3>
+      <p>Mots listés en permanence + hover pour les voir sur la grille. Expérience la plus complète.</p>
+      <div class="mockup" style="padding:10px">
+        <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+          <div class="mini-grid" style="grid-template-columns:repeat(4,30px)">
+            <div class="c cb">→Chat<br>↓Film</div><div class="c cl p1">C</div><div class="c cl p1">H</div><div class="c cl p1">A</div>
+            <div class="c cl p2">F</div><div class="c cl p2">I</div><div class="c cb">→Mer</div><div class="c cl">M</div>
+            <div class="c cl p1">A</div><div class="c cl p1">R</div><div class="c cl p1">B</div><div class="c cl p1">R</div>
+            <div class="c ce"></div><div class="c cl">E</div><div class="c cl">A</div><div class="c cl">U</div>
+          </div>
+          <div class="score-panel" style="cursor:pointer">
+            <div class="p-row" style="background:#7ec87e18;border-radius:4px;padding:4px">
+              <div class="dot" style="background:#7ec87e"></div><strong>Player1</strong> · 15pts
+            </div>
+            <div style="margin-left:16px">
+              <span class="word-tag" style="background:#7ec87e">CHAT</span>
+              <span class="word-tag" style="background:#7ec87e">ARBRE</span>
+            </div>
+            <div class="bar-wrap" style="margin:4px 0 8px 0"><div class="bar" style="width:70%;background:#7ec87e"></div></div>
+            <div class="p-row"><div class="dot" style="background:#6ab0e8"></div><strong>Player2</strong> · 6pts</div>
+            <div style="margin-left:16px">
+              <span class="word-tag" style="background:#6ab0e8">FI</span>
+            </div>
+            <div class="bar-wrap" style="margin:4px 0 0"><div class="bar" style="width:25%;background:#6ab0e8"></div></div>
+            <div style="font-size:9px;color:#666;margin-top:6px">↑ survol pour voir sur grille</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

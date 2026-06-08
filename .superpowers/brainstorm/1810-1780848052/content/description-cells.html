@@ -1,0 +1,165 @@
+<h2>Cases définitions : comment améliorer la lisibilité ?</h2>
+<p class="subtitle">Actuellement : texte petit serré dans la case noire, flèches parfois hors de la case.</p>
+
+<style>
+.mini-grid {
+  display: inline-grid;
+  border: 2px solid #444;
+  gap: 1px;
+  background: #444;
+  font-family: monospace;
+}
+.c { display:flex; align-items:center; justify-content:center; }
+.cl { background:#e8e8e8; color:#111; font-weight:bold; }
+.cl.found { background:#7ec87e; }
+.cb { background:#1e1e1e; color:#ddd; position:relative; }
+.ce { background:#2a2a2a; }
+
+/* Current style */
+.cb-current { font-size:8px; line-height:1.1; padding:2px; text-align:center; }
+
+/* Option A: bigger text, arrows outside */
+.cb-a { font-size:9px; line-height:1.2; padding:3px; }
+.arrow-badge {
+  position:absolute;
+  background:#e8c840;
+  color:#111;
+  border-radius:3px;
+  font-size:9px;
+  font-weight:bold;
+  padding:1px 3px;
+  line-height:1;
+}
+
+/* Option B: click → panel */
+.info-panel {
+  background:#12121e;
+  border: 1px solid #7ec87e;
+  border-radius:6px;
+  padding:8px 12px;
+  font-size:12px;
+  color:#eee;
+  margin-top:6px;
+  min-width:180px;
+}
+.def-line { display:flex; align-items:center; gap:6px; margin:3px 0; }
+.arrow-icon { font-size:16px; width:20px; text-align:center; }
+
+/* Option C: two-tone cell */
+.cb-split {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  width:100%; height:100%;
+}
+.cb-split-top { background:#1e1e1e; border-bottom:1px solid #444; display:flex; align-items:center; justify-content:center; font-size:9px; padding:2px; color:#ddd; }
+.cb-split-bottom { background:#252525; display:flex; align-items:center; justify-content:center; font-size:9px; padding:2px; color:#ddd; }
+</style>
+
+<div class="options">
+
+  <div class="option" data-choice="badge-arrows" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Flèches en badge coloré, texte agrandi</h3>
+      <p>Direction indiquée par un badge jaune en coin. Texte de définition plus grand et lisible.</p>
+      <div class="mockup" style="padding:10px">
+        <div style="display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap">
+          <div>
+            <div style="font-size:10px;color:#888;margin-bottom:4px">Actuel</div>
+            <div class="mini-grid" style="grid-template-columns:repeat(3,44px)">
+              <div class="c cb cb-current" style="width:44px;height:44px;font-size:7px">→Chat<br>↓Film</div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">C</div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">H</div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">F</div>
+              <div class="c cb cb-current" style="width:44px;height:44px;font-size:7px">→Mer<br>&nbsp;</div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">M</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:#888;margin-bottom:4px">Amélioré</div>
+            <div class="mini-grid" style="grid-template-columns:repeat(3,44px)">
+              <div class="c cb" style="width:44px;height:44px;overflow:visible">
+                <div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#ccc;text-align:center;padding:2px">
+                  Chat<br>Film
+                  <span class="arrow-badge" style="bottom:1px;right:1px">→↓</span>
+                </div>
+              </div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">C</div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">H</div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">F</div>
+              <div class="c cb" style="width:44px;height:44px;overflow:visible">
+                <div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#ccc">
+                  Mer
+                  <span class="arrow-badge" style="bottom:1px;right:1px">→</span>
+                </div>
+              </div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">M</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="click-panel" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Clic/survol → panneau définition</h3>
+      <p>Cliquer sur une case noire affiche ses définitions dans un panneau fixe sous la grille. La case elle-même montre juste la/les flèches.</p>
+      <div class="mockup" style="padding:10px">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">
+          <div>
+            <div class="mini-grid" style="grid-template-columns:repeat(3,44px)">
+              <div class="c cb" style="width:44px;height:44px;border:2px solid #7ec87e !important;box-sizing:border-box">
+                <span style="font-size:18px">→↓</span>
+              </div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">C</div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">H</div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">F</div>
+              <div class="c cb" style="width:44px;height:44px"><span style="font-size:18px">→</span></div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">M</div>
+            </div>
+            <div class="info-panel" style="margin-top:8px">
+              <div class="def-line"><span class="arrow-icon">→</span><span>Animal domestique</span></div>
+              <div class="def-line"><span class="arrow-icon">↓</span><span>Long-métrage cinéma</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="split-cell" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Case divisée — def haut / def bas</h3>
+      <p>Case noire séparée en deux zones : définition horizontale en haut, verticale en bas. Flèche implicite par position.</p>
+      <div class="mockup" style="padding:10px">
+        <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+          <div>
+            <div class="mini-grid" style="grid-template-columns:repeat(3,44px)">
+              <div class="c cb" style="width:44px;height:44px;padding:0">
+                <div class="cb-split">
+                  <div class="cb-split-top">→ Chat</div>
+                  <div class="cb-split-bottom">↓ Film</div>
+                </div>
+              </div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">C</div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">H</div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">F</div>
+              <div class="c cb" style="width:44px;height:44px;font-size:9px;color:#ddd">→ Mer</div>
+              <div class="c cl" style="width:44px;height:44px;font-size:14px">M</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#888;max-width:140px">
+            <div>✓ Pas de clic requis</div>
+            <div>✓ Tout visible d'un coup</div>
+            <div>⚠ Texte long = tronqué</div>
+            <div>⚠ Ressemble à l'actuel</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
