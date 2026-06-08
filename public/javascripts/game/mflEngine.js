@@ -236,6 +236,16 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
       // Small delay to ensure grid DOM is rendered before revealing
       setTimeout(replay, 300);
     });
+    _socket.on('kicked', function (data) {
+      localStorage.removeItem('mfl_nick');
+      showError('🚪 Vous avez été expulsé<br/>Raison : ' + ((data && data.reason) ? data.reason : 'inactivité'));
+      setTimeout(function () {
+        _ui.ChangeGameScreen(enumPanels.Lobby, true);
+        _gameState = enumState.Lobby;
+        _gameListenersReady = false;
+        _loginListenersReady = false;
+      }, 3000);
+    });
   }
 
   // ─── Login form ───────────────────────────────────────────────────────────
