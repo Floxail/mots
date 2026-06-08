@@ -54,8 +54,8 @@ define(['cursor'], function (Cursor) {
       lineHeight = size;
       fontSize = Math.max(9, Math.floor(size / 5.7));
     } else {
-      lineHeight = Math.floor(size / info.nbLines * 0.88);
       fontSize = Math.max(9, Math.floor(size / 5.8));
+      lineHeight = Math.max(fontSize, Math.floor(size / info.nbLines * 0.88));
     }
 
     frame.style.lineHeight = lineHeight + 'px';
@@ -348,6 +348,20 @@ define(['cursor'], function (Cursor) {
       _cursor.RegisterEvents();
     }, 100);
     
+  };
+
+  /*
+  * Clear all typed-but-unvalidated letters from the grid
+  */
+  Grid.prototype.clearUnvalidated = function () {
+    for (var i = 0; i < _grid.cases.length; i++) {
+      var c = _grid.cases[i];
+      if (c.type === CaseType.Letter && c.available === true && c.letter !== null) {
+        c.letter = null;
+        var node = document.querySelector('.frame' + i);
+        if (node) node.innerHTML = '';
+      }
+    }
   };
 
   /*

@@ -193,9 +193,14 @@ define(function () {
 
   function removeLetter() {
     var pos = parseInt(_focusCell.getAttribute('data-pos'));
-    if (_grid[pos].available == true) {
+    if (_grid[pos].available == true && _grid[pos].letter !== null) {
+      // Cell has a typed letter — erase it, stay in place
       _focusCell.innerHTML = '';
-      _letterUpdateCallback(parseInt(_focusCell.getAttribute('data-pos')), null);
+      _letterUpdateCallback(pos, null);
+    } else {
+      // Cell is empty or validated — move backward
+      var backDir = (_focusDirection == enumDirections.Right) ? enumDirections.Left : enumDirections.Up;
+      moveCursor(backDir);
     }
   }
 
