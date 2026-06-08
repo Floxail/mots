@@ -410,31 +410,10 @@ html, body {
 .frame::-moz-selection { background: transparent; }
 
 .description {
-  background-color: rgba(52, 73, 94, 0.4);
-  background: url('../images/grey.png');
+  background: #1d3557;
+  color: #ecf0f1;
 }
 
-/* Arrow direction badge — replaces ::after arrows */
-.arrow-badge {
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
-  background: #e8c840;
-  color: #111;
-  border-radius: 3px;
-  padding: 1px 4px;
-  font-size: 10px;
-  font-weight: bold;
-  line-height: 1;
-  pointer-events: none;
-}
-
-/* When the TOP span of a 2-definition cell carries a downward arrow its :after
-   must be relative to the whole .description cell (not just the span), so we
-   remove the span from the positioning context with position:static. */
-.description span.arrow-cell-bottom {
-  position: static;
-}
 .description span {
   position: relative;
   display: inline-block;
@@ -444,9 +423,25 @@ html, body {
   box-sizing: border-box;
   -moz-box-sizing: border-box;
   -webkit-box-sizing: border-box;
-  border-top: 1px solid rgba(127, 140, 141, 0.2);
+  border-top: 1px solid transparent;
   word-break: break-word;
   hyphens: auto;
+}
+
+.description span:not(:first-child) {
+  border-top: 1.5px solid rgba(255, 255, 255, 0.863);
+  padding-top: 5px;
+}
+
+/* Grid arrow elements — positioned on the container, at cell boundaries */
+.grid-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  display: block;
+  pointer-events: none;
+  z-index: 10;
+  font-style: normal;
 }
 
 .letter {
@@ -468,56 +463,6 @@ html, body {
 }
 
 
-/* Right arrow — outside, centered vertically in its span */
-.description span.arrow0:after {
-  position: absolute;
-  right: -18px;
-  top: 50%;
-  -webkit-transform: translateY(-50%);
-  transform: translateY(-50%);
-  content: "\e603";
-  font-family: 'icomoon';
-  font-size: 16px;
-  line-height: 16px;
-  color: #444;
-}
-/* Right+Bottom diagonal arrow */
-.description span.arrow1:after {
-  position: absolute;
-  top: 10%;
-  right: -20px;
-  content: "\e600";
-  font-family: 'icomoon';
-  font-size: 20px;
-  line-height: 20px;
-  color: #444;
-  -webkit-transform: rotateZ(90deg) rotateX(-180deg);
-  transform: rotateZ(90deg) rotateX(-180deg);
-}
-/* Bottom arrow — outside, centered horizontally in its span */
-.description span.arrow2:after {
-  position: absolute;
-  bottom: -18px;
-  left: 50%;
-  content: "\e603";
-  font-family: 'icomoon';
-  font-size: 16px;
-  line-height: 16px;
-  color: #444;
-  -webkit-transform: translateX(-50%) rotate(90deg);
-  transform: translateX(-50%) rotate(90deg);
-}
-/* Bottom+Right diagonal arrow */
-.description span.arrow3:after {
-  position: absolute;
-  left: 10%;
-  bottom: -20px;
-  content: "\e600";
-  font-family: 'icomoon';
-  font-size: 22px;
-  color: #444;
-  line-height: 20px;
-}
 
 .dash1 { border-bottom: 1px dashed rgba(127, 140, 141, 0.2); }
 .dash2 { border-right: 1px dashed rgba(127, 140, 141, 0.2); }
