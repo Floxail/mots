@@ -268,7 +268,8 @@ define(function () {
     _socket = socket;
 
     document.getElementById('gsc-command-start').addEventListener('click', function () { _socket.emit('chat', '!start'); }, false);
-    document.getElementById('gsc-command-grid').addEventListener('click', changeGrid, false);;
+    document.getElementById('gsc-command-grid').addEventListener('click', changeGrid, false);
+    document.getElementById('gsc-command-quit').addEventListener('click', function () { _socket.emit('chat', '!quit'); }, false);
   };
 
 

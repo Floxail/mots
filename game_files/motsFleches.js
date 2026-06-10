@@ -12,6 +12,11 @@ var KICK_INACTIVITY_MS   = 10 * 60 * 1000;  // 10 min d'inactivité avant kick
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function getEstimatedTodayGrid() {
+  var cfg = config.GRID_PROVIDER;
+  return cfg.PROVIDER_DEFAULT_GRID + Math.floor((Date.now() - cfg.PROVIDER_DEFAULT_GRID_DATE) / 86400000);
+}
+
 function generateRoomId() {
   var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I ambiguity
   var id = '';
@@ -272,6 +277,13 @@ GameRoom.prototype.checkServerCommand = function (message, socket) {
     }
     return true;
   }
+  if (message === '!quit') {
+    var leaver = socket ? socket.playerInstance : null;
+    if (!leaver) return true;
+    socket._voluntaryLeave = true;
+    socket.emit('left_room');
+    return true;
+  }
   if (message.indexOf('!kick ') === 0) {
     var targetNick = message.substr(6).trim();
     var kicker = socket ? socket.playerInstance : null;
@@ -347,7 +359,10 @@ GameRoom.prototype.playerLog = function (socket, nick, monsterId) {
     undefined, undefined,
     this.playersManager.getPlayerList()
   );
-  this.sendToSocket(socket, 'Grille actuelle : ' + gridInfos.provider + ' ' + gridInfos.id + ' (Niveau ' + gridInfos.level + ')');
+  var firstGrid = config.GRID_PROVIDER.PROVIDER_FIRST_GRID;
+  var todayGrid = getEstimatedTodayGrid();
+  this.sendToSocket(socket, 'Grille actuelle : ' + gridInfos.provider + ' ' + gridInfos.id + ' (Niveau ' + gridInfos.level + ') — Grilles disponibles : #' + firstGrid + ' à #' + todayGrid);
+  this.sendToSocket(socket, 'Tapez <code>!info</code> pour voir les commandes disponibles.');
 };
 
 
@@ -360,6 +375,23 @@ exports.startMflServer = function (desiredGrid, httpServer) {
   var rooms = new Map(); // roomId → GameRoom
 
   // ── Helpers ──
+
+  function handleDisconnect(socket, room) {
+    var p = socket.playerInstance;
+    if (!p) return;
+    var nick = p.getNick();
+    if (room.gameState === enums.ServerState.WaitingForPlayers || socket._voluntaryLeave) {
+      room.playersManager.removePlayer(p);
+      if (nick) room.sendChat(nick + ' a quitté la salle', undefined, undefined, room.playersManager.getPlayerList());
+      if (room.playersManager.getNumberOfPlayers() === 0) {
+        clearInterval(room._inactivityTimer);
+        rooms.delete(room.id);
+      }
+    } else {
+      if (nick) room.sendChat(nick + ' s\'est déconnecté (peut revenir avec le même pseudo)');
+    }
+    broadcastRoomList();
+  }
 
   function getRoomList() {
     var list = [];
@@ -413,21 +445,7 @@ exports.startMflServer = function (desiredGrid, httpServer) {
       var player = room.playersManager.addNewPlayer(socket);
       socket.playerInstance = player;
 
-      socket.on('disconnect', function () {
-        var p = socket.playerInstance;
-        if (!p) return;
-        if (room.gameState === enums.ServerState.WaitingForPlayers) {
-          room.sendChat(p.getNick() + ' a quitté la partie');
-          room.playersManager.removePlayer(p);
-          if (room.playersManager.getNumberOfPlayers() === 0) {
-            clearInterval(room._inactivityTimer);
-            rooms.delete(room.id);
-          }
-        } else {
-          room.sendChat(p.getNick() + ' s\'est déconnecté (peut revenir avec le même pseudo)');
-        }
-        broadcastRoomList();
-      });
+      socket.on('disconnect', function () { handleDisconnect(socket, room); });
 
       socket.once('userIsReady', function (infos) {
         if (!infos || typeof infos.nick !== 'string') return;
@@ -478,6 +496,7 @@ exports.startMflServer = function (desiredGrid, httpServer) {
           room.sendGameState(socket, rejoiner);
           bindChatHandler(socket, room);
           bindWordHandler(socket, room, rejoiner);
+          socket.on('disconnect', function () { handleDisconnect(socket, room); });
 
         } else if (room.playersManager.getNumberOfPlayers() < MAX_PLAYERS) {
           // New player joining a game already underway
@@ -486,6 +505,7 @@ exports.startMflServer = function (desiredGrid, httpServer) {
           room.playerLog(socket, nick, infos.monster);
           room.sendGameState(socket, player);
           bindChatHandler(socket, room);
+          socket.on('disconnect', function () { handleDisconnect(socket, room); });
           broadcastRoomList();
 
         } else {
