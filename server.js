@@ -38,13 +38,15 @@ app.get('/api/grid/:number?', function (req, res) {
   });
 });
 app.get('/conf.json', function(req, res) {
-    // Derive public address from request headers (works locally and on cloud platforms)
     var protocol = req.headers['x-forwarded-proto'] || req.protocol;
-    var host = req.get('host'); // e.g. "myapp.railway.app" or "192.168.1.5:2121"
+    var host = req.get('host');
     var parts = host.split(':');
     var hostname = parts[0];
     var port = parts[1] ? parseInt(parts[1]) : (protocol === 'https' ? 443 : 80);
-    res.json({ SOCKET_ADDR: protocol + '://' + hostname, SOCKET_PORT: port });
+    res.json(Object.assign({}, config, {
+        SOCKET_ADDR: protocol + '://' + hostname,
+        SOCKET_PORT: port
+    }));
 });
 
 // Create HTTP server (Socket.IO will attach to it too — single port)
