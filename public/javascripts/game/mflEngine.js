@@ -37,6 +37,10 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
 
   // ─── Bootstrap ────────────────────────────────────────────────────────────
 
+  var _gridCfg      = Conf.GRID_PROVIDER;
+  var _todayGrid    = _gridCfg.PROVIDER_DEFAULT_GRID + Math.floor((Date.now() - _gridCfg.PROVIDER_DEFAULT_GRID_DATE) / 86400000);
+  var _gridRange    = '#' + _gridCfg.PROVIDER_FIRST_GRID + ' à #' + _todayGrid;
+
   _ui           = new UITools();
   _scoreManager = new Score();
 
@@ -50,6 +54,8 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
       showError('Impossible de charger socket.io.<br/>Vérifiez l\'adresse du serveur.');
       return;
     }
+
+    document.getElementById('lobby-grid-input').placeholder = 'N° de grille (' + _gridRange + ')';
 
     var socketUrl = Conf.SOCKET_ADDR + (Conf.SOCKET_PORT !== 80 && Conf.SOCKET_PORT !== 443 ? ':' + Conf.SOCKET_PORT : '');
     _socket = io.connect(socketUrl, { reconnect: false });
@@ -209,7 +215,7 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
 
     _chat = new Chat(_socket, _scoreManager.UpdatePlayerList, function (cmd) {
       if (cmd === 'clear' && _gridManager) _gridManager.clearUnvalidated();
-    });
+    }, _gridRange);
     _socket.on('grid_event', onStartGame);
     _socket.on('grid_reset', resetGame);
     _socket.on('score_update', _scoreManager.RefreshScore);
@@ -245,6 +251,10 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
       setTimeout(function () {
         window.location.replace('/');
       }, 3000);
+    });
+    _socket.on('left_room', function () {
+      localStorage.removeItem('mfl_nick');
+      window.location.replace('/');
     });
   }
 
