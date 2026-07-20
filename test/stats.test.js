@@ -17,13 +17,13 @@ test('measureSegments finds horizontal letter runs of length >= 1, split by non-
 
 test('computeStats aggregates density, two-def ratio and segment lengths across grids', function () {
   var gridA = {
-    nbLines: 2,
-    nbColumns: 2,
+    nbLines: 4,
+    nbColumns: 1,
     cases: [descCase(1), letterCase(), letterCase(), letterCase()]
   };
   var gridB = {
-    nbLines: 2,
-    nbColumns: 2,
+    nbLines: 4,
+    nbColumns: 1,
     cases: [descCase(2), letterCase(), letterCase(), letterCase()]
   };
 
