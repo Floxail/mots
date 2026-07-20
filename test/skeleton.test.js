@@ -31,4 +31,8 @@ test('generateSkeleton fills every cell with Description or Letter only', functi
     assert.ok(t === enums.CaseType.Description || t === enums.CaseType.Letter);
   });
   assert.strictEqual(result.types[0], enums.CaseType.Description);
+  assert.deepStrictEqual(result.types, [
+    enums.CaseType.Description, enums.CaseType.Letter, enums.CaseType.Letter,
+    enums.CaseType.Description, enums.CaseType.Letter, enums.CaseType.Letter
+  ]);
 });
