@@ -37,6 +37,7 @@ function exportGrid(skeleton, slots, assignment, dictionary) {
     if (belowSlotIdx !== -1) attached.push({ direction: ARROW_BOTTOM, word: assignment[belowSlotIdx] });
 
     cell.nbDesc = attached.length;
+    cell.nbLines = attached.length;
     cell.desc = [];
     cell.arrow = [];
     attached.forEach(function (a) {
