@@ -33,5 +33,5 @@ test('exportGrid fills letters and attaches definitions/arrows on description ce
   var descCell = grid.cases[0];
   assert.strictEqual(descCell.nbDesc, 2);
   assert.deepStrictEqual(descCell.desc, ['Across def', 'Down def']);
-  assert.deepStrictEqual(descCell.arrow, [0, 2]); // Right, Bottom
+  assert.deepStrictEqual(descCell.arrow, [enums.ArrowDirections.Right, enums.ArrowDirections.Bottom]);
 });

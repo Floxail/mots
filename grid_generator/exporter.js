@@ -1,8 +1,8 @@
 var enums = require('../game_files/enums');
 var Case = require('../game_files/case');
 
-var ARROW_RIGHT = 0;
-var ARROW_BOTTOM = 2;
+var ARROW_RIGHT = enums.ArrowDirections.Right;
+var ARROW_BOTTOM = enums.ArrowDirections.Bottom;
 
 function findSlotStartingAt(slots, cellIndex, axis) {
   for (var i = 0; i < slots.length; i++) {
