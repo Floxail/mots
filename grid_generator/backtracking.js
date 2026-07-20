@@ -12,8 +12,8 @@ function orderSlots(slots) {
 
 function solve(slots, dictionary, options) {
   options = options || {};
-  var maxBacktracks = options.maxBacktracks || 50000;
-  var deadlineMs = options.timeoutMs ? Date.now() + options.timeoutMs : Infinity;
+  var maxBacktracks = options.maxBacktracks !== undefined ? options.maxBacktracks : 50000;
+  var deadlineMs = options.timeoutMs !== undefined ? Date.now() + options.timeoutMs : Infinity;
 
   var order = orderSlots(slots);
   var assignment = new Array(slots.length).fill(null);
