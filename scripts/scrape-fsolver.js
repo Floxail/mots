@@ -13,6 +13,50 @@ var MAX_LENGTH = 15;
 var REQUEST_DELAY_MS = 1500;
 var RATE_LIMIT_BACKOFF_MS = 10000;
 
+// The Gutenberg wordlist is dominated by rare conjugated verb forms at long
+// lengths (e.g. "REENSEMENCEREZ"), which fsolver rarely has definitions for.
+// This curated list of real, common nouns/adjectives fills the 10-15 letter
+// range that the random sampling leaves nearly empty.
+var CURATED_LONG_WORDS = [
+  'ANNIVERSAIRE', 'INTERNATIONAL', 'EXTRAORDINAIRE', 'RESPONSABILITE', 'CARACTERISTIQUE',
+  'ENVIRONNEMENT', 'ORGANISATION', 'DEVELOPPEMENT', 'COMMUNICATION', 'INTELLIGENCE',
+  'ARCHITECTURE', 'BIBLIOTHEQUE', 'CONCENTRATION', 'DEMONSTRATION', 'EXPLORATION',
+  'GENERATION', 'HABITATION', 'IMAGINATION', 'INSTITUTION', 'INVESTIGATION',
+  'LEGISLATION', 'NAVIGATION', 'OBSERVATION', 'PARTICIPATION', 'PRESENTATION',
+  'PRODUCTION', 'PROTECTION', 'PUBLICATION', 'REALISATION', 'RECONNAISSANCE',
+  'REVOLUTION', 'TRANSFORMATION', 'ADMINISTRATION', 'ALIMENTATION', 'AMELIORATION',
+  'APPRECIATION', 'ASSOCIATION', 'CELEBRATION', 'CIVILISATION', 'COLLABORATION',
+  'COMPETITION', 'COMPOSITION', 'CONSTRUCTION', 'CONSULTATION', 'CONTRIBUTION',
+  'CONVERSATION', 'DECLARATION', 'DEFINITION', 'DELEGATION', 'DEMONSTRATEUR',
+  'DESTINATION', 'DISTRIBUTION', 'DOCUMENTATION', 'ELIMINATION', 'EXPEDITION',
+  'EXPERIMENTATION', 'EXPLICATION', 'EXPORTATION', 'FEDERATION', 'FONDATION',
+  'FORMULATION', 'FRUSTRATION', 'GENERALISATION', 'HABITUDE', 'IDENTIFICATION',
+  'ILLUSTRATION', 'IMMIGRATION', 'IMPORTATION', 'IMPRESSION', 'INDICATION',
+  'INFORMATION', 'INSPIRATION', 'INSTALLATION', 'INSTRUCTION', 'INTEGRATION',
+  'INTERPRETATION', 'INTERVENTION', 'INTRODUCTION', 'INVITATION', 'LIBERATION',
+  'LOCALISATION', 'MANIFESTATION', 'MEDITATION', 'MODIFICATION', 'MOTIVATION',
+  'MULTIPLICATION', 'MUNICIPALITE', 'NEGOCIATION', 'NOTIFICATION', 'OCCUPATION',
+  'OPERATION', 'OPPOSITION', 'ORIENTATION', 'PARTICIPANT', 'PERCEPTION',
+  'PERMISSION', 'PERSONNALITE', 'PERSPECTIVE', 'PLANIFICATION', 'POPULATION',
+  'POSSIBILITE', 'PRECAUTION', 'PREDICTION', 'PREPARATION', 'PRESERVATION',
+  'PREVENTION', 'PROBABILITE', 'PROCLAMATION', 'PROGRAMMATION', 'PROLONGATION',
+  'PROPORTION', 'PROPOSITION', 'PROSPERITE', 'PROVOCATION', 'PSYCHOLOGIE',
+  'PUNITION', 'QUALIFICATION', 'REACTION', 'RECOMMANDATION', 'RECONSTRUCTION',
+  'REDUCTION', 'REFLEXION', 'REGENERATION', 'REGLEMENTATION', 'RELATION',
+  'REPETITION', 'REPRESENTATION', 'REPRODUCTION', 'RESERVATION', 'RESIGNATION',
+  'RESOLUTION', 'RESTAURATION', 'RESTRICTION', 'RETRIBUTION', 'REUNIFICATION',
+  'REVELATION', 'SATISFACTION', 'SELECTION', 'SEPARATION', 'SIGNIFICATION',
+  'SIMPLIFICATION', 'SITUATION', 'SOLUTION', 'SPECIALISATION', 'SPECIFICATION',
+  'SPECULATION', 'STABILISATION', 'STIMULATION', 'SUBSTITUTION', 'SUGGESTION',
+  'SUPERSTITION', 'SUPPOSITION', 'SUPPRESSION', 'SURVEILLANCE', 'TELECOMMUNICATION',
+  'TENTATION', 'TERMINAISON', 'TOLERANCE', 'TRADITION', 'TRANSACTION',
+  'TRANSMISSION', 'TRANSPORTATION', 'VACCINATION', 'VALORISATION', 'VARIATION',
+  'VEGETATION', 'VERIFICATION', 'VIBRATION', 'VIOLATION', 'VISUALISATION',
+  'RESPONSABILITES', 'TRANSFORMATIONS', 'ADMINISTRATIONS', 'INTERPRETATIONS',
+  'RECOMMANDATIONS', 'REPRESENTATIONS', 'IDENTIFICATIONS', 'MULTIPLICATIONS',
+  'SPECIALISATIONS', 'GENERALISATIONS', 'SIMPLIFICATIONS', 'RECONSTRUCTIONS'
+];
+
 function httpsGet(url) {
   return new Promise(function (resolve) {
     https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } }, function (res) {
@@ -53,26 +97,33 @@ function shuffle(arr) {
   return arr;
 }
 
-function buildCandidateList(rawText, budget, alreadyKnown) {
+function collectByLength(lines, seen) {
   var byLength = {};
-  var seen = new Set();
-
-  rawText.split('\n').forEach(function (line) {
-    var word = extractWords.normalizeWord(line.trim());
+  lines.forEach(function (raw) {
+    var word = extractWords.normalizeWord(raw);
     if (!/^[A-Z]+$/.test(word)) return;
     if (word.length < MIN_LENGTH || word.length > MAX_LENGTH) return;
-    if (seen.has(word) || alreadyKnown.has(word)) return;
+    if (seen.has(word)) return;
     seen.add(word);
     if (!byLength[word.length]) byLength[word.length] = [];
     byLength[word.length].push(word);
   });
+  return byLength;
+}
 
-  var lengths = Object.keys(byLength).map(Number);
+function buildCandidateList(rawText, budget, alreadyKnown, curatedWords) {
+  var seen = new Set(alreadyKnown);
+  var curatedByLength = collectByLength(curatedWords || [], seen);
+  var wordlistByLength = collectByLength(rawText.split('\n'), seen);
+
+  var lengths = Object.keys(Object.assign({}, curatedByLength, wordlistByLength)).map(Number);
   var capPerLength = Math.ceil(budget / lengths.length);
   var selected = [];
   lengths.forEach(function (len) {
-    var bucket = shuffle(byLength[len]).slice(0, capPerLength);
-    selected = selected.concat(bucket);
+    var curated = curatedByLength[len] || [];
+    var remaining = Math.max(0, capPerLength - curated.length);
+    var fromWordlist = shuffle(wordlistByLength[len] || []).slice(0, remaining);
+    selected = selected.concat(curated, fromWordlist);
   });
 
   return selected;
@@ -128,7 +179,7 @@ if (require.main === module) {
   fetchWordlist().then(function (rawText) {
     var dico = loadExistingDico();
     var alreadyKnown = new Set(dico.keys());
-    var candidates = buildCandidateList(rawText, budget, alreadyKnown);
+    var candidates = buildCandidateList(rawText, budget, alreadyKnown, CURATED_LONG_WORDS);
     console.log(candidates.length + ' mots a scraper sur fsolver.fr (budget demande: ' + budget + ')...');
 
     return scrapeAll(candidates, dico, function (word, count, idx, total) {
