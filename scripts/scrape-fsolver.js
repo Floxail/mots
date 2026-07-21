@@ -178,6 +178,8 @@ function scrapeAll(words, dico, onProgress) {
   }, Promise.resolve());
 }
 
+var SAVE_EVERY_N_WORDS = 20;
+
 if (require.main === module) {
   var budget = parseInt(process.argv[2], 10) || 500;
 
@@ -187,8 +189,15 @@ if (require.main === module) {
     var candidates = buildCandidateList(rawText, budget, alreadyKnown, CURATED_LONG_WORDS);
     console.log(candidates.length + ' mots a scraper sur fsolver.fr (budget demande: ' + budget + ')...');
 
+    process.on('SIGINT', function () {
+      console.log('\nInterrompu, sauvegarde de ' + dico.size + ' mots avant de quitter...');
+      saveDico(dico);
+      process.exit(0);
+    });
+
     return scrapeAll(candidates, dico, function (word, count, idx, total) {
       console.log('[' + idx + '/' + total + '] ' + word + ' -> ' + count + ' definitions');
+      if (idx % SAVE_EVERY_N_WORDS === 0) saveDico(dico);
     }).then(function () {
       saveDico(dico);
       console.log(dico.size + ' mots au total dans data/dico.json');
