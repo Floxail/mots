@@ -21,15 +21,15 @@ function mulberry32(seed) {
 
 function generate(nbLines, nbColumns, dictionary, stats, options) {
   options = options || {};
-  var maxSkeletonAttempts = options.maxSkeletonAttempts || 20;
-  var rng = options.rng || mulberry32(options.seed || Date.now());
+  var maxSkeletonAttempts = options.maxSkeletonAttempts !== undefined ? options.maxSkeletonAttempts : 20;
+  var rng = options.rng || mulberry32(options.seed !== undefined ? options.seed : Date.now());
 
   for (var attempt = 0; attempt < maxSkeletonAttempts; attempt++) {
     var skeleton = skeletonLib.generateSkeleton(nbLines, nbColumns, stats, rng);
     var slots = slotsLib.deriveSlots(skeleton);
     var assignment = backtrackingLib.solve(slots, dictionary, {
-      maxBacktracks: options.maxBacktracks || 50000,
-      timeoutMs: options.timeoutMs || 5000
+      maxBacktracks: options.maxBacktracks !== undefined ? options.maxBacktracks : 50000,
+      timeoutMs: options.timeoutMs !== undefined ? options.timeoutMs : 5000
     });
     if (!assignment) continue;
 
