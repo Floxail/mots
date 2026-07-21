@@ -116,7 +116,12 @@ function buildCandidateList(rawText, budget, alreadyKnown, curatedWords) {
   var curatedByLength = collectByLength(curatedWords || [], seen);
   var wordlistByLength = collectByLength(rawText.split('\n'), seen);
 
-  var lengths = Object.keys(Object.assign({}, curatedByLength, wordlistByLength)).map(Number);
+  // Longest first: those buckets are the scarcest (needed for a 15x15 grid's
+  // longest slots) and the least likely to be reached if a run is stopped
+  // partway through or interrupted by rate-limiting.
+  var lengths = Object.keys(Object.assign({}, curatedByLength, wordlistByLength))
+    .map(Number)
+    .sort(function (a, b) { return b - a; });
   var capPerLength = Math.ceil(budget / lengths.length);
   var selected = [];
   lengths.forEach(function (len) {
