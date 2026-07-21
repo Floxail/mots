@@ -16,6 +16,17 @@ function generateSkeleton(nbLines, nbColumns, stats, rng) {
   var size = nbLines * nbColumns;
   var types = new Array(size).fill(null);
 
+  // A length-1 run gives a Letter cell no horizontal slot at all, leaving it
+  // (and the Description cell that starts it) valid only by lucky vertical
+  // alignment between unrelated rows. Excluding length 1 here guarantees
+  // every row-run is a real >=2 slot, which is enough to keep every Letter
+  // cell and every Description cell out of validate.js's orphan/no-definition
+  // checks regardless of what happens in the vertical direction.
+  var usableLengthCounts = {};
+  Object.keys(stats.segmentLengthCounts).forEach(function (len) {
+    if (Number(len) >= 2) usableLengthCounts[len] = stats.segmentLengthCounts[len];
+  });
+
   for (var row = 0; row < nbColumns; row++) {
     var col = 0;
     while (col < nbLines) {
@@ -23,7 +34,7 @@ function generateSkeleton(nbLines, nbColumns, stats, rng) {
       col++;
 
       var maxRun = nbLines - col;
-      var runLen = maxRun > 0 ? Math.min(pickSegmentLength(stats.segmentLengthCounts, rng), maxRun) : 0;
+      var runLen = maxRun >= 2 ? Math.min(pickSegmentLength(usableLengthCounts, rng), maxRun) : 0;
       for (var k = 0; k < runLen; k++) {
         types[row * nbLines + col + k] = enums.CaseType.Letter;
       }
