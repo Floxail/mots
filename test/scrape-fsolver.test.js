@@ -22,3 +22,39 @@ test('buildCandidateList caps the number of words taken per length bucket', func
   var lengthFour = candidates.filter(function (w) { return w.length === 4; });
   assert.ok(lengthFour.length <= 14);
 });
+
+function lexiqueRow(mot, freqMot, nbLettres) {
+  var cols = new Array(15).fill('');
+  cols[0] = mot;
+  cols[9] = String(freqMot);
+  cols[14] = String(nbLettres);
+  return cols.join('\t');
+}
+
+test('buildCandidateListFromLexique picks the highest-frequency words per length, ignoring non-alpha/out-of-range rows', function () {
+  var header = '1_Mot\t...';
+  var rows = [
+    lexiqueRow('chat', 50, 4),
+    lexiqueRow('chic', 5, 4),
+    lexiqueRow("n'", 9999, 2),
+    lexiqueRow('abaisse-langue', 20, 14),
+    lexiqueRow('bois', 10, 4)
+  ];
+  var raw = [header].concat(rows).join('\n');
+
+  var candidates = scrapeFsolver.buildCandidateListFromLexique(raw, 1, new Set());
+  var lengthFour = candidates.filter(function (w) { return w.length === 4; });
+  assert.deepStrictEqual(lengthFour, ['CHAT']);
+});
+
+test('buildCandidateListFromLexique keeps the max frequency seen when a word appears on multiple rows', function () {
+  var header = '1_Mot\t...';
+  var rows = [
+    lexiqueRow('avance', 3, 6),
+    lexiqueRow('avance', 80, 6)
+  ];
+  var raw = [header].concat(rows).join('\n');
+
+  var candidates = scrapeFsolver.buildCandidateListFromLexique(raw, 1, new Set());
+  assert.deepStrictEqual(candidates, ['AVANCE']);
+});

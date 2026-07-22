@@ -9,6 +9,7 @@ var DATA_DIR = path.join(__dirname, '..', 'data');
 var WORDLIST_CACHE = path.join(DATA_DIR, 'wordlist-raw.txt');
 var DICO_PATH = path.join(DATA_DIR, 'dico.json');
 var FAILED_PATH = path.join(DATA_DIR, 'fsolver-failed.json');
+var LEXIQUE_PATH = path.join(DATA_DIR, 'Lexique4.tsv');
 var MIN_LENGTH = 2;
 var MAX_LENGTH = 15;
 var REQUEST_DELAY_MS = 1500;
@@ -135,6 +136,53 @@ function buildCandidateList(rawText, budget, alreadyKnown, curatedWords) {
   return selected;
 }
 
+// Lexique (lexique.org) is a French lexical database with real usage
+// frequency per word form, unlike the raw Gutenberg wordlist which is
+// dominated by rare conjugated forms fsolver has no definitions for.
+// Column 10 (index 9) is "10_FreqMot", the word form's own frequency
+// per million occurrences - a direct "is this a real, commonly used
+// word" signal to sort candidates by instead of picking at random.
+function buildCandidateListFromLexique(rawText, budget, alreadyKnown, curatedWords) {
+  var seen = new Set(alreadyKnown);
+  var curatedByLength = collectByLength(curatedWords || [], seen);
+
+  var byLength = {};
+  var bestFreq = new Map();
+  var lines = rawText.split('\n');
+  for (var i = 1; i < lines.length; i++) {
+    var cols = lines[i].split('\t');
+    if (cols.length < 15) continue;
+    var word = extractWords.normalizeWord(cols[0]);
+    if (!/^[A-Z]+$/.test(word)) continue;
+    if (word.length < MIN_LENGTH || word.length > MAX_LENGTH) continue;
+    if (seen.has(word)) continue;
+    var freq = parseFloat(cols[9]) || 0;
+    if (bestFreq.has(word) && bestFreq.get(word) >= freq) continue;
+    bestFreq.set(word, freq);
+  }
+  bestFreq.forEach(function (freq, word) {
+    if (!byLength[word.length]) byLength[word.length] = [];
+    byLength[word.length].push(word);
+  });
+  Object.keys(byLength).forEach(function (len) {
+    byLength[len].sort(function (a, b) { return bestFreq.get(b) - bestFreq.get(a); });
+  });
+
+  var lengths = Object.keys(Object.assign({}, curatedByLength, byLength))
+    .map(Number)
+    .sort(function (a, b) { return b - a; });
+  var capPerLength = Math.ceil(budget / lengths.length);
+  var selected = [];
+  lengths.forEach(function (len) {
+    var curated = curatedByLength[len] || [];
+    var remaining = Math.max(0, capPerLength - curated.length);
+    var fromLexique = (byLength[len] || []).slice(0, remaining);
+    selected = selected.concat(curated, fromLexique);
+  });
+
+  return selected;
+}
+
 function loadExistingDico() {
   if (!fs.existsSync(DICO_PATH)) return new Map();
   var entries = JSON.parse(fs.readFileSync(DICO_PATH, 'utf8'));
@@ -203,15 +251,27 @@ function scrapeAll(words, dico, onProgress) {
 
 var SAVE_EVERY_N_WORDS = 20;
 
+function loadWordSource() {
+  if (fs.existsSync(LEXIQUE_PATH)) {
+    console.log('Utilisation de Lexique4.tsv (mots tries par frequence reelle)...');
+    return Promise.resolve({ rawText: fs.readFileSync(LEXIQUE_PATH, 'utf8'), fromLexique: true });
+  }
+  return fetchWordlist().then(function (rawText) {
+    return { rawText: rawText, fromLexique: false };
+  });
+}
+
 if (require.main === module) {
   var budget = parseInt(process.argv[2], 10) || 500;
 
-  fetchWordlist().then(function (rawText) {
+  loadWordSource().then(function (source) {
     var dico = loadExistingDico();
     var failedWords = loadFailedWords();
     var excluded = new Set(dico.keys());
     failedWords.forEach(function (w) { excluded.add(w); });
-    var candidates = buildCandidateList(rawText, budget, excluded, CURATED_LONG_WORDS);
+    var candidates = source.fromLexique
+      ? buildCandidateListFromLexique(source.rawText, budget, excluded, CURATED_LONG_WORDS)
+      : buildCandidateList(source.rawText, budget, excluded, CURATED_LONG_WORDS);
     console.log(candidates.length + ' mots a scraper sur fsolver.fr (budget demande: ' + budget + '), ' + failedWords.size + ' mots deja connus sans definition ignores...');
 
     function saveAll() {
@@ -241,6 +301,7 @@ if (require.main === module) {
 
 module.exports = {
   buildCandidateList: buildCandidateList,
+  buildCandidateListFromLexique: buildCandidateListFromLexique,
   scrapeAll: scrapeAll,
   scrapeWord: scrapeWord
 };
