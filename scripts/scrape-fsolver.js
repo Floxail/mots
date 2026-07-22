@@ -8,6 +8,7 @@ var WORDLIST_URL = 'https://raw.githubusercontent.com/chrplr/openlexicon/master/
 var DATA_DIR = path.join(__dirname, '..', 'data');
 var WORDLIST_CACHE = path.join(DATA_DIR, 'wordlist-raw.txt');
 var DICO_PATH = path.join(DATA_DIR, 'dico.json');
+var FAILED_PATH = path.join(DATA_DIR, 'fsolver-failed.json');
 var MIN_LENGTH = 2;
 var MAX_LENGTH = 15;
 var REQUEST_DELAY_MS = 1500;
@@ -158,6 +159,19 @@ function saveDico(map) {
   fs.writeFileSync(DICO_PATH, JSON.stringify(entries, null, 2));
 }
 
+function loadFailedWords() {
+  if (!fs.existsSync(FAILED_PATH)) return new Set();
+  return new Set(JSON.parse(fs.readFileSync(FAILED_PATH, 'utf8')));
+}
+
+function saveFailedWords(set) {
+  // Same concurrency concern as saveDico: merge with disk instead of overwriting.
+  var onDisk = loadFailedWords();
+  onDisk.forEach(function (w) { set.add(w); });
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(FAILED_PATH, JSON.stringify(Array.from(set).sort(), null, 2));
+}
+
 function scrapeWord(word) {
   return httpsGet('https://www.fsolver.fr/mots-fleches/' + word).then(function (r) {
     if (r.status === 429) {
@@ -194,22 +208,30 @@ if (require.main === module) {
 
   fetchWordlist().then(function (rawText) {
     var dico = loadExistingDico();
-    var alreadyKnown = new Set(dico.keys());
-    var candidates = buildCandidateList(rawText, budget, alreadyKnown, CURATED_LONG_WORDS);
-    console.log(candidates.length + ' mots a scraper sur fsolver.fr (budget demande: ' + budget + ')...');
+    var failedWords = loadFailedWords();
+    var excluded = new Set(dico.keys());
+    failedWords.forEach(function (w) { excluded.add(w); });
+    var candidates = buildCandidateList(rawText, budget, excluded, CURATED_LONG_WORDS);
+    console.log(candidates.length + ' mots a scraper sur fsolver.fr (budget demande: ' + budget + '), ' + failedWords.size + ' mots deja connus sans definition ignores...');
+
+    function saveAll() {
+      saveDico(dico);
+      saveFailedWords(failedWords);
+    }
 
     process.on('SIGINT', function () {
       console.log('\nInterrompu, sauvegarde de ' + dico.size + ' mots avant de quitter...');
-      saveDico(dico);
+      saveAll();
       process.exit(0);
     });
 
     return scrapeAll(candidates, dico, function (word, count, idx, total) {
       console.log('[' + idx + '/' + total + '] ' + word + ' -> ' + count + ' definitions');
-      if (idx % SAVE_EVERY_N_WORDS === 0) saveDico(dico);
+      if (count === 0) failedWords.add(word);
+      if (idx % SAVE_EVERY_N_WORDS === 0) saveAll();
     }).then(function () {
-      saveDico(dico);
-      console.log(dico.size + ' mots au total dans data/dico.json');
+      saveAll();
+      console.log(dico.size + ' mots au total dans data/dico.json, ' + failedWords.size + ' mots sans definition connus');
     });
   }).catch(function (err) {
     console.error(err);
