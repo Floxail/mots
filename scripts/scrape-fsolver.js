@@ -143,6 +143,15 @@ function loadExistingDico() {
 }
 
 function saveDico(map) {
+  // Merge with whatever is currently on disk instead of overwriting outright:
+  // if another scrape-fsolver.js process is running concurrently against the
+  // same dico.json, this keeps its saves from clobbering ours (and vice versa).
+  var onDisk = loadExistingDico();
+  onDisk.forEach(function (defs, word) {
+    if (!map.has(word)) map.set(word, new Set());
+    defs.forEach(function (d) { map.get(word).add(d); });
+  });
+
   var entries = [];
   map.forEach(function (defs, word) { entries.push({ word: word, definitions: Array.from(defs) }); });
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
