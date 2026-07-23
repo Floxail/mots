@@ -474,6 +474,42 @@ GridManager.prototype.retreiveAndParseGrid = function (gridNumber, callback) {
   });
 };
 
+// Loads a grid produced by scripts/generate-grid.js instead of fetching one
+// from GSO. Same output shape as retreiveAndParseGrid ({nbLines, nbColumns,
+// nbWords, cases}), so nothing downstream (checkPlayerWord, getGrid, etc.)
+// needs to know the difference.
+GridManager.prototype.loadLocalGrid = function (filePath, callback) {
+  var self = this;
+  fs.readFile(filePath, 'utf8', function (err, text) {
+    if (err) {
+      onGetGridError(callback, 'Cannot read local grid file: ' + err.message);
+      return;
+    }
+
+    var grid;
+    try {
+      grid = JSON.parse(text);
+    } catch (e) {
+      onGetGridError(callback, 'Invalid local grid JSON: ' + e.message);
+      return;
+    }
+
+    self._nbLetters = 0;
+    grid.cases.forEach(function (cell) {
+      if (cell.type === enums.CaseType.Letter) self._nbLetters++;
+    });
+
+    self._gridInfos.provider = 'LOCAL';
+    self._gridInfos.id = 'genere';
+    self._gridInfos.level = 0;
+    self._gridInfos.nbWords = grid.nbWords;
+    self._gridInfos.date = Date.now();
+
+    self._grid = grid;
+    callback(self._grid);
+  });
+};
+
 GridManager.prototype.resetGrid = function (gridNumber, callback) {
   this._grid = null;
   this._wordsPoints = null;
@@ -485,6 +521,11 @@ GridManager.prototype.resetGrid = function (gridNumber, callback) {
   this._gridInfos.level = 0;
   this._gridInfos.nbWords = 0;
   this._gridInfos.date = null;
+
+  if (gridNumber === 'local') {
+    this.loadLocalGrid(path.join(__dirname, '..', 'data', 'generated-grid.json'), callback);
+    return;
+  }
 
   this.retreiveAndParseGrid(gridNumber, callback);
 };
