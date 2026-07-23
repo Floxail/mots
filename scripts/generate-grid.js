@@ -48,12 +48,15 @@ function generate(nbLines, nbColumns, dictionary, stats, options) {
 }
 
 if (require.main === module) {
-  var size = parseInt(process.argv[2], 10) || 15;
+  // node scripts/generate-grid.js 15       -> 15x15 (square)
+  // node scripts/generate-grid.js 13 15    -> 13 wide x 15 tall (rectangular)
+  var nbLines = parseInt(process.argv[2], 10) || 15;
+  var nbColumns = parseInt(process.argv[3], 10) || nbLines;
   var dico = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'dico.json'), 'utf8'));
   var stats = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'gso-stats.json'), 'utf8'));
   var dictionary = dictionaryLib.buildDictionary(dico);
 
-  var grid = generate(size, size, dictionary, stats, {
+  var grid = generate(nbLines, nbColumns, dictionary, stats, {
     onAttempt: function (n, total, nbSlots) {
       console.log('Tentative ' + n + '/' + total + ' (' + nbSlots + ' slots)...');
     }
