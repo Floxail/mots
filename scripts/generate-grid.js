@@ -34,7 +34,19 @@ function generate(nbLines, nbColumns, dictionary, stats, options) {
   for (var attempt = 0; attempt < maxSkeletonAttempts; attempt++) {
     var skeleton = skeletonLib.generateSkeleton(nbLines, nbColumns, stats, rng);
     var slots = slotsLib.deriveSlots(skeleton);
-    if (options.onAttempt) options.onAttempt(attempt + 1, maxSkeletonAttempts, slots.length);
+
+    // Deriving a skeleton is cheap (milliseconds); solving one is not (up to
+    // timeoutMs). Slot count is the strongest available predictor of how hard
+    // a skeleton will be to solve, so reject one outside the desired range
+    // before spending any solver budget on it at all.
+    var tooManySlots = options.maxSlots !== undefined && slots.length > options.maxSlots;
+    var tooFewSlots = options.minSlots !== undefined && slots.length < options.minSlots;
+    if (tooManySlots || tooFewSlots) {
+      if (options.onAttempt) options.onAttempt(attempt + 1, maxSkeletonAttempts, slots.length, true);
+      continue;
+    }
+
+    if (options.onAttempt) options.onAttempt(attempt + 1, maxSkeletonAttempts, slots.length, false);
     var assignment = backtrackingLib.solve(slots, dictionary, {
       maxBacktracks: options.maxBacktracks !== undefined ? options.maxBacktracks : 2000000,
       timeoutMs: options.timeoutMs !== undefined ? options.timeoutMs : 20000
@@ -48,17 +60,20 @@ function generate(nbLines, nbColumns, dictionary, stats, options) {
 }
 
 if (require.main === module) {
-  // node scripts/generate-grid.js 15       -> 15x15 (square)
-  // node scripts/generate-grid.js 13 15    -> 13 wide x 15 tall (rectangular)
+  // node scripts/generate-grid.js 15          -> 15x15 (square)
+  // node scripts/generate-grid.js 13 15       -> 13 wide x 15 tall (rectangular)
+  // node scripts/generate-grid.js 15 15 50    -> 15x15, skip any skeleton with more than 50 slots
   var nbLines = parseInt(process.argv[2], 10) || 15;
   var nbColumns = parseInt(process.argv[3], 10) || nbLines;
+  var maxSlots = process.argv[4] !== undefined ? parseInt(process.argv[4], 10) : undefined;
   var dico = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'dico.json'), 'utf8'));
   var stats = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'gso-stats.json'), 'utf8'));
   var dictionary = dictionaryLib.buildDictionary(dico);
 
   var grid = generate(nbLines, nbColumns, dictionary, stats, {
-    onAttempt: function (n, total, nbSlots) {
-      console.log('Tentative ' + n + '/' + total + ' (' + nbSlots + ' slots)...');
+    maxSlots: maxSlots,
+    onAttempt: function (n, total, nbSlots, skipped) {
+      console.log('Tentative ' + n + '/' + total + ' (' + nbSlots + ' slots)' + (skipped ? ' - ignoree (trop de slots)' : '...'));
     }
   });
   if (!grid) {

@@ -28,3 +28,23 @@ test('generate returns null when the dictionary cannot satisfy any skeleton', fu
   var grid = generateGrid.generate(5, 1, dico, stats, { seed: 42, maxSkeletonAttempts: 2, maxBacktracks: 10 });
   assert.strictEqual(grid, null);
 });
+
+test('generate skips a skeleton without solving it when its slot count exceeds options.maxSlots', function () {
+  // 5-wide, 1-tall, single possible segment length -> always exactly 1 slot.
+  // The dictionary CAN satisfy this skeleton (same as the passing test above),
+  // so maxSlots:0 rejecting it proves the slot-count filter runs before - and
+  // independently of - the solver, not that the dictionary was insufficient.
+  var stats = { segmentLengthCounts: { 4: 1 } };
+  var dico = dictionary.buildDictionary([{ word: 'ABCD', definitions: ['test def'] }]);
+
+  var grid = generateGrid.generate(5, 1, dico, stats, { seed: 42, maxSkeletonAttempts: 3, maxSlots: 0 });
+  assert.strictEqual(grid, null);
+});
+
+test('generate still succeeds when maxSlots is high enough to admit the skeleton', function () {
+  var stats = { segmentLengthCounts: { 4: 1 } };
+  var dico = dictionary.buildDictionary([{ word: 'ABCD', definitions: ['test def'] }]);
+
+  var grid = generateGrid.generate(5, 1, dico, stats, { seed: 42, maxSlots: 1 });
+  assert.notStrictEqual(grid, null);
+});
