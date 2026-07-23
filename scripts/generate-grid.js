@@ -21,15 +21,20 @@ function mulberry32(seed) {
 
 function generate(nbLines, nbColumns, dictionary, stats, options) {
   options = options || {};
-  var maxSkeletonAttempts = options.maxSkeletonAttempts !== undefined ? options.maxSkeletonAttempts : 20;
+  // Empirically measured against a real ~24k-word dico at 10x10 (with forward
+  // checking in backtracking.js): ~15% of random skeletons solve within
+  // 200000 backtracks / 8s. Raising skeleton attempts to 30 keeps the odds
+  // of total failure low (~1% at that per-attempt rate) without an excessive
+  // worst-case runtime.
+  var maxSkeletonAttempts = options.maxSkeletonAttempts !== undefined ? options.maxSkeletonAttempts : 30;
   var rng = options.rng || mulberry32(options.seed !== undefined ? options.seed : Date.now());
 
   for (var attempt = 0; attempt < maxSkeletonAttempts; attempt++) {
     var skeleton = skeletonLib.generateSkeleton(nbLines, nbColumns, stats, rng);
     var slots = slotsLib.deriveSlots(skeleton);
     var assignment = backtrackingLib.solve(slots, dictionary, {
-      maxBacktracks: options.maxBacktracks !== undefined ? options.maxBacktracks : 50000,
-      timeoutMs: options.timeoutMs !== undefined ? options.timeoutMs : 5000
+      maxBacktracks: options.maxBacktracks !== undefined ? options.maxBacktracks : 200000,
+      timeoutMs: options.timeoutMs !== undefined ? options.timeoutMs : 8000
     });
     if (!assignment) continue;
 
