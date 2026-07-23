@@ -21,20 +21,23 @@ function mulberry32(seed) {
 
 function generate(nbLines, nbColumns, dictionary, stats, options) {
   options = options || {};
-  // Empirically measured against a real ~24k-word dico at 10x10 (with forward
-  // checking in backtracking.js): ~15% of random skeletons solve within
-  // 200000 backtracks / 8s. Raising skeleton attempts to 30 keeps the odds
-  // of total failure low (~1% at that per-attempt rate) without an excessive
-  // worst-case runtime.
-  var maxSkeletonAttempts = options.maxSkeletonAttempts !== undefined ? options.maxSkeletonAttempts : 30;
+  // Measured against a real ~24k-word dico at 15x15: a genuinely infeasible
+  // skeleton can take ~77s for the solver to exhaustively rule out (not a
+  // budget shortfall - it proves no solution exists before either limit is
+  // hit). This generator runs offline, once per grid (e.g. a daily cron job),
+  // never on a player-facing request path, so there is no real reason to
+  // stay near the original <5s aspiration - a few minutes total is an
+  // acceptable trade for reliably finding a solvable skeleton.
+  var maxSkeletonAttempts = options.maxSkeletonAttempts !== undefined ? options.maxSkeletonAttempts : 40;
   var rng = options.rng || mulberry32(options.seed !== undefined ? options.seed : Date.now());
 
   for (var attempt = 0; attempt < maxSkeletonAttempts; attempt++) {
     var skeleton = skeletonLib.generateSkeleton(nbLines, nbColumns, stats, rng);
     var slots = slotsLib.deriveSlots(skeleton);
+    if (options.onAttempt) options.onAttempt(attempt + 1, maxSkeletonAttempts, slots.length);
     var assignment = backtrackingLib.solve(slots, dictionary, {
-      maxBacktracks: options.maxBacktracks !== undefined ? options.maxBacktracks : 200000,
-      timeoutMs: options.timeoutMs !== undefined ? options.timeoutMs : 8000
+      maxBacktracks: options.maxBacktracks !== undefined ? options.maxBacktracks : 2000000,
+      timeoutMs: options.timeoutMs !== undefined ? options.timeoutMs : 20000
     });
     if (!assignment) continue;
 
@@ -50,7 +53,11 @@ if (require.main === module) {
   var stats = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'gso-stats.json'), 'utf8'));
   var dictionary = dictionaryLib.buildDictionary(dico);
 
-  var grid = generate(size, size, dictionary, stats, {});
+  var grid = generate(size, size, dictionary, stats, {
+    onAttempt: function (n, total, nbSlots) {
+      console.log('Tentative ' + n + '/' + total + ' (' + nbSlots + ' slots)...');
+    }
+  });
   if (!grid) {
     console.error('Echec de generation apres plusieurs tentatives.');
     process.exit(1);
