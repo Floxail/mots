@@ -78,3 +78,19 @@ test('generateSkeleton does not create a length-1 run when only 1 cell remains a
     assert.ok(len >= 2, 'expected every horizontal run to be >= 2, got ' + len);
   });
 });
+
+test('generateSkeleton absorbs a 1-cell stranded stub into the preceding run instead of creating a dead Description cell', function () {
+  var stats = { segmentLengthCounts: { 2: 1 } };
+  var rng = fixedRng([0.5]);
+  // 5-wide row: D@0, run(2)@1-2, then placing a fresh D@3 would strand
+  // exactly 1 cell (col4) with no room for a real run. Since col2 (right
+  // before col3) is already a Letter, col3 and col4 both get absorbed into
+  // that run instead of col3 becoming a Description with zero horizontal
+  // reach (which, without a lucky vertical neighbor, fails validate.js's
+  // "no definition" check - reproduced against real data before this fix).
+  var result = skeleton.generateSkeleton(5, 1, stats, rng);
+  assert.deepStrictEqual(result.types, [
+    enums.CaseType.Description, enums.CaseType.Letter, enums.CaseType.Letter,
+    enums.CaseType.Letter, enums.CaseType.Letter
+  ]);
+});

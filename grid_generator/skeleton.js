@@ -17,11 +17,10 @@ function generateSkeleton(nbLines, nbColumns, stats, rng) {
   var types = new Array(size).fill(null);
 
   // A length-1 run gives a Letter cell no horizontal slot at all, leaving it
-  // (and the Description cell that starts it) valid only by lucky vertical
-  // alignment between unrelated rows. Excluding length 1 here guarantees
-  // every row-run is a real >=2 slot, which is enough to keep every Letter
-  // cell and every Description cell out of validate.js's orphan/no-definition
-  // checks regardless of what happens in the vertical direction.
+  // valid only by lucky vertical alignment between unrelated rows. Excluding
+  // length 1 here guarantees every row-run is a real >=2 slot, which keeps
+  // every Letter cell out of validate.js's orphan check regardless of what
+  // happens in the vertical direction.
   var usableLengthCounts = {};
   Object.keys(stats.segmentLengthCounts).forEach(function (len) {
     if (Number(len) >= 2) usableLengthCounts[len] = stats.segmentLengthCounts[len];
@@ -30,13 +29,27 @@ function generateSkeleton(nbLines, nbColumns, stats, rng) {
   for (var row = 0; row < nbColumns; row++) {
     var col = 0;
     while (col < nbLines) {
+      // Placing a Description here would strand exactly 1 cell after it (no
+      // room for a real run) - if the cell just before this one is already
+      // part of a letter run, absorb the remainder into that run instead of
+      // creating a new Description with zero horizontal reach. Such a cell
+      // would depend entirely on vertical luck for a definition, and this
+      // codebase's row-only tiling doesn't coordinate columns between rows
+      // to make that reliable (confirmed in production: "Case description
+      // sans definition" failures traced back to exactly this case).
+      var strandedByDescHere = nbLines - col - 1;
+      if (strandedByDescHere === 1 && col > 0 && types[row * nbLines + col - 1] === enums.CaseType.Letter) {
+        for (var k = col; k < nbLines; k++) types[row * nbLines + k] = enums.CaseType.Letter;
+        break;
+      }
+
       types[row * nbLines + col] = enums.CaseType.Description;
       col++;
 
       var maxRun = nbLines - col;
       var runLen = maxRun >= 2 ? Math.min(pickSegmentLength(usableLengthCounts, rng), maxRun) : 0;
-      for (var k = 0; k < runLen; k++) {
-        types[row * nbLines + col + k] = enums.CaseType.Letter;
+      for (var k2 = 0; k2 < runLen; k2++) {
+        types[row * nbLines + col + k2] = enums.CaseType.Letter;
       }
       col += runLen;
     }
