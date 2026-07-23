@@ -29,6 +29,22 @@ function solve(slots, dictionary, options) {
     return constraints;
   }
 
+  // Forward checking: after tentatively placing a word, verify every
+  // not-yet-assigned crossing neighbor still has at least one viable
+  // candidate given that placement. Without this, a doomed branch is only
+  // discovered once the search reaches that neighbor's own turn in `order`,
+  // which can be arbitrarily many slots (and recursive calls) later.
+  function hasViableNeighbors(slot) {
+    for (var i = 0; i < slot.crossings.length; i++) {
+      var cross = slot.crossings[i];
+      if (assignment[cross.slotIndex] !== null) continue;
+      var neighbor = slots[cross.slotIndex];
+      var candidates = dictionary.candidatesFor(neighbor.length, constraintsFor(neighbor), usedWords);
+      if (candidates.length === 0) return false;
+    }
+    return true;
+  }
+
   function backtrack(orderIdx) {
     if (Date.now() > deadlineMs) return false;
     if (orderIdx >= order.length) return true;
@@ -42,7 +58,7 @@ function solve(slots, dictionary, options) {
       assignment[slotIndex] = word;
       usedWords.add(word);
 
-      if (backtrack(orderIdx + 1)) return true;
+      if (hasViableNeighbors(slot) && backtrack(orderIdx + 1)) return true;
 
       assignment[slotIndex] = null;
       usedWords.delete(word);
