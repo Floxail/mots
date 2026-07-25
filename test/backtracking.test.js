@@ -52,6 +52,25 @@ test('solve still finds the unique correct assignment through a 3-slot chain wit
   assert.deepStrictEqual(result, ['AAM', 'MZZ', 'ZOO']);
 });
 
+test('solve rejects reusing a word across two non-crossing slots of the same length (usedWords must not be cached stale)', function () {
+  // Two slots that never cross each other at all, both length 3, but the
+  // dictionary only has ONE length-3 word. If domain caching only
+  // invalidates crossing neighbors (not every same-length slot) when a word
+  // gets used, the second slot's cached domain could still show the word as
+  // available even after slot 0 consumes it - this must not happen.
+  var dico = dictionary.buildDictionary([
+    { word: 'CAT', definitions: ['x'] }
+  ]);
+
+  var slots = [
+    { axis: 'H', cells: [0, 1, 2], length: 3, crossings: [] },
+    { axis: 'H', cells: [10, 11, 12], length: 3, crossings: [] }
+  ];
+
+  var result = backtracking.solve(slots, dico, {});
+  assert.strictEqual(result, null);
+});
+
 test('solve returns null when no assignment satisfies the crossing constraint', function () {
   var dico = dictionary.buildDictionary([
     { word: 'DOG', definitions: ['x'] },
