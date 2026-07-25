@@ -34,5 +34,9 @@ test('exportGrid fills letters and attaches definitions/arrows on description ce
   assert.strictEqual(descCell.nbDesc, 2);
   assert.strictEqual(descCell.nbLines, 2);
   assert.deepStrictEqual(descCell.desc, ['Across def', 'Down def']);
-  assert.deepStrictEqual(descCell.arrow, [enums.ArrowDirections.Right, enums.ArrowDirections.Bottom]);
+  // NOT enums.ArrowDirections - the front-end renderer (grid.js) checks
+  // dir===0 for Right and dir===2 for Bottom, matching gridManager.js's own
+  // local enumArrow convention, not the shared enum. See exporter.js's
+  // ARROW_RIGHT/ARROW_BOTTOM comment for the full explanation.
+  assert.deepStrictEqual(descCell.arrow, [0, 2]);
 });

@@ -1,8 +1,17 @@
 var enums = require('../game_files/enums');
 var Case = require('../game_files/case');
 
-var ARROW_RIGHT = enums.ArrowDirections.Right;
-var ARROW_BOTTOM = enums.ArrowDirections.Bottom;
+// NOT enums.ArrowDirections (Right:1, Bottom:2) - the front-end renderer
+// (public/javascripts/game/grid.js createDescriptionArrows, documented at its
+// top as "dir: 0=Right, 1=RightBottom, 2=Bottom, 3=BottomRight") checks
+// dir===0 for Right and dir===2 for Bottom. This matches gridManager.js's own
+// *local* enumArrow (Right:0, Bottom:2), which is what every real GSO grid's
+// arrow values have always used - not the shared enum. Confirmed via
+// graphify extraction flagging the enumArrow/ArrowDirections mismatch as
+// AMBIGUOUS; a prior fix here wrongly "corrected" this to the shared enum's
+// Right=1, which the renderer does not recognize as Right at all.
+var ARROW_RIGHT = 0;
+var ARROW_BOTTOM = 2;
 
 function findSlotStartingAt(slots, cellIndex, axis) {
   for (var i = 0; i < slots.length; i++) {
