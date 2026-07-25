@@ -60,20 +60,23 @@ function generate(nbLines, nbColumns, dictionary, stats, options) {
 }
 
 if (require.main === module) {
-  // node scripts/generate-grid.js 15          -> 15x15 (square)
-  // node scripts/generate-grid.js 13 15       -> 13 wide x 15 tall (rectangular)
-  // node scripts/generate-grid.js 15 15 50    -> 15x15, skip any skeleton with more than 50 slots
+  // node scripts/generate-grid.js 15             -> 15x15 (square)
+  // node scripts/generate-grid.js 13 15          -> 13 wide x 15 tall (rectangular)
+  // node scripts/generate-grid.js 15 15 50       -> 15x15, skip any skeleton with more than 50 slots
+  // node scripts/generate-grid.js 13 15 60 40    -> 13x15, only attempt skeletons with 40-60 slots
   var nbLines = parseInt(process.argv[2], 10) || 15;
   var nbColumns = parseInt(process.argv[3], 10) || nbLines;
   var maxSlots = process.argv[4] !== undefined ? parseInt(process.argv[4], 10) : undefined;
+  var minSlots = process.argv[5] !== undefined ? parseInt(process.argv[5], 10) : undefined;
   var dico = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'dico.json'), 'utf8'));
   var stats = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'gso-stats.json'), 'utf8'));
   var dictionary = dictionaryLib.buildDictionary(dico);
 
   var grid = generate(nbLines, nbColumns, dictionary, stats, {
     maxSlots: maxSlots,
+    minSlots: minSlots,
     onAttempt: function (n, total, nbSlots, skipped) {
-      console.log('Tentative ' + n + '/' + total + ' (' + nbSlots + ' slots)' + (skipped ? ' - ignoree (trop de slots)' : '...'));
+      console.log('Tentative ' + n + '/' + total + ' (' + nbSlots + ' slots)' + (skipped ? ' - ignoree (hors plage)' : '...'));
     }
   });
   if (!grid) {
