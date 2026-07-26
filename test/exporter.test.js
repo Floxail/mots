@@ -40,3 +40,24 @@ test('exportGrid fills letters and attaches definitions/arrows on description ce
   // ARROW_RIGHT/ARROW_BOTTOM comment for the full explanation.
   assert.deepStrictEqual(descCell.arrow, [0, 2]);
 });
+
+test('exportGrid prefers the shortest available definition for a word, not just the first scraped', function () {
+  var D = enums.CaseType.Description, L = enums.CaseType.Letter;
+  var skeleton = { nbLines: 3, nbColumns: 1, types: [D, L, L] };
+  var slots = [{ axis: 'H', cells: [1, 2], length: 2, crossings: [] }];
+  var assignment = ['AB'];
+  // fsolver-style: several definitions of very different length for the same
+  // word, scraped in no particular order. A long one landing first would
+  // overflow the 2-line cell layout the client uses when a Description cell
+  // has 2 attached definitions - picking the shortest reduces that risk.
+  var dico = dictionary.buildDictionary([
+    { word: 'AB', definitions: [
+      'POUR UN GREFFIER IL NA PAS UNE BIEN BELLE ECRITURE',
+      'COURT',
+      'UNE DEFINITION DE LONGUEUR MOYENNE ICI'
+    ] }
+  ]);
+
+  var grid = exporter.exportGrid(skeleton, slots, assignment, dico);
+  assert.strictEqual(grid.cases[0].desc[0], 'COURT');
+});

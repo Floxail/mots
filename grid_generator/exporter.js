@@ -13,6 +13,18 @@ var Case = require('../game_files/case');
 var ARROW_RIGHT = 0;
 var ARROW_BOTTOM = 2;
 
+// fsolver definitions vary wildly in length ("COURT" vs "POUR UN GREFFIER IL
+// N'A PAS UNE BIEN BELLE ECRITURE" for the same word) - the client's
+// description-cell layout was sized around GSO's typically terse clues, and
+// a long one lands hardest on a 2-attached-description cell (half the cell
+// height per line). Preferring the shortest available definition per word
+// reduces overflow risk without needing to touch the shared client CSS.
+function shortestDefinition(defs) {
+  return defs.reduce(function (shortest, d) {
+    return d.length < shortest.length ? d : shortest;
+  });
+}
+
 function findSlotStartingAt(slots, cellIndex, axis) {
   for (var i = 0; i < slots.length; i++) {
     if (slots[i].axis === axis && slots[i].cells[0] === cellIndex) return i;
@@ -51,7 +63,7 @@ function exportGrid(skeleton, slots, assignment, dictionary) {
     cell.arrow = [];
     attached.forEach(function (a) {
       var defs = dictionary.definitionsByWord.get(a.word) || [];
-      cell.desc.push(defs.length > 0 ? defs[0] : '');
+      cell.desc.push(defs.length > 0 ? shortestDefinition(defs) : '');
       cell.arrow.push(a.direction);
     });
   });
