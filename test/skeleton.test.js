@@ -119,29 +119,49 @@ test('generateSkeleton never lets a vertical run overflow past the last row', fu
   });
 });
 
+test('generateSkeleton never lets a horizontal run overflow past the last column', function () {
+  var stats = { segmentLengthCounts: { 8: 1 }, descriptionDensity: 0 };
+  // Transpose of the vertical-overflow test above: a 4-wide, 6-tall grid
+  // with the same single-huge-segment-length/zero-density stats forces the
+  // sweep to constantly try to start long horizontal runs - if horizontal
+  // clamping to `nbLines - col` were broken, this would throw (out-of-bounds
+  // index) or leave a run visibly longer than the grid width. Confirmed
+  // empirically: every row fills as a single run of length 8 clamped down
+  // to 4 (the grid width), so the clamp is genuinely exercised here.
+  var rng = fixedRng([0.9, 0.1, 0.9, 0.1, 0.9, 0.1]);
+  var result = skeleton.generateSkeleton(4, 6, stats, rng);
+  var hRuns = countRunsAxis(result.types, 4, 6, 'H');
+  hRuns.forEach(function (len) {
+    assert.ok(len <= 4, 'horizontal run of ' + len + ' cannot fit in a 4-column grid');
+  });
+});
+
 test('generateSkeleton produces a genuine crossing: a cell forced by both an active row run and an active column obligation', function () {
-  // Deterministic small case: force column 0 to start a vertical run of 3
-  // at row 0 (descriptionDensity 0, first free-cell roll picks vertical),
-  // then force row 1 to start its own horizontal run of 2 starting at
-  // column 0 - but column 0 at row 1 is already obligated by the vertical
-  // run, so it must land as a forced-by-both crossing, and the row's
-  // horizontal run must still continue correctly into column 1.
+  // Hand-traced against the actual sweep in skeleton.js for this exact rng
+  // sequence on a 4x4 grid with descriptionDensity 0:
+  //   row0: every column starts a fresh vertical run (V lengths 3,2,3,2),
+  //     since tryHorizontalFirst is false on every free-cell roll.
+  //   row1, row2 col0/col2: fully forced by those column obligations.
+  //   row2 col1 and col3: obligations have drained, so these are free
+  //     cells that each start a new vertical run (clamped to length 2 by
+  //     the remaining verticalRoom).
+  //   row3 col0: free cell, starts a horizontal run of length 3
+  //     (rowRemaining = 2).
+  //   row3 col1: BOTH active at once - columnObligation[1] still has 1
+  //     remaining (from the row2 col1 vertical run) AND rowRemaining is 2
+  //     (from the row3 col0 horizontal run). This is idx 13, the exact
+  //     cell where the `colObligated && rowObligated` branch fires and
+  //     must decrement both trackers in the same iteration.
+  // Verified by instrumenting the sweep and logging every "both active"
+  // hit: it fires exactly once, at row=3, col=1.
   var stats = { segmentLengthCounts: { 2: 1, 3: 1 }, descriptionDensity: 0 };
-  var callLog = [];
-  var script = [0.9, 3 / 6]; // first free cell: vertical (0.9>=0.5 tries horizontal first... )
-  // Simpler: just run with a fixed seed-like sequence and inspect the result
-  // directly rather than hand-deriving exact rng branching.
   var rng = fixedRng([0.6, 0.5, 0.6, 0.5, 0.6, 0.5, 0.6, 0.5]);
   var result = skeleton.generateSkeleton(4, 4, stats, rng);
-  var hRuns = countRunsAxis(result.types, 4, 4, 'H');
-  var vRuns = countRunsAxis(result.types, 4, 4, 'V');
-  hRuns.concat(vRuns).forEach(function (len) {
-    assert.ok(len >= 2, 'expected every run to be >= 2, got ' + len);
-  });
-  // At least one Letter cell must be reachable via both an H run and a V
-  // run of length >= 2 for a "crossing" to exist in this denser (density=0)
-  // configuration - assert overall shape sanity instead of the exact cell,
-  // since pinning one specific crossing index would over-fit this test to
-  // implementation branching order rather than the guarantee that matters.
-  assert.ok(hRuns.length > 0 && vRuns.length > 0, 'expected both horizontal and vertical runs to exist');
+
+  var crossingRow = 3, crossingCol = 1;
+  assert.strictEqual(result.types[crossingRow * 4 + crossingCol], enums.CaseType.Letter);
+  var hLen = runLengthAt(result.types, 4, 4, crossingRow, crossingCol, 'H');
+  var vLen = runLengthAt(result.types, 4, 4, crossingRow, crossingCol, 'V');
+  assert.ok(hLen >= 2, 'expected the crossing cell to be in a real horizontal run, got hLen=' + hLen);
+  assert.ok(vLen >= 2, 'expected the crossing cell to be in a real vertical run, got vLen=' + vLen);
 });
