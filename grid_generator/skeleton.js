@@ -28,6 +28,18 @@ function generateSkeleton(nbLines, nbColumns, stats, rng) {
 
   for (var row = 0; row < nbColumns; row++) {
     var col = 0;
+
+    // ~50% of rows open with a letter run instead of a Description, so the
+    // grid's left edge isn't a solid column of descriptions (confirmed
+    // against a real generated grid: every row started with one, which no
+    // real GSO grid does - a row can just as validly open with a vertical
+    // word's continuation letters as with a definition).
+    if (nbLines >= 4 && rng() < 0.5) {
+      var openRun = Math.min(pickSegmentLength(usableLengthCounts, rng), nbLines);
+      for (var k0 = 0; k0 < openRun; k0++) types[row * nbLines + k0] = enums.CaseType.Letter;
+      col = openRun;
+    }
+
     while (col < nbLines) {
       // Placing a Description here would strand exactly 1 cell after it (no
       // room for a real run) - if the cell just before this one is already

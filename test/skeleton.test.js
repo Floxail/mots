@@ -23,6 +23,8 @@ test('pickSegmentLength returns a length present in the distribution', function 
 
 test('generateSkeleton fills every cell with Description or Letter only', function () {
   var stats = { segmentLengthCounts: { 2: 1, 3: 1 } };
+  // 0.1 < 0.5 -> row opens with a letter run (pickSegmentLength consumes 0.9 -> 3),
+  // then the main loop places D@3 and a run(2) (consumes 0.3 -> 2).
   var rng = fixedRng([0.1, 0.9, 0.3, 0.7]);
   var result = skeleton.generateSkeleton(6, 1, stats, rng);
 
@@ -30,11 +32,19 @@ test('generateSkeleton fills every cell with Description or Letter only', functi
   result.types.forEach(function (t) {
     assert.ok(t === enums.CaseType.Description || t === enums.CaseType.Letter);
   });
-  assert.strictEqual(result.types[0], enums.CaseType.Description);
   assert.deepStrictEqual(result.types, [
-    enums.CaseType.Description, enums.CaseType.Letter, enums.CaseType.Letter,
+    enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Letter,
     enums.CaseType.Description, enums.CaseType.Letter, enums.CaseType.Letter
   ]);
+});
+
+test('generateSkeleton can open a row with a Description when the opening-letter-run roll fails', function () {
+  var stats = { segmentLengthCounts: { 2: 1, 3: 1 } };
+  // 0.6 >= 0.5 -> row does NOT open with a letter run, falls straight into
+  // the main loop (same behavior as before this feature existed).
+  var rng = fixedRng([0.6, 0.1, 0.9]);
+  var result = skeleton.generateSkeleton(6, 1, stats, rng);
+  assert.strictEqual(result.types[0], enums.CaseType.Description);
 });
 
 function countRuns(types, nbLines, nbColumns) {
