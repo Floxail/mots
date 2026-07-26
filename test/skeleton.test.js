@@ -105,31 +105,71 @@ test('generateSkeleton (2D sweep) guarantees every Letter cell belongs to a run 
   }
 });
 
-test('generateSkeleton never lets a vertical run overflow past the last row', function () {
+// NOTE ON THESE TWO TESTS' ORIGINAL FRAMING: they claimed to prove that the
+// `Math.min(pickSegmentLength(...), room)` clamps in tryStartVertical /
+// tryStartHorizontal fire and prevent overflow. That is not something a
+// `types`-based test can observe given the current loop structure:
+// `rowRemaining` is a local reset to 0 at the top of every row, and
+// `columnObligation[col]` is local to a single generateSkeleton call and
+// never read again after the sweep ends. Forced continuation only checks
+// "remaining > 0", never its magnitude, so a row's (or column's) inner loop
+// stops at the grid boundary regardless of whether Math.min clamped the
+// remaining count first - both the clamped and unclamped variants force
+// exactly the same physically-available cells. Verified empirically: a
+// scratch copy of generateSkeleton with both Math.min(...) calls replaced by
+// the raw unclamped picked length produced a byte-for-byte identical
+// `types` array on these two tests' exact rng/stats/grid, and on 500
+// randomized grids/rng sequences with a wide segment-length pool.
+//
+// A related hypothesis - that removing the `horizontalRoom < 2` /
+// `verticalRoom < 2` early-exit guards (instead of the Math.min clamp)
+// would let a length-1/length-0 "run" slip through - also does not hold on
+// its own. `horizontalRoom`/`verticalRoom` are never 0 in practice (col/row
+// never exceed the grid), and `pickSegmentLength` always returns a length
+// >= 2 (usableLengthCounts excludes 1), so even with the guard removed,
+// `Math.min(length, 1)` still yields 1, which the subsequent
+// `if (length < 2) return false` catches. Removing the guard alone just
+// wastes one rng() call when room is 1, shifting later rng reads (the same
+// failure family as the crossing-branch bug covered below) - confirmed
+// empirically across 2000 tiny random grids: zero invalid runs either way.
+// The guard and the post-pick length check are a redundant pair; only
+// removing BOTH at once (for the same axis) would let an orphan length-1
+// run through uncaught.
+//
+// So: Math.min is real, deliberate belt-and-suspenders (kept in
+// skeleton.js), but what these two tests can actually verify - and now
+// assert - is that generation with a segment-length distribution vastly
+// exceeding available room does not throw/crash and still produces valid
+// output: every cell Description or Letter, and no run exceeding the
+// grid's own dimension.
+test('generateSkeleton produces valid, non-crashing output when segment lengths vastly exceed available row/column room (vertical case)', function () {
   var stats = { segmentLengthCounts: { 8: 1 }, descriptionDensity: 0 };
   // descriptionDensity 0 and a single huge segment length (8) forces the
-  // sweep to constantly try to start long runs - if vertical clamping to
-  // `nbColumns - row` were broken, this would throw (out-of-bounds index)
-  // or leave a run visibly longer than the grid height.
+  // sweep to constantly try to start long runs on a grid only 4 rows tall.
   var rng = fixedRng([0.9, 0.1, 0.9, 0.1, 0.9, 0.1]);
   var result = skeleton.generateSkeleton(6, 4, stats, rng);
+
+  result.types.forEach(function (t) {
+    assert.ok(t === enums.CaseType.Description || t === enums.CaseType.Letter);
+  });
   var vRuns = countRunsAxis(result.types, 6, 4, 'V');
   vRuns.forEach(function (len) {
     assert.ok(len <= 4, 'vertical run of ' + len + ' cannot fit in a 4-row grid');
   });
 });
 
-test('generateSkeleton never lets a horizontal run overflow past the last column', function () {
+test('generateSkeleton produces valid, non-crashing output when segment lengths vastly exceed available row/column room (horizontal case)', function () {
   var stats = { segmentLengthCounts: { 8: 1 }, descriptionDensity: 0 };
-  // Transpose of the vertical-overflow test above: a 4-wide, 6-tall grid
-  // with the same single-huge-segment-length/zero-density stats forces the
-  // sweep to constantly try to start long horizontal runs - if horizontal
-  // clamping to `nbLines - col` were broken, this would throw (out-of-bounds
-  // index) or leave a run visibly longer than the grid width. Confirmed
-  // empirically: every row fills as a single run of length 8 clamped down
-  // to 4 (the grid width), so the clamp is genuinely exercised here.
+  // Transpose of the vertical case above: a 4-wide, 6-tall grid with the
+  // same single-huge-segment-length/zero-density stats, forcing the sweep
+  // to constantly try to start long horizontal runs on a grid only 4
+  // columns wide.
   var rng = fixedRng([0.9, 0.1, 0.9, 0.1, 0.9, 0.1]);
   var result = skeleton.generateSkeleton(4, 6, stats, rng);
+
+  result.types.forEach(function (t) {
+    assert.ok(t === enums.CaseType.Description || t === enums.CaseType.Letter);
+  });
   var hRuns = countRunsAxis(result.types, 4, 6, 'H');
   hRuns.forEach(function (len) {
     assert.ok(len <= 4, 'horizontal run of ' + len + ' cannot fit in a 4-column grid');
@@ -137,31 +177,57 @@ test('generateSkeleton never lets a horizontal run overflow past the last column
 });
 
 test('generateSkeleton produces a genuine crossing: a cell forced by both an active row run and an active column obligation', function () {
-  // Hand-traced against the actual sweep in skeleton.js for this exact rng
-  // sequence on a 4x4 grid with descriptionDensity 0:
-  //   row0: every column starts a fresh vertical run (V lengths 3,2,3,2),
-  //     since tryHorizontalFirst is false on every free-cell roll.
-  //   row1, row2 col0/col2: fully forced by those column obligations.
-  //   row2 col1 and col3: obligations have drained, so these are free
-  //     cells that each start a new vertical run (clamped to length 2 by
-  //     the remaining verticalRoom).
-  //   row3 col0: free cell, starts a horizontal run of length 3
-  //     (rowRemaining = 2).
-  //   row3 col1: BOTH active at once - columnObligation[1] still has 1
-  //     remaining (from the row2 col1 vertical run) AND rowRemaining is 2
-  //     (from the row3 col0 horizontal run). This is idx 13, the exact
-  //     cell where the `colObligated && rowObligated` branch fires and
-  //     must decrement both trackers in the same iteration.
-  // Verified by instrumenting the sweep and logging every "both active"
-  // hit: it fires exactly once, at row=3, col=1.
-  var stats = { segmentLengthCounts: { 2: 1, 3: 1 }, descriptionDensity: 0 };
-  var rng = fixedRng([0.6, 0.5, 0.6, 0.5, 0.6, 0.5, 0.6, 0.5]);
+  // This rng sequence is not hand-traced: it's the exact sequence a
+  // mulberry32 PRNG (seed 4664) produces for this stats/grid, captured and
+  // hard-coded here. It was found by an automated search for a sequence
+  // that (a) produces a real crossing - a cell where both an in-progress
+  // vertical (column) obligation and an in-progress horizontal (row) run
+  // are simultaneously active - AND (b) leaves >= 2 more columns in that
+  // same row after the crossing, so a miscounted `rowRemaining` there can
+  // still flip a later cell's forced-vs-free decision before the row ends.
+  //
+  // Empirically verified (scratch copies of generateSkeleton, deleted after
+  // use) that this exact input diverges between:
+  //   - the real code (`if (colObligated) {...}; if (rowObligated) {...}`,
+  //     both decrement independently), and
+  //   - a deliberately-broken `else if` variant (only one of the two
+  //     decrements when both are active),
+  // and that the two `types` arrays differ starting at index 15 (the last
+  // cell): real leaves it Description, the broken variant leaves it
+  // Letter. This is exactly the failure mode described above: the
+  // crossing cell itself (index 13) is Letter under both variants (the bug
+  // is invisible there), but the broken variant's under-decremented
+  // `rowRemaining` shifts every rng() call after the crossing by one
+  // position for the rest of the row, changing a later free-cell decision.
+  var stats = { segmentLengthCounts: { 2: 1, 3: 1 }, descriptionDensity: 0.1 };
+  var rng = fixedRng([
+    0.9259336937684566, 0.769770429469645, 0.5637234086170793, 0.0012118341401219368,
+    0.9978029660414904, 0.9024868179112673, 0.7403421711642295, 0.3332418098580092,
+    0.35777182946912944, 0.6192755028605461, 0.3534947638399899, 0.525042651919648,
+    0.861455072183162, 0.3533237169031054, 0.6729183446150273, 0.8109661459457129,
+    0.8429647982120514, 0.46181874303147197
+  ]);
   var result = skeleton.generateSkeleton(4, 4, stats, rng);
 
+  // The crossing itself: idx 13 (row 3, col 1) is forced by both axes and
+  // is a real crossing (run >= 2 in both directions), not an incidental
+  // single-cell overlap.
   var crossingRow = 3, crossingCol = 1;
   assert.strictEqual(result.types[crossingRow * 4 + crossingCol], enums.CaseType.Letter);
   var hLen = runLengthAt(result.types, 4, 4, crossingRow, crossingCol, 'H');
   var vLen = runLengthAt(result.types, 4, 4, crossingRow, crossingCol, 'V');
   assert.ok(hLen >= 2, 'expected the crossing cell to be in a real horizontal run, got hLen=' + hLen);
   assert.ok(vLen >= 2, 'expected the crossing cell to be in a real vertical run, got vLen=' + vLen);
+
+  // The regression check: this is the cell (idx 15, the last cell of the
+  // grid) whose type depends on `rowRemaining` having been decremented
+  // correctly back at the crossing, several cells earlier in the same row.
+  // If the crossing only decremented one of the two counters (the `else
+  // if` bug), this cell flips from Description to Letter.
+  assert.deepStrictEqual(result.types, [
+    enums.CaseType.Letter, enums.CaseType.Description, enums.CaseType.Letter, enums.CaseType.Letter,
+    enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Letter,
+    enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Letter,
+    enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Description
+  ]);
 });
