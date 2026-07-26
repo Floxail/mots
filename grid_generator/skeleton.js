@@ -16,54 +16,77 @@ function generateSkeleton(nbLines, nbColumns, stats, rng) {
   var size = nbLines * nbColumns;
   var types = new Array(size).fill(null);
 
-  // A length-1 run gives a Letter cell no horizontal slot at all, leaving it
-  // valid only by lucky vertical alignment between unrelated rows. Excluding
-  // length 1 here guarantees every row-run is a real >=2 slot, which keeps
-  // every Letter cell out of validate.js's orphan check regardless of what
-  // happens in the vertical direction.
+  // A length-1 run gives a Letter cell no same-axis slot at all. Excluding
+  // length 1 from the pool guarantees every run this module starts (H or V)
+  // is a real >=2 slot.
   var usableLengthCounts = {};
   Object.keys(stats.segmentLengthCounts).forEach(function (len) {
     if (Number(len) >= 2) usableLengthCounts[len] = stats.segmentLengthCounts[len];
   });
+  var descriptionDensity = stats.descriptionDensity !== undefined ? stats.descriptionDensity : 0.2;
+
+  // columnObligation[c] tracks an in-progress vertical run started by an
+  // earlier row: null (free) or { remaining } (this many more rows in
+  // column c must be Letter to complete the run that was already started).
+  var columnObligation = new Array(nbLines).fill(null);
 
   for (var row = 0; row < nbColumns; row++) {
-    var col = 0;
+    var rowRemaining = 0;
 
-    // ~50% of rows open with a letter run instead of a Description, so the
-    // grid's left edge isn't a solid column of descriptions (confirmed
-    // against a real generated grid: every row started with one, which no
-    // real GSO grid does - a row can just as validly open with a vertical
-    // word's continuation letters as with a definition).
-    if (nbLines >= 4 && rng() < 0.5) {
-      var openRun = Math.min(pickSegmentLength(usableLengthCounts, rng), nbLines);
-      for (var k0 = 0; k0 < openRun; k0++) types[row * nbLines + k0] = enums.CaseType.Letter;
-      col = openRun;
-    }
+    for (var col = 0; col < nbLines; col++) {
+      var idx = row * nbLines + col;
+      var colObligated = columnObligation[col] !== null;
+      var rowObligated = rowRemaining > 0;
 
-    while (col < nbLines) {
-      // Placing a Description here would strand exactly 1 cell after it (no
-      // room for a real run) - if the cell just before this one is already
-      // part of a letter run, absorb the remainder into that run instead of
-      // creating a new Description with zero horizontal reach. Such a cell
-      // would depend entirely on vertical luck for a definition, and this
-      // codebase's row-only tiling doesn't coordinate columns between rows
-      // to make that reliable (confirmed in production: "Case description
-      // sans definition" failures traced back to exactly this case).
-      var strandedByDescHere = nbLines - col - 1;
-      if (strandedByDescHere === 1 && col > 0 && types[row * nbLines + col - 1] === enums.CaseType.Letter) {
-        for (var k = col; k < nbLines; k++) types[row * nbLines + k] = enums.CaseType.Letter;
-        break;
+      if (colObligated || rowObligated) {
+        // Forced Letter: continuing an already-started run in one or both
+        // axes. Both active at once is a natural crossing, not special-cased.
+        types[idx] = enums.CaseType.Letter;
+        if (colObligated) {
+          columnObligation[col].remaining--;
+          if (columnObligation[col].remaining === 0) columnObligation[col] = null;
+        }
+        if (rowObligated) rowRemaining--;
+        continue;
       }
 
-      types[row * nbLines + col] = enums.CaseType.Description;
-      col++;
-
-      var maxRun = nbLines - col;
-      var runLen = maxRun >= 2 ? Math.min(pickSegmentLength(usableLengthCounts, rng), maxRun) : 0;
-      for (var k2 = 0; k2 < runLen; k2++) {
-        types[row * nbLines + col + k2] = enums.CaseType.Letter;
+      // Free cell: decide fresh.
+      if (rng() < descriptionDensity) {
+        types[idx] = enums.CaseType.Description;
+        continue;
       }
-      col += runLen;
+
+      var tryHorizontalFirst = rng() < 0.5;
+      var horizontalRoom = nbLines - col;
+      var verticalRoom = nbColumns - row;
+
+      var started = false;
+      if (tryHorizontalFirst) {
+        started = tryStartHorizontal();
+        if (!started) started = tryStartVertical();
+      } else {
+        started = tryStartVertical();
+        if (!started) started = tryStartHorizontal();
+      }
+      if (!started) types[idx] = enums.CaseType.Description;
+
+      function tryStartHorizontal() {
+        if (horizontalRoom < 2) return false;
+        var length = Math.min(pickSegmentLength(usableLengthCounts, rng), horizontalRoom);
+        if (length < 2) return false;
+        types[idx] = enums.CaseType.Letter;
+        rowRemaining = length - 1;
+        return true;
+      }
+
+      function tryStartVertical() {
+        if (verticalRoom < 2) return false;
+        var length = Math.min(pickSegmentLength(usableLengthCounts, rng), verticalRoom);
+        if (length < 2) return false;
+        types[idx] = enums.CaseType.Letter;
+        columnObligation[col] = { remaining: length - 1 };
+        return true;
+      }
     }
   }
 
