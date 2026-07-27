@@ -22,6 +22,64 @@ test('pickSegmentLength returns a length present in the distribution', function 
   assert.strictEqual(skeleton.pickSegmentLength(counts, rng2), 3);
 });
 
+test('meanUsableLength computes the count-weighted mean of the given lengths', function () {
+  assert.strictEqual(skeleton.meanUsableLength({ 3: 1 }), 3);
+  assert.strictEqual(skeleton.meanUsableLength({ 2: 1, 4: 1 }), 3);
+  // weighted: (2*1 + 3*2 + 4*1) / (1+2+1) = (2+6+4)/4 = 3
+  assert.strictEqual(skeleton.meanUsableLength({ 2: 1, 3: 2, 4: 1 }), 3);
+  assert.strictEqual(skeleton.meanUsableLength({}), 0);
+});
+
+test('computeDecisionDescriptionProbability calibrates decision probability from target cell density and mean run length', function () {
+  // d=0.25, L=3 (single length): p = 0.25*3 / (0.25*3 + 0.75) = 0.75/1.5 = 0.5
+  var stats1 = { descriptionDensity: 0.25 };
+  assert.strictEqual(skeleton.computeDecisionDescriptionProbability(stats1, { 3: 1 }), 0.5);
+
+  // d=0.2, L=2.5 (mean of {2:1,3:1}): p = 0.5 / (0.5 + 0.8) = 0.5/1.3
+  var stats2 = { descriptionDensity: 0.2 };
+  var expected2 = 0.5 / 1.3;
+  assert.ok(Math.abs(skeleton.computeDecisionDescriptionProbability(stats2, { 2: 1, 3: 1 }) - expected2) < 1e-9);
+
+  // Empty usableLengthCounts (degenerate case, e.g. every real segment length
+  // filtered out) falls back to the raw target density unchanged.
+  var stats3 = { descriptionDensity: 0.33 };
+  assert.strictEqual(skeleton.computeDecisionDescriptionProbability(stats3, {}), 0.33);
+
+  // Missing descriptionDensity falls back to the same 0.2 default generateSkeleton uses.
+  var stats4 = {};
+  assert.strictEqual(skeleton.computeDecisionDescriptionProbability(stats4, {}), 0.2);
+});
+
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+test('generateSkeleton calibration converges the resulting cell-level description density to stats.descriptionDensity', function () {
+  var stats = { segmentLengthCounts: { 2: 1, 3: 1, 4: 1 }, descriptionDensity: 0.3 };
+  var trials = 300, nbLines = 12, nbColumns = 12;
+  var totalCells = 0, totalDescriptions = 0;
+
+  for (var seed = 1; seed <= trials; seed++) {
+    var rng = mulberry32(seed * 7919);
+    var result = skeleton.generateSkeleton(nbLines, nbColumns, stats, rng);
+    totalCells += result.types.length;
+    totalDescriptions += result.types.filter(function (t) {
+      return t === enums.CaseType.Description;
+    }).length;
+  }
+
+  var observedDensity = totalDescriptions / totalCells;
+  assert.ok(
+    Math.abs(observedDensity - stats.descriptionDensity) < 0.05,
+    'expected observed cell density ~' + stats.descriptionDensity + ', got ' + observedDensity.toFixed(3)
+  );
+});
+
 function countRunsAxis(types, nbLines, nbColumns, axis) {
   var step = axis === 'H' ? 1 : nbLines;
   var outerCount = axis === 'H' ? nbColumns : nbLines;

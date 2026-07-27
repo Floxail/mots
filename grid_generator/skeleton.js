@@ -12,6 +12,36 @@ function pickSegmentLength(lengthCounts, rng) {
   return lengths[lengths.length - 1];
 }
 
+function meanUsableLength(usableLengthCounts) {
+  var lengths = Object.keys(usableLengthCounts).map(Number);
+  var total = 0, weightedSum = 0;
+  lengths.forEach(function (len) {
+    total += usableLengthCounts[len];
+    weightedSum += len * usableLengthCounts[len];
+  });
+  return total > 0 ? weightedSum / total : 0;
+}
+
+// stats.descriptionDensity is the real, measured fraction of GSO grid CELLS
+// that are descriptions - but generateSkeleton only rolls a probability at
+// free-cell DECISIONS, and a decision that starts a run consumes ~L cells
+// (the mean usable segment length) versus exactly 1 cell for a description
+// decision. Using stats.descriptionDensity directly as the decision
+// probability therefore produces a much lower cell-level density than
+// intended (empirically ~4-6% instead of the real ~19%, since run-starts
+// dilute the count). This inverts that relationship so the resulting
+// cell-level density actually converges to the target:
+//   p = (d * L) / (d * L + (1 - d))
+// Falls back to the raw target density when there's no usable length data
+// to compute L from (matches generateSkeleton's existing degenerate-case
+// handling for an empty usableLengthCounts).
+function computeDecisionDescriptionProbability(stats, usableLengthCounts) {
+  var d = stats.descriptionDensity !== undefined ? stats.descriptionDensity : 0.2;
+  var L = meanUsableLength(usableLengthCounts);
+  if (L <= 0) return d;
+  return (d * L) / (d * L + (1 - d));
+}
+
 function generateSkeleton(nbLines, nbColumns, stats, rng) {
   var size = nbLines * nbColumns;
   var types = new Array(size).fill(null);
@@ -23,7 +53,7 @@ function generateSkeleton(nbLines, nbColumns, stats, rng) {
   Object.keys(stats.segmentLengthCounts).forEach(function (len) {
     if (Number(len) >= 2) usableLengthCounts[len] = stats.segmentLengthCounts[len];
   });
-  var descriptionDensity = stats.descriptionDensity !== undefined ? stats.descriptionDensity : 0.2;
+  var decisionDescriptionProbability = computeDecisionDescriptionProbability(stats, usableLengthCounts);
 
   // columnObligation[c] tracks an in-progress vertical run started by an
   // earlier row: null (free) or { remaining } (this many more rows in
@@ -51,7 +81,7 @@ function generateSkeleton(nbLines, nbColumns, stats, rng) {
       }
 
       // Free cell: decide fresh.
-      if (rng() < descriptionDensity) {
+      if (rng() < decisionDescriptionProbability) {
         types[idx] = enums.CaseType.Description;
         continue;
       }
@@ -93,4 +123,9 @@ function generateSkeleton(nbLines, nbColumns, stats, rng) {
   return { nbLines: nbLines, nbColumns: nbColumns, types: types };
 }
 
-module.exports = { generateSkeleton: generateSkeleton, pickSegmentLength: pickSegmentLength };
+module.exports = {
+  generateSkeleton: generateSkeleton,
+  pickSegmentLength: pickSegmentLength,
+  meanUsableLength: meanUsableLength,
+  computeDecisionDescriptionProbability: computeDecisionDescriptionProbability
+};
