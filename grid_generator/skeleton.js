@@ -120,7 +120,69 @@ function generateSkeleton(nbLines, nbColumns, stats, rng) {
     }
   }
 
+  repairOrphanDescriptions(types, nbLines, nbColumns);
+
   return { nbLines: nbLines, nbColumns: nbColumns, types: types };
+}
+
+// exportGrid only attaches a definition to a Description cell via a word
+// that STARTS immediately to its right (H) or below it (V) - real GSO
+// clue placement. At low description density this was rarely an issue, but
+// the density-calibration fix (see computeDecisionDescriptionProbability)
+// makes Description cells cluster together far more often, regularly
+// leaving one with neither neighbor starting a word ("orphan"), which
+// exportGrid then can't attach a definition to and validateGrid rejects.
+//
+// Repair carves a fresh 2-cell run immediately right or below the orphan
+// (whichever has room), touching only those 2 cells rather than flipping
+// the orphan itself or sweeping whole Description blobs - an earlier,
+// blob-eroding version of this repair collapsed density far below target
+// (0.3 target measured at 0.19) because flipping every Description that
+// merely bordered a Letter cascaded through entire clusters. Carving can
+// still occasionally un-start a word that used to begin one cell further
+// right/down (its new predecessor is now Letter), so this iterates to a
+// fixed point; any orphan with no room for a 2-cell run in either
+// direction (grid-corner edge case) is left alone - generate()'s existing
+// retry loop discards that skeleton.
+function repairOrphanDescriptions(types, nbLines, nbColumns) {
+  function isWordStart(idx, axis) {
+    if (types[idx] !== enums.CaseType.Letter) return false;
+    var col = idx % nbLines;
+    var step = axis === 'H' ? 1 : nbLines;
+    var atLineStart = axis === 'H' ? col === 0 : idx - nbLines < 0;
+    var atLineEnd = axis === 'H' ? col === nbLines - 1 : idx + nbLines >= types.length;
+    if (!atLineStart && types[idx - step] === enums.CaseType.Letter) return false;
+    if (atLineEnd || types[idx + step] !== enums.CaseType.Letter) return false;
+    return true;
+  }
+
+  function isOrphan(idx) {
+    var col = idx % nbLines;
+    var rightAttached = col + 1 < nbLines && isWordStart(idx + 1, 'H');
+    var belowAttached = idx + nbLines < types.length && isWordStart(idx + nbLines, 'V');
+    return !rightAttached && !belowAttached;
+  }
+
+  var changed = true;
+  var maxPasses = types.length;
+  while (changed && maxPasses-- > 0) {
+    changed = false;
+    for (var idx = 0; idx < types.length; idx++) {
+      if (types[idx] !== enums.CaseType.Description) continue;
+      if (!isOrphan(idx)) continue;
+
+      var col = idx % nbLines;
+      if (col + 2 < nbLines) {
+        types[idx + 1] = enums.CaseType.Letter;
+        types[idx + 2] = enums.CaseType.Letter;
+        changed = true;
+      } else if (idx + 2 * nbLines < types.length) {
+        types[idx + nbLines] = enums.CaseType.Letter;
+        types[idx + 2 * nbLines] = enums.CaseType.Letter;
+        changed = true;
+      }
+    }
+  }
 }
 
 module.exports = {

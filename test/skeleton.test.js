@@ -73,9 +73,19 @@ test('generateSkeleton calibration converges the resulting cell-level descriptio
     }).length;
   }
 
+  // At this high a target density, free-cell decisions land Description
+  // often enough (p~=0.56 here) to form large contiguous blobs. Orphan
+  // repair (skeleton.js's repairOrphanDescriptions, added once real GSO
+  // density exposed it) carves a 2-cell Letter run next to any Description
+  // with no word starting right/below it, which costs more density the
+  // bigger blobs get - so exact convergence no longer holds at this
+  // extreme. At the real production target (~0.19, data/gso-stats.json)
+  // blobs are small and repair's cost is <0.03 absolute; 0.1 covers this
+  // synthetic stress case's larger, blob-driven loss without masking a
+  // genuine regression.
   var observedDensity = totalDescriptions / totalCells;
   assert.ok(
-    Math.abs(observedDensity - stats.descriptionDensity) < 0.05,
+    Math.abs(observedDensity - stats.descriptionDensity) < 0.1,
     'expected observed cell density ~' + stats.descriptionDensity + ', got ' + observedDensity.toFixed(3)
   );
 });
