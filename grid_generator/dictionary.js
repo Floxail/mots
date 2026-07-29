@@ -1,4 +1,4 @@
-function buildDictionary(entries) {
+function buildDictionary(entries, freqMap) {
   var byLength = new Map();
   var crossIndex = new Map();
   var definitionsByWord = new Map();
@@ -25,6 +25,14 @@ function buildDictionary(entries) {
       definitionsByWord.get(word).push(d);
     });
   });
+
+  if (freqMap) {
+    byLength.forEach(function (words) {
+      words.sort(function (a, b) {
+        return (freqMap.get(b) || 0) - (freqMap.get(a) || 0);
+      });
+    });
+  }
 
   function candidatesFor(length, constraints, excluded) {
     var pool = byLength.get(length) || [];

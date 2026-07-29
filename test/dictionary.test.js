@@ -33,3 +33,34 @@ test('definitionsByWord exposes the definitions for export', function () {
   ]);
   assert.deepStrictEqual(dico.definitionsByWord.get('CHAT'), ['Petit felin', 'Animal domestique']);
 });
+
+test('buildDictionary sorts each byLength pool by descending frequency when a freqMap is given', function () {
+  var freqMap = new Map([['CHAT', 5], ['CHIC', 50], ['BOIS', 1]]);
+  var dico = dictionary.buildDictionary([
+    { word: 'CHAT', definitions: ['x'] },
+    { word: 'CHIC', definitions: ['x'] },
+    { word: 'BOIS', definitions: ['x'] }
+  ], freqMap);
+
+  assert.deepStrictEqual(dico.byLength.get(4), ['CHIC', 'CHAT', 'BOIS']);
+});
+
+test('buildDictionary treats a word missing from freqMap as frequency 0 (sorted last)', function () {
+  var freqMap = new Map([['CHIC', 50]]);
+  var dico = dictionary.buildDictionary([
+    { word: 'CHAT', definitions: ['x'] },
+    { word: 'CHIC', definitions: ['x'] }
+  ], freqMap);
+
+  assert.deepStrictEqual(dico.byLength.get(4), ['CHIC', 'CHAT']);
+});
+
+test('buildDictionary without a freqMap keeps dico.json insertion order (no regression)', function () {
+  var dico = dictionary.buildDictionary([
+    { word: 'BOIS', definitions: ['x'] },
+    { word: 'CHAT', definitions: ['x'] },
+    { word: 'CHIC', definitions: ['x'] }
+  ]);
+
+  assert.deepStrictEqual(dico.byLength.get(4), ['BOIS', 'CHAT', 'CHIC']);
+});
