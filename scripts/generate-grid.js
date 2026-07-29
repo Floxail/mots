@@ -55,8 +55,8 @@ function generate(nbLines, nbColumns, dictionary, stats, options) {
 
     if (options.onAttempt) options.onAttempt(attempt + 1, maxSkeletonAttempts, slots.length, false);
     var assignment = backtrackingLib.solve(slots, dictionary, {
-      maxBacktracks: options.maxBacktracks !== undefined ? options.maxBacktracks : 5000000,
-      timeoutMs: options.timeoutMs !== undefined ? options.timeoutMs : 90000
+      maxBacktracks: options.maxBacktracks !== undefined ? options.maxBacktracks : 50000000,
+      timeoutMs: options.timeoutMs !== undefined ? options.timeoutMs : 300000
     });
     if (!assignment) continue;
 
