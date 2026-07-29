@@ -7,7 +7,6 @@ var slotsLib = require('../grid_generator/slots');
 var backtrackingLib = require('../grid_generator/backtracking');
 var exporterLib = require('../grid_generator/exporter');
 var validateLib = require('../grid_generator/validate');
-var constraintPropagationLib = require('../grid_generator/constraintPropagation');
 var lexiqueFrequencyLib = require('../grid_generator/lexiqueFrequency');
 
 function mulberry32(seed) {
@@ -23,13 +22,19 @@ function mulberry32(seed) {
 
 function generate(nbLines, nbColumns, dictionary, stats, options) {
   options = options || {};
-  // Measured against a real ~24k-word dico at 15x15: a genuinely infeasible
-  // skeleton can take ~77s for the solver to exhaustively rule out (not a
-  // budget shortfall - it proves no solution exists before either limit is
-  // hit). This generator runs offline, once per grid (e.g. a daily cron job),
-  // never on a player-facing request path, so there is no real reason to
-  // stay near the original <5s aspiration - a few minutes total is an
-  // acceptable trade for reliably finding a solvable skeleton.
+  // Two rounds of investigation (docs/superpowers/specs/2026-07-28 and
+  // 2026-07-29) tried to make individual attempts smarter or faster
+  // (static AC-3 pruning, then a word-first constructive fill) and neither
+  // held up: AC-3 barely prunes a 56k-word dictionary and added net
+  // overhead; word-first hit a structural bug (independently-chosen runs
+  // silently merging into non-words via slots.js) that a pure greedy,
+  // no-backtracking fill also failed 0/100 to work around - confirming
+  // backtracking itself is structurally necessary at this scale, not just
+  // "not smart enough". The only thing that has ever produced a real
+  // 15x15 grid in this whole investigation is this plain backtracking
+  // solver, rarely and slowly. This generator runs offline, once per grid
+  // (e.g. a daily cron job), never on a player-facing request path, so a
+  // large time budget here is an acceptable trade for reliability.
   var maxSkeletonAttempts = options.maxSkeletonAttempts !== undefined ? options.maxSkeletonAttempts : 40;
   var rng = options.rng || mulberry32(options.seed !== undefined ? options.seed : Date.now());
 
@@ -48,20 +53,10 @@ function generate(nbLines, nbColumns, dictionary, stats, options) {
       continue;
     }
 
-    // Prune before ever calling the solver: an unsatisfiable skeleton is
-    // detected here in milliseconds instead of burning the full solver
-    // time budget discovering it by exhaustive search.
-    var allowedWords = constraintPropagationLib.pruneDomains(slots, dictionary);
-    if (!allowedWords) {
-      if (options.onAttempt) options.onAttempt(attempt + 1, maxSkeletonAttempts, slots.length, true);
-      continue;
-    }
-
     if (options.onAttempt) options.onAttempt(attempt + 1, maxSkeletonAttempts, slots.length, false);
     var assignment = backtrackingLib.solve(slots, dictionary, {
-      maxBacktracks: options.maxBacktracks !== undefined ? options.maxBacktracks : 2000000,
-      timeoutMs: options.timeoutMs !== undefined ? options.timeoutMs : 20000,
-      allowedWords: allowedWords
+      maxBacktracks: options.maxBacktracks !== undefined ? options.maxBacktracks : 5000000,
+      timeoutMs: options.timeoutMs !== undefined ? options.timeoutMs : 90000
     });
     if (!assignment) continue;
 
