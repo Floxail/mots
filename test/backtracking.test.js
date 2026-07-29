@@ -85,3 +85,25 @@ test('solve returns null when no assignment satisfies the crossing constraint', 
   var result = backtracking.solve(slots, dico, { maxBacktracks: 10 });
   assert.strictEqual(result, null);
 });
+
+test('solve only picks words present in options.allowedWords when it is provided', function () {
+  // Without restriction, the solver could pick either DOG or CAT for the
+  // single slot (both length 3, no crossings). allowedWords limits it to
+  // just CAT.
+  var dico = dictionary.buildDictionary([
+    { word: 'DOG', definitions: ['x'] },
+    { word: 'CAT', definitions: ['x'] }
+  ]);
+  var slots = [{ axis: 'H', cells: [0, 1, 2], length: 3, crossings: [] }];
+
+  var result = backtracking.solve(slots, dico, { allowedWords: [new Set(['CAT'])] });
+  assert.deepStrictEqual(result, ['CAT']);
+});
+
+test('solve returns null when allowedWords excludes every candidate for a slot', function () {
+  var dico = dictionary.buildDictionary([{ word: 'CAT', definitions: ['x'] }]);
+  var slots = [{ axis: 'H', cells: [0, 1, 2], length: 3, crossings: [] }];
+
+  var result = backtracking.solve(slots, dico, { allowedWords: [new Set()] });
+  assert.strictEqual(result, null);
+});

@@ -15,6 +15,7 @@ function solve(slots, dictionary, options) {
   // without concluding either way). Cache each slot's current candidate list
   // and only recompute it when something that could change it happens.
   var domainCache = new Array(slots.length).fill(null);
+  var allowedWords = options.allowedWords; // optional Array<Set<string>>, indexed by slot index
 
   // Slot indices grouped by length, so a word becoming used/unused (which
   // affects candidatesFor for every slot of that length, not just crossing
@@ -36,7 +37,11 @@ function solve(slots, dictionary, options) {
 
   function domainFor(i) {
     if (domainCache[i] === null) {
-      domainCache[i] = dictionary.candidatesFor(slots[i].length, constraintsFor(slots[i]), usedWords);
+      var candidates = dictionary.candidatesFor(slots[i].length, constraintsFor(slots[i]), usedWords);
+      if (allowedWords) {
+        candidates = candidates.filter(function (word) { return allowedWords[i].has(word); });
+      }
+      domainCache[i] = candidates;
     }
     return domainCache[i];
   }
