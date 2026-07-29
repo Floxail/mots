@@ -7,6 +7,8 @@ var slotsLib = require('../grid_generator/slots');
 var backtrackingLib = require('../grid_generator/backtracking');
 var exporterLib = require('../grid_generator/exporter');
 var validateLib = require('../grid_generator/validate');
+var constraintPropagationLib = require('../grid_generator/constraintPropagation');
+var lexiqueFrequencyLib = require('../grid_generator/lexiqueFrequency');
 
 function mulberry32(seed) {
   var state = seed;
@@ -46,10 +48,20 @@ function generate(nbLines, nbColumns, dictionary, stats, options) {
       continue;
     }
 
+    // Prune before ever calling the solver: an unsatisfiable skeleton is
+    // detected here in milliseconds instead of burning the full solver
+    // time budget discovering it by exhaustive search.
+    var allowedWords = constraintPropagationLib.pruneDomains(slots, dictionary);
+    if (!allowedWords) {
+      if (options.onAttempt) options.onAttempt(attempt + 1, maxSkeletonAttempts, slots.length, true);
+      continue;
+    }
+
     if (options.onAttempt) options.onAttempt(attempt + 1, maxSkeletonAttempts, slots.length, false);
     var assignment = backtrackingLib.solve(slots, dictionary, {
       maxBacktracks: options.maxBacktracks !== undefined ? options.maxBacktracks : 2000000,
-      timeoutMs: options.timeoutMs !== undefined ? options.timeoutMs : 20000
+      timeoutMs: options.timeoutMs !== undefined ? options.timeoutMs : 20000,
+      allowedWords: allowedWords
     });
     if (!assignment) continue;
 
@@ -70,7 +82,9 @@ if (require.main === module) {
   var minSlots = process.argv[5] !== undefined ? parseInt(process.argv[5], 10) : undefined;
   var dico = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'dico.json'), 'utf8'));
   var stats = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'gso-stats.json'), 'utf8'));
-  var dictionary = dictionaryLib.buildDictionary(dico);
+  var lexiqueRaw = fs.readFileSync(path.join(__dirname, '..', 'data', 'Lexique4.tsv'), 'utf8');
+  var freqMap = lexiqueFrequencyLib.buildFrequencyMap(lexiqueRaw);
+  var dictionary = dictionaryLib.buildDictionary(dico, freqMap);
 
   var grid = generate(nbLines, nbColumns, dictionary, stats, {
     maxSlots: maxSlots,

@@ -48,3 +48,21 @@ test('generate still succeeds when maxSlots is high enough to admit the skeleton
   var grid = generateGrid.generate(5, 1, dico, stats, { seed: 42, maxSlots: 1 });
   assert.notStrictEqual(grid, null);
 });
+
+test('generate rejects a skeleton whose crossing slots can never mutually agree, at seed 42', function () {
+  // Every word here has 'A' at position 1 but 'X'/'Y' (never 'A') at
+  // positions 0 and 2 - empirically confirmed (see plan write-up) that at
+  // seed 42 with a single usable length of 3, all 5 skeleton attempts
+  // involve a crossing that needs position 0 or 2 to match position 1
+  // somewhere, which this dictionary can never satisfy - null even with a
+  // generous budget (maxBacktracks: 100000), confirming genuine
+  // unsatisfiability rather than a starved search.
+  var stats = { segmentLengthCounts: { 3: 1 } };
+  var dico = dictionary.buildDictionary([
+    { word: 'XAX', definitions: ['x'] },
+    { word: 'YAY', definitions: ['x'] }
+  ]);
+
+  var grid = generateGrid.generate(3, 3, dico, stats, { seed: 42, maxSkeletonAttempts: 5, maxBacktracks: 100000, timeoutMs: 5000 });
+  assert.strictEqual(grid, null);
+});
