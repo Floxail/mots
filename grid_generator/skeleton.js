@@ -42,7 +42,10 @@ function computeDecisionDescriptionProbability(stats, usableLengthCounts) {
   return (d * L) / (d * L + (1 - d));
 }
 
-function generateSkeleton(nbLines, nbColumns, stats, rng) {
+// The 2D sweep only, with no orphan repair - split out so tests targeting
+// the sweep's own row/column-obligation bookkeeping aren't coupled to
+// repairOrphanDescriptions' separate, unrelated concern (see generateSkeleton).
+function sweepSkeleton(nbLines, nbColumns, stats, rng) {
   var size = nbLines * nbColumns;
   var types = new Array(size).fill(null);
 
@@ -120,9 +123,13 @@ function generateSkeleton(nbLines, nbColumns, stats, rng) {
     }
   }
 
-  repairOrphanDescriptions(types, nbLines, nbColumns);
-
   return { nbLines: nbLines, nbColumns: nbColumns, types: types };
+}
+
+function generateSkeleton(nbLines, nbColumns, stats, rng) {
+  var skeleton = sweepSkeleton(nbLines, nbColumns, stats, rng);
+  repairOrphanDescriptions(skeleton.types, nbLines, nbColumns);
+  return skeleton;
 }
 
 // exportGrid only attaches a definition to a Description cell via a word
@@ -133,17 +140,24 @@ function generateSkeleton(nbLines, nbColumns, stats, rng) {
 // leaving one with neither neighbor starting a word ("orphan"), which
 // exportGrid then can't attach a definition to and validateGrid rejects.
 //
-// Repair carves a fresh 2-cell run immediately right or below the orphan
-// (whichever has room), touching only those 2 cells rather than flipping
-// the orphan itself or sweeping whole Description blobs - an earlier,
-// blob-eroding version of this repair collapsed density far below target
-// (0.3 target measured at 0.19) because flipping every Description that
-// merely bordered a Letter cascaded through entire clusters. Carving can
-// still occasionally un-start a word that used to begin one cell further
-// right/down (its new predecessor is now Letter), so this iterates to a
-// fixed point; any orphan with no room for a 2-cell run in either
-// direction (grid-corner edge case) is left alone - generate()'s existing
-// retry loop discards that skeleton.
+// Two repair strategies, cheapest first:
+//  1. If the orphan borders an existing Letter cell, flip the orphan itself
+//     to Letter - it just extends that run by one cell (same slot, one
+//     longer), adding no new constraint for backtracking.solve() to satisfy.
+//  2. Only when fully boxed in by Descriptions (no Letter neighbor at all)
+//     carve a brand-new 2-cell run right or below. This creates an
+//     independent slot the solver must satisfy from scratch, which at 15x15
+//     real-density scale (dozens of orphans/grid) was expensive enough to
+//     make backtracking.solve() fail on nearly every attempt when it was
+//     the *only* strategy - so it's now the fallback, not the default.
+// Flipping the orphan itself does cost some density (an earlier version
+// that used ONLY that strategy measured 0.3 target -> 0.19 observed on a
+// high-density synthetic stress test, from cascading through whole
+// Description blobs) - hence trying it only where it's this cheap, and
+// falling back to carving otherwise. Iterates to a fixed point since a
+// flip can satisfy a neighboring orphan's check too; any orphan neither
+// strategy can resolve (grid-corner edge case) is left alone - generate()'s
+// existing retry loop discards that skeleton.
 function repairOrphanDescriptions(types, nbLines, nbColumns) {
   function isWordStart(idx, axis) {
     if (types[idx] !== enums.CaseType.Letter) return false;
@@ -163,6 +177,15 @@ function repairOrphanDescriptions(types, nbLines, nbColumns) {
     return !rightAttached && !belowAttached;
   }
 
+  function hasLetterNeighbor(idx) {
+    var col = idx % nbLines;
+    if (col > 0 && types[idx - 1] === enums.CaseType.Letter) return true;
+    if (col + 1 < nbLines && types[idx + 1] === enums.CaseType.Letter) return true;
+    if (idx - nbLines >= 0 && types[idx - nbLines] === enums.CaseType.Letter) return true;
+    if (idx + nbLines < types.length && types[idx + nbLines] === enums.CaseType.Letter) return true;
+    return false;
+  }
+
   var changed = true;
   var maxPasses = types.length;
   while (changed && maxPasses-- > 0) {
@@ -170,6 +193,12 @@ function repairOrphanDescriptions(types, nbLines, nbColumns) {
     for (var idx = 0; idx < types.length; idx++) {
       if (types[idx] !== enums.CaseType.Description) continue;
       if (!isOrphan(idx)) continue;
+
+      if (hasLetterNeighbor(idx)) {
+        types[idx] = enums.CaseType.Letter;
+        changed = true;
+        continue;
+      }
 
       var col = idx % nbLines;
       if (col + 2 < nbLines) {
@@ -187,6 +216,7 @@ function repairOrphanDescriptions(types, nbLines, nbColumns) {
 
 module.exports = {
   generateSkeleton: generateSkeleton,
+  sweepSkeleton: sweepSkeleton,
   pickSegmentLength: pickSegmentLength,
   meanUsableLength: meanUsableLength,
   computeDecisionDescriptionProbability: computeDecisionDescriptionProbability

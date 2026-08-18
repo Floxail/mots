@@ -50,7 +50,13 @@ function exportGrid(skeleton, slots, assignment, dictionary) {
   cases.forEach(function (cell, idx) {
     if (cell.type !== enums.CaseType.Description) return;
 
-    var rightSlotIdx = findSlotStartingAt(slots, idx + 1, 'H');
+    // idx+1 on the last column of a row is actually column 0 of the next
+    // row in this flat array - without the bound check, a description in
+    // the last column could pick up a horizontal word that only looks
+    // adjacent due to wraparound, pointing an arrow off the grid at a word
+    // that isn't really to its right.
+    var col = idx % nbLines;
+    var rightSlotIdx = col + 1 < nbLines ? findSlotStartingAt(slots, idx + 1, 'H') : -1;
     var belowSlotIdx = findSlotStartingAt(slots, idx + nbLines, 'V');
 
     var attached = [];

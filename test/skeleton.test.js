@@ -76,16 +76,20 @@ test('generateSkeleton calibration converges the resulting cell-level descriptio
   // At this high a target density, free-cell decisions land Description
   // often enough (p~=0.56 here) to form large contiguous blobs. Orphan
   // repair (skeleton.js's repairOrphanDescriptions, added once real GSO
-  // density exposed it) carves a 2-cell Letter run next to any Description
-  // with no word starting right/below it, which costs more density the
-  // bigger blobs get - so exact convergence no longer holds at this
-  // extreme. At the real production target (~0.19, data/gso-stats.json)
-  // blobs are small and repair's cost is <0.03 absolute; 0.1 covers this
-  // synthetic stress case's larger, blob-driven loss without masking a
-  // genuine regression.
+  // density exposed it) prefers flipping an orphan itself to Letter when it
+  // already borders one (cheap: just extends an existing run, no new slot
+  // for backtracking.solve() to satisfy - carving a brand-new run instead,
+  // as an earlier version of this repair always did, made solve() fail on
+  // nearly every attempt at 15x15 real density), falling back to carving
+  // only when fully boxed in by Descriptions. The self-flip is cheaper for
+  // the solver but costs more density the bigger blobs get, so exact
+  // convergence no longer holds at this synthetic extreme. At the real
+  // production target (~0.19, data/gso-stats.json) blobs are small and
+  // repair's cost is ~0.036 absolute; 0.15 covers this stress case's
+  // larger, blob-driven loss without masking a genuine regression.
   var observedDensity = totalDescriptions / totalCells;
   assert.ok(
-    Math.abs(observedDensity - stats.descriptionDensity) < 0.1,
+    Math.abs(observedDensity - stats.descriptionDensity) < 0.15,
     'expected observed cell density ~' + stats.descriptionDensity + ', got ' + observedDensity.toFixed(3)
   );
 });
@@ -275,7 +279,13 @@ test('generateSkeleton produces a genuine crossing: a cell forced by both an act
     0.861455072183162, 0.3533237169031054, 0.6729183446150273, 0.8109661459457129,
     0.8429647982120514, 0.46181874303147197
   ]);
-  var result = skeleton.generateSkeleton(4, 4, stats, rng);
+  // sweepSkeleton (not generateSkeleton) - this test targets the sweep's
+  // row/column-obligation bookkeeping in isolation; generateSkeleton's
+  // separate orphan-repair pass would otherwise legitimately flip the last
+  // cell (an always-unfixable-by-attachment grid corner) regardless of
+  // whether the decrement bug this test guards against is present, masking
+  // the regression this test exists to catch.
+  var result = skeleton.sweepSkeleton(4, 4, stats, rng);
 
   // The crossing itself: idx 13 (row 3, col 1) is forced by both axes and
   // is a real crossing (run >= 2 in both directions), not an incidental

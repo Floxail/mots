@@ -61,3 +61,25 @@ test('exportGrid prefers the shortest available definition for a word, not just 
   var grid = exporter.exportGrid(skeleton, slots, assignment, dico);
   assert.strictEqual(grid.cases[0].desc[0], 'COURT');
 });
+
+test('exportGrid does not attach a horizontal word wrapped from the next row to a last-column description', function () {
+  var D = enums.CaseType.Description, L = enums.CaseType.Letter;
+  // 3 wide x 2 tall:
+  // row0: L L D   (D is last column of row0 - idx 2; idx+1 === 3, which is
+  //                actually row1 col0, NOT adjacent to D on the grid)
+  // row1: A B C   (a real horizontal word starting at row1 col0)
+  var skeleton = { nbLines: 3, nbColumns: 2, types: [L, L, D, L, L, L] };
+  var slots = [
+    { axis: 'H', cells: [0, 1], length: 2, crossings: [] },
+    { axis: 'H', cells: [3, 4, 5], length: 3, crossings: [] }
+  ];
+  var assignment = ['AB', 'XYZ'];
+  var dico = dictionary.buildDictionary([
+    { word: 'AB', definitions: ['def AB'] },
+    { word: 'XYZ', definitions: ['def XYZ'] }
+  ]);
+
+  var grid = exporter.exportGrid(skeleton, slots, assignment, dico);
+  var descCell = grid.cases[2];
+  assert.strictEqual(descCell.nbDesc, 0, 'last-column description must not pick up next row\'s word via index wraparound');
+});

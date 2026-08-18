@@ -35,7 +35,6 @@ define(['cursor'], function (Cursor) {
 
   function insertDescription(line, column, size, info) {
     var frame = document.createElement('div'),
-        lineHeight,
         fontSize,
         descNode,
         i;
@@ -50,15 +49,14 @@ define(['cursor'], function (Cursor) {
     frame.setAttribute('data-col', column);
     frame.setAttribute('data-pos', info.pos);
 
-    if (info.nbLines === 1) {
-      lineHeight = size;
-      fontSize = Math.max(9, Math.floor(size / 5.7));
-    } else {
-      fontSize = Math.max(9, Math.floor(size / 5.8));
-      lineHeight = Math.max(fontSize, Math.floor(size / info.nbLines * 0.88));
-    }
+    // mfl.css lays .description out as a flex column - each attached
+    // definition gets an equal, auto-centered share of the cell height, so
+    // only the font size needs picking here (smaller when splitting the
+    // cell between more than one definition).
+    fontSize = info.nbLines === 1
+      ? Math.max(9, Math.floor(size / 5.7))
+      : Math.max(9, Math.floor(size / 5.8));
 
-    frame.style.lineHeight = lineHeight + 'px';
     frame.style.fontSize = fontSize + 'px';
 
     var fullParts = [];
@@ -264,7 +262,7 @@ define(['cursor'], function (Cursor) {
     if (word.length <= 1)
       return (null);
 
-    // console.log('Mot ' + ((axis == AxisType.Horizontal) ? 'horizontal' : 'vertical') + ' trouvé: [' + word + ']');
+    // console.log('Mot ' + ((axis == AxisType.Horizontal) ? 'horizontal' : 'vertical') + ' trouvé: [' + word + ']')
     return  ( { 'axis': axis, 'word': word, 'start': firstLetterIndex } );
   }
 
