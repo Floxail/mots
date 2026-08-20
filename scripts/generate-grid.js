@@ -35,11 +35,30 @@ function generate(nbLines, nbColumns, dictionary, stats, options) {
   // solver, rarely and slowly. This generator runs offline, once per grid
   // (e.g. a daily cron job), never on a player-facing request path, so a
   // large time budget here is an acceptable trade for reliability.
-  var maxSkeletonAttempts = options.maxSkeletonAttempts !== undefined ? options.maxSkeletonAttempts : 40;
+  // ~88% of skeletons get rejected by hasUnclueableEdgeStart before ever
+  // reaching the solver (see its comment in skeleton.js) - that rejection is
+  // cheap (milliseconds), so the attempt budget needs to be much larger than
+  // the actual number of solver calls it should produce. 300 keeps roughly
+  // the same number of real (post-filter) solve attempts as the 40 this used
+  // to be before that filter started skipping most of them for free.
+  var maxSkeletonAttempts = options.maxSkeletonAttempts !== undefined ? options.maxSkeletonAttempts : 300;
   var rng = options.rng || mulberry32(options.seed !== undefined ? options.seed : Date.now());
 
   for (var attempt = 0; attempt < maxSkeletonAttempts; attempt++) {
     var skeleton = skeletonLib.generateSkeleton(nbLines, nbColumns, stats, rng);
+
+    // A word starting right at column 0 or row 0 has no cell before it to
+    // hold the Description that clues it - exportGrid can never attach a
+    // definition, and validateGrid would reject the final grid anyway. This
+    // is common enough (skeleton.js's own sweep/repair guards reduce it but
+    // can't eliminate it - see hasUnclueableEdgeStart's comment) that
+    // checking it here, before deriving slots or calling the solver, avoids
+    // burning solver budget on a skeleton that's already doomed.
+    if (skeletonLib.hasUnclueableEdgeStart(skeleton)) {
+      if (options.onAttempt) options.onAttempt(attempt + 1, maxSkeletonAttempts, 0, true);
+      continue;
+    }
+
     var slots = slotsLib.deriveSlots(skeleton);
 
     // Deriving a skeleton is cheap (milliseconds); solving one is not (up to

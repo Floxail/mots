@@ -83,6 +83,23 @@ function sweepSkeleton(nbLines, nbColumns, stats, rng) {
         continue;
       }
 
+      // A free cell (no active obligation of its own) whose left or top
+      // neighbor is already Letter would, if it also became Letter, merge
+      // into that neighbor's run purely by adjacency - deriveSlots doesn't
+      // know or care *why* a cell is Letter. If that neighbor's run has no
+      // valid Description behind it (the col-0/row-0 guards above stop the
+      // neighbor being a *fresh* edge start, but not a forced vertical/
+      // horizontal continuation that happens to land there), the merged
+      // run inherits that lack of a clue. Forcing Description here is
+      // always safe - it never breaks an existing run, only declines to
+      // silently extend one - and it also hands the *next* cell a valid
+      // clue-provider instead of another Letter to merge into.
+      if ((col > 0 && types[idx - 1] === enums.CaseType.Letter) ||
+          (idx - nbLines >= 0 && types[idx - nbLines] === enums.CaseType.Letter)) {
+        types[idx] = enums.CaseType.Description;
+        continue;
+      }
+
       // Free cell: decide fresh.
       if (rng() < decisionDescriptionProbability) {
         types[idx] = enums.CaseType.Description;
@@ -104,6 +121,9 @@ function sweepSkeleton(nbLines, nbColumns, stats, rng) {
       if (!started) types[idx] = enums.CaseType.Description;
 
       function tryStartHorizontal() {
+        // Column 0 has no cell to its left to hold the Description that would
+        // clue this word - exportGrid can never attach a definition to it.
+        if (col === 0) return false;
         if (horizontalRoom < 2) return false;
         var length = Math.min(pickSegmentLength(usableLengthCounts, rng), horizontalRoom);
         if (length < 2) return false;
@@ -113,6 +133,9 @@ function sweepSkeleton(nbLines, nbColumns, stats, rng) {
       }
 
       function tryStartVertical() {
+        // Row 0 has no cell above it to hold the Description that would clue
+        // this word - same reasoning as the column-0 case above.
+        if (row === 0) return false;
         if (verticalRoom < 2) return false;
         var length = Math.min(pickSegmentLength(usableLengthCounts, rng), verticalRoom);
         if (length < 2) return false;
@@ -186,6 +209,37 @@ function repairOrphanDescriptions(types, nbLines, nbColumns) {
     return false;
   }
 
+  // Turning cellIdx into Letter can merge it into a neighboring run purely
+  // by adjacency, same as the sweep's own adjacency guard above - this
+  // applies both to flipping the orphan itself and to the cells the carve
+  // fallback below creates. If that merge's column-0 or row-0 cell ends up
+  // Letter with a Letter right next to / below it, the run has no cell left
+  // to hold a description - not just when cellIdx itself sits on the edge
+  // (an *interior* cell can just as easily bridge an edge-adjacent Letter
+  // into a longer unclueable run). Uses the current types array, so call it
+  // before committing the Letter assignment it's checking.
+  function wouldCreateEdgeStart(cellIdx) {
+    var row = Math.floor(cellIdx / nbLines);
+    var col = cellIdx % nbLines;
+
+    // Find the full extent of the horizontal run cellIdx would join
+    // (counting cellIdx itself as Letter): how far it reaches left and right.
+    var left = col;
+    while (left > 0 && types[row * nbLines + left - 1] === enums.CaseType.Letter) left--;
+    var right = col;
+    while (right < nbLines - 1 && types[row * nbLines + right + 1] === enums.CaseType.Letter) right++;
+    var hBad = left === 0 && right > left;
+
+    // Same for the vertical run: how far it reaches up and down.
+    var top = row;
+    while (top > 0 && types[(top - 1) * nbLines + col] === enums.CaseType.Letter) top--;
+    var bottom = row;
+    while (bottom < nbColumns - 1 && types[(bottom + 1) * nbLines + col] === enums.CaseType.Letter) bottom++;
+    var vBad = top === 0 && bottom > top;
+
+    return hBad || vBad;
+  }
+
   var changed = true;
   var maxPasses = types.length;
   while (changed && maxPasses-- > 0) {
@@ -194,27 +248,58 @@ function repairOrphanDescriptions(types, nbLines, nbColumns) {
       if (types[idx] !== enums.CaseType.Description) continue;
       if (!isOrphan(idx)) continue;
 
-      if (hasLetterNeighbor(idx)) {
+      if (hasLetterNeighbor(idx) && !wouldCreateEdgeStart(idx)) {
         types[idx] = enums.CaseType.Letter;
         changed = true;
         continue;
       }
 
+      // Carving right keeps idx itself as Description, so the new run's
+      // *horizontal* start is always safely clued - but the two new Letter
+      // cells can still each bridge into an existing run reaching row 0
+      // vertically, so they need the same check before committing. Same
+      // reasoning for carving down, mirrored onto the horizontal axis.
       var col = idx % nbLines;
-      if (col + 2 < nbLines) {
+      if (col + 2 < nbLines &&
+          !wouldCreateEdgeStart(idx + 1) && !wouldCreateEdgeStart(idx + 2)) {
         types[idx + 1] = enums.CaseType.Letter;
         types[idx + 2] = enums.CaseType.Letter;
         changed = true;
-      } else if (idx + 2 * nbLines < types.length) {
+      } else if (idx + 2 * nbLines < types.length &&
+          !wouldCreateEdgeStart(idx + nbLines) && !wouldCreateEdgeStart(idx + 2 * nbLines)) {
         types[idx + nbLines] = enums.CaseType.Letter;
         types[idx + 2 * nbLines] = enums.CaseType.Letter;
         changed = true;
       }
+      // Neither strategy is safe here (rare grid-corner case) - left alone,
+      // generate()'s retry loop discards a skeleton that still has this.
     }
   }
 }
 
+// A word can only be clued by a Description cell immediately to its left
+// (H) or above it (V), so a Letter run starting right at column 0 or row 0
+// can never be clued - see repairOrphanDescriptions' wouldCreateEdgeStart
+// for why the sweep/repair passes can't fully rule this out on their own
+// (two independently-valid runs from different rows/columns can still land
+// next to each other by coincidence). Cheap enough to call on every
+// skeleton attempt before deriving slots or spending any solver budget -
+// generate() uses this to skip a doomed skeleton immediately rather than
+// only discovering the same thing after a full solve + export.
+function hasUnclueableEdgeStart(skeleton) {
+  var types = skeleton.types, nbLines = skeleton.nbLines, nbColumns = skeleton.nbColumns;
+  for (var row = 0; row < nbColumns; row++) {
+    var idx = row * nbLines;
+    if (types[idx] === enums.CaseType.Letter && types[idx + 1] === enums.CaseType.Letter) return true;
+  }
+  for (var col = 0; col < nbLines; col++) {
+    if (types[col] === enums.CaseType.Letter && types[nbLines + col] === enums.CaseType.Letter) return true;
+  }
+  return false;
+}
+
 module.exports = {
+  hasUnclueableEdgeStart: hasUnclueableEdgeStart,
   generateSkeleton: generateSkeleton,
   sweepSkeleton: sweepSkeleton,
   pickSegmentLength: pickSegmentLength,

@@ -250,13 +250,17 @@ test('generateSkeleton produces valid, non-crashing output when segment lengths 
 
 test('generateSkeleton produces a genuine crossing: a cell forced by both an active row run and an active column obligation', function () {
   // This rng sequence is not hand-traced: it's the exact sequence a
-  // mulberry32 PRNG (seed 4664) produces for this stats/grid, captured and
+  // mulberry32 PRNG (seed 4) produces for this stats/grid, captured and
   // hard-coded here. It was found by an automated search for a sequence
   // that (a) produces a real crossing - a cell where both an in-progress
   // vertical (column) obligation and an in-progress horizontal (row) run
-  // are simultaneously active - AND (b) leaves >= 2 more columns in that
+  // are simultaneously active - AND (b) leaves >= 1 more column in that
   // same row after the crossing, so a miscounted `rowRemaining` there can
   // still flip a later cell's forced-vs-free decision before the row ends.
+  // (Re-derived after the col-0/row-0 free-start guards and the general
+  // "free cell next to an existing Letter forces Description" adjacency
+  // rule were added - both consume rng() differently than before, which
+  // shifts every draw downstream and invalidates any earlier sequence.)
   //
   // Empirically verified (scratch copies of generateSkeleton, deleted after
   // use) that this exact input diverges between:
@@ -264,48 +268,88 @@ test('generateSkeleton produces a genuine crossing: a cell forced by both an act
   //     both decrement independently), and
   //   - a deliberately-broken `else if` variant (only one of the two
   //     decrements when both are active),
-  // and that the two `types` arrays differ starting at index 15 (the last
-  // cell): real leaves it Description, the broken variant leaves it
-  // Letter. This is exactly the failure mode described above: the
-  // crossing cell itself (index 13) is Letter under both variants (the bug
-  // is invisible there), but the broken variant's under-decremented
-  // `rowRemaining` shifts every rng() call after the crossing by one
-  // position for the rest of the row, changing a later free-cell decision.
+  // and that the two `types` arrays differ at the last cell: real leaves it
+  // Letter, the broken variant leaves it Description. This is exactly the
+  // failure mode described above: the crossing cell itself is Letter under
+  // both variants (the bug is invisible there), but the broken variant's
+  // under-decremented `rowRemaining` shifts every rng() call after the
+  // crossing by one position for the rest of the row, changing a later
+  // free-cell decision.
   var stats = { segmentLengthCounts: { 2: 1, 3: 1 }, descriptionDensity: 0.1 };
   var rng = fixedRng([
-    0.9259336937684566, 0.769770429469645, 0.5637234086170793, 0.0012118341401219368,
-    0.9978029660414904, 0.9024868179112673, 0.7403421711642295, 0.3332418098580092,
-    0.35777182946912944, 0.6192755028605461, 0.3534947638399899, 0.525042651919648,
-    0.861455072183162, 0.3533237169031054, 0.6729183446150273, 0.8109661459457129,
-    0.8429647982120514, 0.46181874303147197
+    0.9236361971125007, 0.33304587937891483, 0.2216679009143263, 0.08184101991355419,
+    0.23399724275805056, 0.5084968542214483, 0.0773914884775877, 0.9738619206473231,
+    0.6220374784898013, 0.6908154499251395, 0.7681461023166776, 0.3691486772149801,
+    0.7324949100147933, 0.8758750655688345, 0.5287687703967094, 0.7433461560867727,
+    0.42174601648002863, 0.4904501575510949, 0.7359134785365313, 0.9307232699356973,
+    0.9795403191819787, 0.4713440854102373
   ]);
   // sweepSkeleton (not generateSkeleton) - this test targets the sweep's
   // row/column-obligation bookkeeping in isolation; generateSkeleton's
-  // separate orphan-repair pass would otherwise legitimately flip the last
-  // cell (an always-unfixable-by-attachment grid corner) regardless of
-  // whether the decrement bug this test guards against is present, masking
-  // the regression this test exists to catch.
-  var result = skeleton.sweepSkeleton(4, 4, stats, rng);
+  // separate orphan-repair pass would otherwise legitimately flip cells
+  // regardless of whether the decrement bug this test guards against is
+  // present, masking the regression this test exists to catch.
+  var result = skeleton.sweepSkeleton(5, 5, stats, rng);
 
-  // The crossing itself: idx 13 (row 3, col 1) is forced by both axes and
+  // The crossing itself: idx 22 (row 4, col 2) is forced by both axes and
   // is a real crossing (run >= 2 in both directions), not an incidental
   // single-cell overlap.
-  var crossingRow = 3, crossingCol = 1;
-  assert.strictEqual(result.types[crossingRow * 4 + crossingCol], enums.CaseType.Letter);
-  var hLen = runLengthAt(result.types, 4, 4, crossingRow, crossingCol, 'H');
-  var vLen = runLengthAt(result.types, 4, 4, crossingRow, crossingCol, 'V');
+  var crossingRow = 4, crossingCol = 2;
+  assert.strictEqual(result.types[crossingRow * 5 + crossingCol], enums.CaseType.Letter);
+  var hLen = runLengthAt(result.types, 5, 5, crossingRow, crossingCol, 'H');
+  var vLen = runLengthAt(result.types, 5, 5, crossingRow, crossingCol, 'V');
   assert.ok(hLen >= 2, 'expected the crossing cell to be in a real horizontal run, got hLen=' + hLen);
   assert.ok(vLen >= 2, 'expected the crossing cell to be in a real vertical run, got vLen=' + vLen);
 
-  // The regression check: this is the cell (idx 15, the last cell of the
-  // grid) whose type depends on `rowRemaining` having been decremented
-  // correctly back at the crossing, several cells earlier in the same row.
-  // If the crossing only decremented one of the two counters (the `else
-  // if` bug), this cell flips from Description to Letter.
+  // The regression check: this is the cell (idx 23) whose type depends on
+  // `rowRemaining` having been decremented correctly back at the crossing,
+  // earlier in the same row. If the crossing only decremented one of the
+  // two counters (the `else if` bug), this cell flips from Description to
+  // Letter.
   assert.deepStrictEqual(result.types, [
-    enums.CaseType.Letter, enums.CaseType.Description, enums.CaseType.Letter, enums.CaseType.Letter,
-    enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Letter,
-    enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Letter,
-    enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Description
+    enums.CaseType.Description, enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Description,
+    enums.CaseType.Description, enums.CaseType.Letter, enums.CaseType.Description, enums.CaseType.Description,
+    enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Description,
+    enums.CaseType.Letter, enums.CaseType.Description, enums.CaseType.Description, enums.CaseType.Letter,
+    enums.CaseType.Description, enums.CaseType.Letter, enums.CaseType.Description, enums.CaseType.Letter,
+    enums.CaseType.Description, enums.CaseType.Letter, enums.CaseType.Letter, enums.CaseType.Description,
+    enums.CaseType.Letter
   ]);
+});
+
+test('hasUnclueableEdgeStart detects a column-0/row-0 word start and generateSkeleton can still produce clean skeletons', function () {
+  // Column 0 has no cell to its left, and row 0 has no cell above it, so a
+  // Letter run starting right on either edge can never be clued by
+  // exportGrid (it only attaches a definition via a Description cell
+  // immediately before the run). tryStartHorizontal/tryStartVertical won't
+  // freshly start a run right on the edge, and the sweep's own adjacency
+  // guard plus repairOrphanDescriptions' wouldCreateEdgeStart check stop
+  // most *emergent* cases (an edge cell forced Letter by one row's run
+  // happening to sit next to another row's independently-placed run) - but
+  // not all: two *forced* runs from separate rows/columns can each look
+  // perfectly valid on their own and still land next to each other by
+  // coincidence (e.g. row 0's own horizontal run and row 1's separate one
+  // both passing through the same column). Preventing that fully would need
+  // cross-row lookahead this row-major sweep doesn't have (the same class of
+  // problem the word-first rewrite hit and was abandoned for - see
+  // docs/superpowers/specs/2026-07-29), so it happens on a real majority of
+  // 15x15 attempts at production density (measured ~88%). That's why
+  // generate() (scripts/generate-grid.js) calls hasUnclueableEdgeStart to
+  // skip a bad skeleton before ever deriving slots or calling the solver,
+  // with validate.js's hasUnclueableEdgeStart-on-the-exported-grid check
+  // (test/validate.test.js) as the final backstop - the same
+  // reject-and-retry pattern already used for orphan Descriptions.
+  var stats = { segmentLengthCounts: { 2: 3, 3: 2, 4: 1 }, descriptionDensity: 0.19 };
+  var nbLines = 15, nbColumns = 15;
+  var trials = 100, bad = 0, clean = 0;
+
+  for (var seed = 1; seed <= trials; seed++) {
+    var rng = mulberry32(seed * 104729);
+    var result = skeleton.generateSkeleton(nbLines, nbColumns, stats, rng);
+    if (skeleton.hasUnclueableEdgeStart(result)) bad++;
+    else clean++;
+  }
+
+  assert.ok(bad > 0, 'expected this scenario to actually exercise the edge-start case');
+  assert.ok(clean > 0, 'expected at least some skeletons to come out clean across 100 seeds');
 });
