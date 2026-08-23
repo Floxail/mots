@@ -60,3 +60,96 @@ test('deriveWords: a double def cell yields two words in arrow order', function 
   assert.strictEqual(words[0].arrow, 'R');
   assert.strictEqual(words[1].arrow, 'B');
 });
+
+function zeroWeights() {
+  return {
+    uncovered: 0, singleCovered: 0, singleCoveredEnclosed: 0, overlap: 0,
+    wordLength: new Array(16).fill(0), wordLengthBeyond: 0,
+    unenclosedStart: 0, deadEnd: 0,
+    clusterBase: new Array(8).fill(0), clusterBeyond: 0,
+    longCrossLen: 6
+  };
+}
+
+test('scoreMask: uncovered letters', function () {
+  var w = zeroWeights(); w.uncovered = 1500;
+  assert.strictEqual(mask.scoreMask(M(2, 1, [L(), L()]), w), 3000);
+});
+
+test('scoreMask: crossed cell costs 0, single-covered enclosed costs the enclosed rate', function () {
+  var w = zeroWeights(); w.singleCoveredEnclosed = 75; w.singleCovered = 200;
+  // D(RB,BR) at (0,0): V word [1,3], H word [2,3]. Cell 3 crossed (0),
+  // cells 1 and 2 single-covered with non-letter perpendicular neighbors (75 each).
+  var m = M(2, 2, [D('RB', 'BR'), L(), L(), L()]);
+  assert.strictEqual(mask.scoreMask(m, w), 150);
+});
+
+test('scoreMask: single-covered with a letter perpendicular neighbor costs the full rate', function () {
+  var w = zeroWeights(); w.singleCovered = 200; w.singleCoveredEnclosed = 75;
+  // 3x2: H word [1,2] on row 0; row 1 all letters (uncovered, zero-weighted here).
+  // Cells 1,2 have letter neighbors below -> NOT enclosed -> 200 each.
+  var m = M(3, 2, [D('R'), L(), L(), L(), L(), L()]);
+  assert.strictEqual(mask.scoreMask(m, w), 400);
+});
+
+test('scoreMask: same-axis overlap', function () {
+  var w = zeroWeights(); w.overlap = 600;
+  // Two BR words on row 1 overlapping on cells 5,6,7 (word A [4..7], word B [5..7])
+  var m = M(4, 2, [D('BR'), D('BR'), L(), L(), L(), L(), L(), L()]);
+  assert.strictEqual(mask.scoreMask(m, w), 1800);
+});
+
+test('scoreMask: bent arrow starting after a letter (unenclosed start)', function () {
+  var w = zeroWeights(); w.unenclosedStart = 2000;
+  var m = M(4, 2, [D('BR'), D('BR'), L(), L(), L(), L(), L(), L()]);
+  // word B starts at cell 5 whose left neighbor (cell 4) is a Letter
+  assert.strictEqual(mask.scoreMask(m, w), 2000);
+});
+
+test('scoreMask: word length table and beyond-table extrapolation', function () {
+  var w = zeroWeights(); w.wordLength[2] = 650;
+  assert.strictEqual(mask.scoreMask(M(3, 1, [D('R'), L(), L()]), w), 650);
+
+  var w2 = zeroWeights(); w2.wordLength[15] = 1300; w2.wordLengthBeyond = 300;
+  var cells = [D('R')];
+  for (var i = 0; i < 17; i++) cells.push(L());
+  assert.strictEqual(mask.scoreMask(M(18, 1, cells), w2), 1300 + 300 * 2); // len 17
+});
+
+test('scoreMask: crossing of two long words costs lenH*lenV', function () {
+  var w = zeroWeights();
+  var cells = [];
+  for (var i = 0; i < 64; i++) cells.push(L());
+  cells[3 * 8 + 0] = D('R'); // H word row 3, cols 1..7, len 7
+  cells[0 * 8 + 4] = D('B'); // V word col 4, rows 1..7, len 7
+  assert.strictEqual(mask.scoreMask(M(8, 8, cells), w), 49);
+});
+
+test('scoreMask: dead ends (3 non-letter neighbors, top/left border excluded)', function () {
+  var w = zeroWeights(); w.deadEnd = 400;
+  // (1,1) and (2,1) each have exactly 3 non-letter neighbors
+  var m = M(3, 3, [D('B'), D('B'), D('B'),
+                   D('B'), L(),    D('B'),
+                   D('B'), L(),    D('B')]);
+  assert.strictEqual(mask.scoreMask(m, w), 800);
+});
+
+test('scoreMask: def cluster penalty, interior block', function () {
+  var w = zeroWeights(); w.clusterBase = [0, 0, 150, 320, 670, 980, 1300, 2000];
+  // 4-cell D block at rows 1-2, cols 1-2 of a 3x3: size 4, extension 2
+  var m = M(3, 3, [L(), L(), L(),
+                   L(), D('R'), D('R'),
+                   L(), D('R'), D('R')]);
+  // round(670 * (0.75 + 0.25 * 2/4)) = 586
+  assert.strictEqual(mask.scoreMask(m, w), 586);
+});
+
+test('scoreMask: border def cells count half toward cluster size', function () {
+  var w = zeroWeights(); w.clusterBase = [0, 0, 150, 320, 670, 980, 1300, 2000];
+  // block at rows 0-1, cols 0-1: three border cells (0.5 each) + one interior
+  // effective size 2.5 -> round 3, ext 2 -> round(320 * (0.75 + 0.25*2/3)) = 293
+  var m = M(3, 3, [D('R'), D('R'), L(),
+                   D('R'), D('R'), L(),
+                   L(), L(), L()]);
+  assert.strictEqual(mask.scoreMask(m, w), 293);
+});

@@ -62,6 +62,131 @@ function deriveWords(mask) {
   return words;
 }
 
+var DEFAULT_WEIGHTS = {
+  uncovered: 1500,
+  singleCovered: 200,
+  singleCoveredEnclosed: 75,
+  overlap: 600,
+  // index = word length; length 0 = arrow pointing off-grid/at-a-Def
+  wordLength: [2000, 1500, 650, 100, 10, 0, 0, 30, 50, 150, 250, 400, 550, 750, 1000, 1300],
+  wordLengthBeyond: 300,
+  unenclosedStart: 2000,
+  deadEnd: 400,
+  clusterBase: [0, 0, 150, 320, 670, 980, 1300, 2000],
+  clusterBeyond: 400,
+  longCrossLen: 6
+};
+
+function clusterPenalty(mask, w) {
+  var total = 0;
+  var visited = new Array(mask.cells.length).fill(false);
+  for (var i = 0; i < mask.cells.length; i++) {
+    if (visited[i] || mask.cells[i].kind !== DEF) continue;
+    var queue = [i];
+    visited[i] = true;
+    var members = [];
+    while (queue.length) {
+      var idx = queue.pop();
+      members.push(idx);
+      var col = idx % mask.nbLines, row = (idx - col) / mask.nbLines;
+      for (var dr = -1; dr <= 1; dr++) {
+        for (var dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          var r = row + dr, c = col + dc;
+          if (r < 0 || c < 0 || r >= mask.nbColumns || c >= mask.nbLines) continue;
+          var n = r * mask.nbLines + c;
+          if (!visited[n] && mask.cells[n].kind === DEF) { visited[n] = true; queue.push(n); }
+        }
+      }
+    }
+    // border (row 0 / col 0) def cells count half - clusters there are unavoidable
+    var effSize = 0, minR = Infinity, maxR = -1, minC = Infinity, maxC = -1;
+    members.forEach(function (idx) {
+      var col = idx % mask.nbLines, row = (idx - col) / mask.nbLines;
+      effSize += (row === 0 || col === 0) ? 0.5 : 1;
+      if (row < minR) minR = row;
+      if (row > maxR) maxR = row;
+      if (col < minC) minC = col;
+      if (col > maxC) maxC = col;
+    });
+    var s = Math.round(effSize);
+    var ext = Math.max(maxR - minR + 1, maxC - minC + 1);
+    var base = s < w.clusterBase.length
+      ? w.clusterBase[s]
+      : w.clusterBase[w.clusterBase.length - 1] + w.clusterBeyond * (s - w.clusterBase.length + 1);
+    total += Math.round(base * (0.75 + 0.25 * ext / Math.max(s, 1)));
+  }
+  return total;
+}
+
+function scoreMask(mask, weights) {
+  var w = weights || DEFAULT_WEIGHTS;
+  var total = 0;
+  var words = deriveWords(mask);
+  var size = mask.cells.length;
+  var hCov = new Array(size).fill(0);
+  var vCov = new Array(size).fill(0);
+  var hLen = new Array(size).fill(0);
+  var vLen = new Array(size).fill(0);
+
+  words.forEach(function (word) {
+    var len = word.cells.length;
+    total += len < w.wordLength.length
+      ? w.wordLength[len]
+      : w.wordLength[w.wordLength.length - 1] + w.wordLengthBeyond * (len - w.wordLength.length + 1);
+
+    word.cells.forEach(function (idx) {
+      if (word.axis === 'H') { hCov[idx]++; hLen[idx] = len; }
+      else { vCov[idx]++; vLen[idx] = len; }
+    });
+
+    // a bent word starting right after a Letter would render as one continuous
+    // run the player cannot split - penalize the unenclosed start
+    if (len > 0 && (word.arrow === 'RB' || word.arrow === 'BR')) {
+      var start = word.cells[0];
+      var col = start % mask.nbLines, row = (start - col) / mask.nbLines;
+      var pred = word.arrow === 'RB'
+        ? (row > 0 ? start - mask.nbLines : -1)
+        : (col > 0 ? start - 1 : -1);
+      if (pred !== -1 && mask.cells[pred].kind === LETTER) total += w.unenclosedStart;
+    }
+  });
+
+  mask.cells.forEach(function (cell, idx) {
+    if (cell.kind !== LETTER) return;
+    var col = idx % mask.nbLines, row = (idx - col) / mask.nbLines;
+
+    if (hCov[idx] > 1 || vCov[idx] > 1) total += w.overlap;
+    else if (hCov[idx] + vCov[idx] === 0) total += w.uncovered;
+    else if (hCov[idx] + vCov[idx] === 1) {
+      var prev, next;
+      if (hCov[idx] === 1) {
+        prev = row > 0 ? mask.cells[idx - mask.nbLines] : null;
+        next = row + 1 < mask.nbColumns ? mask.cells[idx + mask.nbLines] : null;
+      } else {
+        prev = col > 0 ? mask.cells[idx - 1] : null;
+        next = col + 1 < mask.nbLines ? mask.cells[idx + 1] : null;
+      }
+      var enclosed = (!prev || prev.kind !== LETTER) && (!next || next.kind !== LETTER);
+      total += enclosed ? w.singleCoveredEnclosed : w.singleCovered;
+    }
+
+    if (hLen[idx] > w.longCrossLen && vLen[idx] > w.longCrossLen) total += hLen[idx] * vLen[idx];
+
+    // dead end: 3 of 4 neighbors non-letter (off-grid counts), except top/left border
+    if (row > 0 && col > 0) {
+      var nonLetter = 0;
+      if (mask.cells[idx - mask.nbLines].kind !== LETTER) nonLetter++;
+      if (row + 1 >= mask.nbColumns || mask.cells[idx + mask.nbLines].kind !== LETTER) nonLetter++;
+      if (mask.cells[idx - 1].kind !== LETTER) nonLetter++;
+      if (col + 1 >= mask.nbLines || mask.cells[idx + 1].kind !== LETTER) nonLetter++;
+      if (nonLetter === 3) total += w.deadEnd;
+    }
+  });
+
+  return total + clusterPenalty(mask, w);
+}
+
 module.exports = {
   LETTER: LETTER,
   DEF: DEF,
@@ -69,5 +194,7 @@ module.exports = {
   ARROW_PAIRS: ARROW_PAIRS,
   arrowAxis: arrowAxis,
   deriveWords: deriveWords,
-  mulberry32: mulberry32
+  mulberry32: mulberry32,
+  DEFAULT_WEIGHTS: DEFAULT_WEIGHTS,
+  scoreMask: scoreMask
 };
