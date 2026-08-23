@@ -119,6 +119,40 @@ function clusterPenalty(mask, w) {
   return total;
 }
 
+function deriveSlots(mask) {
+  var words = deriveWords(mask);
+  var slots = [];
+  for (var i = 0; i < words.length; i++) {
+    if (words[i].cells.length < 2) return null;
+    slots.push({
+      axis: words[i].axis, cells: words[i].cells, length: words[i].cells.length,
+      crossings: [], defCell: words[i].defCell, arrowIndex: words[i].arrowIndex
+    });
+  }
+
+  var hOwner = new Map(), vOwner = new Map();
+  for (var s = 0; s < slots.length; s++) {
+    var owner = slots[s].axis === 'H' ? hOwner : vOwner;
+    for (var p = 0; p < slots[s].cells.length; p++) {
+      if (owner.has(slots[s].cells[p])) return null;
+      owner.set(slots[s].cells[p], { slotIndex: s, pos: p });
+    }
+  }
+
+  for (var i = 0; i < mask.cells.length; i++) {
+    if (mask.cells[i].kind === LETTER && !hOwner.has(i) && !vOwner.has(i)) return null;
+  }
+
+  slots.forEach(function (slot) {
+    var other = slot.axis === 'H' ? vOwner : hOwner;
+    slot.cells.forEach(function (cellIndex, pos) {
+      var hit = other.get(cellIndex);
+      if (hit) slot.crossings.push({ slotIndex: hit.slotIndex, ownPos: pos, otherPos: hit.pos });
+    });
+  });
+  return slots;
+}
+
 function scoreMask(mask, weights) {
   var w = weights || DEFAULT_WEIGHTS;
   var total = 0;
@@ -194,6 +228,7 @@ module.exports = {
   ARROW_PAIRS: ARROW_PAIRS,
   arrowAxis: arrowAxis,
   deriveWords: deriveWords,
+  deriveSlots: deriveSlots,
   mulberry32: mulberry32,
   DEFAULT_WEIGHTS: DEFAULT_WEIGHTS,
   scoreMask: scoreMask

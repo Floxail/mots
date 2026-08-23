@@ -153,3 +153,29 @@ test('scoreMask: border def cells count half toward cluster size', function () {
                    L(), L(), L()]);
   assert.strictEqual(mask.scoreMask(m, w), 293);
 });
+
+test('deriveSlots: slots with crossings from a valid mask', function () {
+  // D(RB,BR): V slot [1,3], H slot [2,3], crossing at cell 3
+  var m = M(2, 2, [D('RB', 'BR'), L(), L(), L()]);
+  var slots = mask.deriveSlots(m);
+  assert.strictEqual(slots.length, 2);
+  assert.strictEqual(slots[0].axis, 'V');
+  assert.deepStrictEqual(slots[0].crossings, [{ slotIndex: 1, ownPos: 1, otherPos: 1 }]);
+  assert.strictEqual(slots[0].defCell, 0);
+  assert.strictEqual(slots[1].arrowIndex, 1);
+});
+
+test('deriveSlots: null on a word shorter than 2', function () {
+  assert.strictEqual(mask.deriveSlots(M(2, 1, [D('R'), L()])), null);
+});
+
+test('deriveSlots: null on same-axis overlap', function () {
+  var m = M(4, 2, [D('BR'), D('BR'), L(), L(), L(), L(), L(), L()]);
+  assert.strictEqual(mask.deriveSlots(m), null);
+});
+
+test('deriveSlots: null when a letter cell is uncovered', function () {
+  // H word [1,2] on row 0; cells 3,4,5 uncovered letters
+  var m = M(3, 2, [D('R'), L(), L(), L(), L(), L()]);
+  assert.strictEqual(mask.deriveSlots(m), null);
+});
