@@ -159,6 +159,12 @@ function parseGrid(self, callback, serverText) {
   self._grid = grid;
 }
 
+// GSO encodes a description cell's arrows in its character. The table below was
+// derived empirically over ~50 real grids: for each definition cell, the only
+// arrow assignment under which every maximal letter run is clued exactly once.
+// The scheme is regular - a-d carry one definition, then e-i, j-n, o-s and t-x
+// carry two each. Getting a character wrong points a clue at the wrong word,
+// which also silently corrupts the word/definition pairs scrape-dico.js reads.
 function placeArrows(grid) {
   var i,
       gridSize = grid.cases.length;
@@ -178,12 +184,15 @@ function placeArrows(grid) {
         case 'd':
           grid.cases[i].arrow[0] = enumArrow.BottomRight;
           break;
+        case 'e':
         case 'f':
         case 'g':
         case 'h':
+        case 'i':
           grid.cases[i].arrow[0] = enumArrow.Right;
           grid.cases[i].arrow[1] = enumArrow.Bottom;
           break;
+        case 'j':
         case 'k':
         case 'l':
         case 'm':
@@ -191,6 +200,7 @@ function placeArrows(grid) {
           grid.cases[i].arrow[0] = enumArrow.RightBottom;
           grid.cases[i].arrow[1] = enumArrow.Bottom;
           break;
+        case 'o':
         case 'p':
         case 'q':
         case 'r':
@@ -199,16 +209,14 @@ function placeArrows(grid) {
           grid.cases[i].arrow[1] = enumArrow.BottomRight;
           break;
         case 't':
-          grid.cases[i].arrow[0] = enumArrow.Bottom;
-          grid.cases[i].arrow[1] = enumArrow.BottomRight;
-          break;
         case 'u':
         case 'v':
         case 'w':
+        case 'x':
           grid.cases[i].arrow[0] = enumArrow.RightBottom;
           grid.cases[i].arrow[1] = enumArrow.BottomRight;
           break;
-        
+
         default: {
           var colIdx = i % grid.nbLines;
           var hasRight = (colIdx + 1 < grid.nbLines) && grid.cases[i + 1] && (grid.cases[i + 1].type === enums.CaseType.Letter);
@@ -531,3 +539,5 @@ GridManager.prototype.resetGrid = function (gridNumber, callback) {
 };
 
 module.exports = GridManager;
+// Exposed so the character/arrow table can be tested without a network fetch.
+module.exports.placeArrows = placeArrows;
