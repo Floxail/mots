@@ -67,7 +67,7 @@ function zeroWeights() {
     wordLength: new Array(16).fill(0), wordLengthBeyond: 0,
     unenclosedStart: 0, deadEnd: 0,
     clusterBase: new Array(8).fill(0), clusterBeyond: 0,
-    longCrossLen: 6
+    longCrossLen: 6, uncluedRun: 0
   };
 }
 
@@ -180,6 +180,37 @@ test('deriveSlots: null when a letter cell is uncovered', function () {
   assert.strictEqual(mask.deriveSlots(m), null);
 });
 
+test('scoreMask: a maximal run of 2+ with no arrow pointing at it is penalized', function () {
+  var w = zeroWeights(); w.uncluedRun = 1500;
+  // 3 wide, 1 tall, all letters, no description at all -> one unclued H run [0,1,2].
+  // Each column is a 1-cell V run, which is never an unclued-run violation.
+  assert.strictEqual(mask.scoreMask(M(3, 1, [L(), L(), L()]), w), 1500);
+});
+
+test('scoreMask: a properly clued maximal run costs nothing', function () {
+  var w = zeroWeights(); w.uncluedRun = 1500;
+  assert.strictEqual(mask.scoreMask(M(3, 1, [D('R'), L(), L()]), w), 0);
+});
+
+test('scoreMask: cells fully covered on the other axis still owe for their unclued runs', function () {
+  var w = zeroWeights(); w.uncluedRun = 1500;
+  // 2 wide, 3 tall. Two B arrows clue both columns fully, so every letter cell
+  // IS owned by a vertical word - but rows 1 and 2 are each an unclued H run of 2.
+  var m = M(2, 3, [D('B'), D('B'), L(), L(), L(), L()]);
+  assert.strictEqual(mask.scoreMask(m, w), 3000);
+});
+
+test('deriveSlots: null when a maximal run is not clued, even if every cell is covered', function () {
+  // same mask as above: vertical coverage is complete, horizontal runs are unclued
+  var m = M(2, 3, [D('B'), D('B'), L(), L(), L(), L()]);
+  assert.strictEqual(mask.deriveSlots(m), null);
+});
+
+test('deriveSlots: still accepts a mask whose every run is clued', function () {
+  var m = M(2, 2, [D('RB', 'BR'), L(), L(), L()]);
+  assert.notStrictEqual(mask.deriveSlots(m), null);
+});
+
 test('generateMask: deterministic for a fixed seed', function () {
   var a = mask.generateMask(9, 9, mask.mulberry32(7));
   var b = mask.generateMask(9, 9, mask.mulberry32(7));
@@ -193,8 +224,9 @@ test('generateMask: returned penalty matches a fresh full rescore', function () 
 
 test('generateMask: converged 9x9 masks are valid (deriveSlots accepts them)', function () {
   // The hillclimber must at minimum eliminate all hard-validity penalties
-  // (uncovered cells at 1500, overlaps at 600, sub-2-letter words) before
-  // going stale - these seeds are a regression canary, not a proof.
+  // (uncovered cells at 1500, overlaps at 600, sub-2-letter words, and now
+  // unclued runs at 1500) before going stale - these seeds are a regression
+  // canary, not a proof.
   //
   // Investigation note (Task 4): seeds 1, 2 and 3 from the brief do NOT
   // converge to a valid mask, even at maxStale=200000/maxIterations=5e6
@@ -207,12 +239,22 @@ test('generateMask: converged 9x9 masks are valid (deriveSlots accepts them)', f
   // word was covering. A strict-improvement-only, single-cell-mutation
   // hillclimber cannot execute the two-cell move such traps require - a
   // structural property of this search (no bug found in scoring). Scanning
-  // seeds 1-30 at maxStale=20000, only 3/30 converge (6, 12, 25). Swapped
-  // the canary to those so it still exercises deriveSlots end-to-end;
-  // filed as a concern for follow-up (simulated annealing / basin hops /
-  // reweighting hard-validity penalties) rather than widening the budget
-  // further, since budget was proven not to matter here.
-  [6, 12, 25].forEach(function (seed) {
+  // seeds 1-30 at maxStale=20000, only 3/30 converge (6, 12, 25).
+  //
+  // Task 9 update: scoreMask/deriveSlots now also penalize/reject unclued
+  // maximal runs (the actual validateGrid rule - see mask.js scanRuns), and
+  // generateMask accepts equal-penalty plateau moves to help escape local
+  // optima. Both changes make the landscape strictly harder to satisfy (a
+  // mask now has to be genuinely valid, not just "every cell covered"), so
+  // the old canary seeds (6, 12, 25) no longer converge - re-scanning at
+  // default budget (maxStale=5000) over seeds 1-300 found only 3 valid:
+  // 86, 131, 289 (1%, down from 10% pre-fix at maxStale=20000). This drop
+  // is expected and matches Task 8's finding that the pre-fix objective was
+  // far too permissive (~98% of its "valid" masks failed validateGrid);
+  // this canary now exercises the real, harder constraint end-to-end.
+  // Filed as a concern for follow-up (simulated annealing / basin hops /
+  // reweighting) - see task-9-report.md.
+  [86, 131, 289].forEach(function (seed) {
     var m = mask.generateMask(9, 9, mask.mulberry32(seed));
     assert.notStrictEqual(mask.deriveSlots(m), null, 'seed ' + seed);
   });

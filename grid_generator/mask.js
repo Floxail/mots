@@ -74,7 +74,8 @@ var DEFAULT_WEIGHTS = {
   deadEnd: 400,
   clusterBase: [0, 0, 150, 320, 670, 980, 1300, 2000],
   clusterBeyond: 400,
-  longCrossLen: 6
+  longCrossLen: 6,
+  uncluedRun: 1500
 };
 
 function clusterPenalty(mask, w) {
@@ -119,6 +120,42 @@ function clusterPenalty(mask, w) {
   return total;
 }
 
+// Every maximal run of 2+ letter cells must be exactly one clued word: the
+// player reads any such run as a word, so a run no arrow points at is
+// unsolvable even when each of its cells is covered by the perpendicular
+// axis. validateGrid enforces this on the finished grid; scoring and
+// deriveSlots have to agree with it or the hillclimber optimizes toward
+// masks the validator will reject.
+function scanRuns(mask, axis) {
+  var runs = [];
+  var outerCount = axis === 'H' ? mask.nbColumns : mask.nbLines;
+  var innerCount = axis === 'H' ? mask.nbLines : mask.nbColumns;
+  for (var outer = 0; outer < outerCount; outer++) {
+    var run = [];
+    for (var inner = 0; inner < innerCount; inner++) {
+      var idx = axis === 'H' ? outer * mask.nbLines + inner : inner * mask.nbLines + outer;
+      if (mask.cells[idx].kind === LETTER) run.push(idx);
+      else if (run.length) { runs.push(run); run = []; }
+    }
+    if (run.length) runs.push(run);
+  }
+  return runs;
+}
+
+function uncluedRunPenalty(mask, words, w) {
+  var clued = { H: new Set(), V: new Set() };
+  words.forEach(function (word) {
+    if (word.cells.length >= 2) clued[word.axis].add(word.cells.join(','));
+  });
+  var total = 0;
+  ['H', 'V'].forEach(function (axis) {
+    scanRuns(mask, axis).forEach(function (run) {
+      if (run.length >= 2 && !clued[axis].has(run.join(','))) total += w.uncluedRun;
+    });
+  });
+  return total;
+}
+
 function deriveSlots(mask) {
   var words = deriveWords(mask);
   var slots = [];
@@ -141,6 +178,16 @@ function deriveSlots(mask) {
 
   for (var i = 0; i < mask.cells.length; i++) {
     if (mask.cells[i].kind === LETTER && !hOwner.has(i) && !vOwner.has(i)) return null;
+  }
+
+  var clued = { H: new Set(), V: new Set() };
+  slots.forEach(function (slot) { clued[slot.axis].add(slot.cells.join(',')); });
+  var axes = ['H', 'V'];
+  for (var a = 0; a < axes.length; a++) {
+    var runs = scanRuns(mask, axes[a]);
+    for (var r = 0; r < runs.length; r++) {
+      if (runs[r].length >= 2 && !clued[axes[a]].has(runs[r].join(','))) return null;
+    }
   }
 
   slots.forEach(function (slot) {
@@ -218,7 +265,7 @@ function scoreMask(mask, weights) {
     }
   });
 
-  return total + clusterPenalty(mask, w);
+  return total + clusterPenalty(mask, w) + uncluedRunPenalty(mask, words, w);
 }
 
 function randomArrows(rng) {
@@ -254,6 +301,7 @@ function generateMask(nbLines, nbColumns, rng, options) {
 
     var next = scoreMask(mask, w);
     if (next < penalty) { penalty = next; stale = 0; }
+    else if (next === penalty) { stale++; }  // plateau move: keep it, still count toward the break
     else { cells[idx] = saved; stale++; }
   }
 
