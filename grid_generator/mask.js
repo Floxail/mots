@@ -68,14 +68,33 @@ var DEFAULT_WEIGHTS = {
   singleCoveredEnclosed: 75,
   overlap: 600,
   // index = word length; length 0 = arrow pointing off-grid/at-a-Def
-  wordLength: [2000, 1500, 650, 100, 10, 0, 0, 30, 50, 150, 250, 400, 550, 750, 1000, 1300],
+  // Retuned against 51 real GSO grids: 2-16, 3-17, 4-21, 5-15, 6-10, 7-4, 8-5,
+  // 9-7, 10-5 percent of words, so lengths 2-6 are all ordinary and only the
+  // extremes deserve real cost. Engel's original table (tuned on German
+  // Schwedenraetsel) charged 650 for a 2-letter word, nearly a veto here.
+  wordLength: [2000, 1500, 60, 20, 0, 0, 10, 40, 50, 60, 80, 180, 300, 450, 650, 900],
   wordLengthBeyond: 300,
   unenclosedStart: 2000,
   deadEnd: 400,
-  clusterBase: [0, 0, 150, 320, 670, 980, 1300, 2000],
+  // Retuned against 51 real GSO grids: definition clusters never exceed 3
+  // cells, so the table now stops describing 4-7 as merely expensive and
+  // charges them like the outliers they are.
+  clusterBase: [0, 0, 60, 260, 900, 1600, 2400, 3400],
   clusterBeyond: 400,
   longCrossLen: 6,
-  uncluedRun: 1500
+  uncluedRun: 1500,
+  // Retuned against 51 real GSO grids (see defRunPenalty): vertical runs of
+  // adjacent definition cells are always length 1, horizontal runs reach 2
+  // only 6% of the time and never 3. The previous barème had no term for
+  // this at all, which is how the first generated 15x15 got a column of
+  // seven stacked definitions - the "band of definitions" defect. Started
+  // at 900 (quadratic excess, so it dominates fast); at 15x15/maxStale=60000
+  // that collapsed convergence to ~1/15 valid masks (vs ~4/15 pre-retune),
+  // so softened to 500, which recovered convergence to ~3/15 while a real
+  // generated 15x15 still met every structural target (H2 V2, cluster 3,
+  // density 23% - see task-11-report.md Step 5/7).
+  defRunH: 500,
+  defRunV: 500
 };
 
 function clusterPenalty(mask, w) {
@@ -117,6 +136,43 @@ function clusterPenalty(mask, w) {
       : w.clusterBase[w.clusterBase.length - 1] + w.clusterBeyond * (s - w.clusterBase.length + 1);
     total += Math.round(base * (0.75 + 0.25 * ext / Math.max(s, 1)));
   }
+  return total;
+}
+
+// Measured over 51 real GSO grids: every vertical run of adjacent definition
+// cells is length 1, and horizontal runs reach 2 only 6% of the time and
+// never 3. The 8-connected cluster term alone does not express this - it
+// charges a diagonal scatter and a straight bar about the same - so a
+// straight stack of definitions was cheap enough for the optimizer to buy.
+// That stack is what reads as a "band of definitions" down one side.
+// Cost grows quadratically past the length real grids tolerate.
+function defRunPenalty(mask, w) {
+  var total = 0;
+
+  function chargeRun(len, allowed, weight) {
+    if (len <= allowed) return 0;
+    var excess = len - allowed;
+    return weight * excess * excess;
+  }
+
+  for (var row = 0; row < mask.nbColumns; row++) {
+    var run = 0;
+    for (var col = 0; col < mask.nbLines; col++) {
+      if (mask.cells[row * mask.nbLines + col].kind === DEF) run++;
+      else { total += chargeRun(run, 2, w.defRunH); run = 0; }
+    }
+    total += chargeRun(run, 2, w.defRunH);
+  }
+
+  for (var col2 = 0; col2 < mask.nbLines; col2++) {
+    var run2 = 0;
+    for (var row2 = 0; row2 < mask.nbColumns; row2++) {
+      if (mask.cells[row2 * mask.nbLines + col2].kind === DEF) run2++;
+      else { total += chargeRun(run2, 1, w.defRunV); run2 = 0; }
+    }
+    total += chargeRun(run2, 1, w.defRunV);
+  }
+
   return total;
 }
 
@@ -265,7 +321,7 @@ function scoreMask(mask, weights) {
     }
   });
 
-  return total + clusterPenalty(mask, w) + uncluedRunPenalty(mask, words, w);
+  return total + clusterPenalty(mask, w) + uncluedRunPenalty(mask, words, w) + defRunPenalty(mask, w);
 }
 
 function randomArrows(rng) {

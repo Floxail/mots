@@ -67,7 +67,8 @@ function zeroWeights() {
     wordLength: new Array(16).fill(0), wordLengthBeyond: 0,
     unenclosedStart: 0, deadEnd: 0,
     clusterBase: new Array(8).fill(0), clusterBeyond: 0,
-    longCrossLen: 6, uncluedRun: 0
+    longCrossLen: 6, uncluedRun: 0,
+    defRunH: 0, defRunV: 0
   };
 }
 
@@ -211,6 +212,41 @@ test('deriveSlots: still accepts a mask whose every run is clued', function () {
   assert.notStrictEqual(mask.deriveSlots(m), null);
 });
 
+test('scoreMask: two vertically stacked description cells are penalized', function () {
+  var w = zeroWeights(); w.defRunV = 900;
+  // 1 wide, 2 tall: a vertical definition run of length 2. Real GSO grids
+  // never do this - 100% of their vertical definition runs are length 1.
+  assert.strictEqual(mask.scoreMask(M(1, 2, [D('R'), D('R')]), w), 900);
+});
+
+test('scoreMask: vertical description runs cost more the longer they get', function () {
+  var w = zeroWeights(); w.defRunV = 900;
+  var two = mask.scoreMask(M(1, 2, [D('R'), D('R')]), w);
+  var three = mask.scoreMask(M(1, 3, [D('R'), D('R'), D('R')]), w);
+  assert.ok(three > two * 1.5, 'length 3 must cost superlinearly more than length 2: ' + three + ' vs ' + two);
+});
+
+test('scoreMask: a lone description cell costs no chain penalty', function () {
+  var w = zeroWeights(); w.defRunV = 900; w.defRunH = 900;
+  assert.strictEqual(mask.scoreMask(M(1, 1, [D('R')]), w), 0);
+});
+
+test('scoreMask: two side-by-side description cells are free, three are not', function () {
+  var w = zeroWeights(); w.defRunH = 900;
+  // Real GSO grids do reach horizontal runs of 2 (6% of the time) but never 3.
+  assert.strictEqual(mask.scoreMask(M(2, 1, [D('B'), D('B')]), w), 0);
+  assert.ok(mask.scoreMask(M(3, 1, [D('B'), D('B'), D('B')]), w) > 0);
+});
+
+test('scoreMask: two-letter words are only mildly penalized', function () {
+  // Engel charged 650 here, tuned on German puzzles. Real GSO grids make 16%
+  // of their words two letters long, so this must not be a near-veto.
+  assert.ok(mask.DEFAULT_WEIGHTS.wordLength[2] < 150,
+    'length-2 penalty should be mild, got ' + mask.DEFAULT_WEIGHTS.wordLength[2]);
+  assert.ok(mask.DEFAULT_WEIGHTS.wordLength[2] > mask.DEFAULT_WEIGHTS.wordLength[4],
+    'length 4 should still be preferred over length 2');
+});
+
 test('generateMask: deterministic for a fixed seed', function () {
   var a = mask.generateMask(9, 9, mask.mulberry32(7));
   var b = mask.generateMask(9, 9, mask.mulberry32(7));
@@ -260,7 +296,15 @@ test('generateMask: converged 9x9 masks are valid (deriveSlots accepts them)', f
   // task-10-report.md - convergence keeps climbing with budget at every
   // grid size), lifted the 9x9 rate from 1% to 150/300 (50%) over seeds
   // 1-300. Re-picked canary seeds: 1, 4, 5.
-  [1, 4, 5].forEach(function (seed) {
+  //
+  // Task 11 update: adding defRunH/defRunV (see DEFAULT_WEIGHTS) makes the
+  // landscape harder again - straight definition chains that used to be
+  // free now cost real penalty - so seed 5 stopped converging. Re-scanned
+  // seeds 1-60 at default budget: 22/60 (37%) converge, down from ~50% but
+  // still healthy; the drop is the expected cost of forbidding the
+  // "band of definitions" defect the retune exists to fix (see
+  // task-11-report.md). Re-picked canary seeds: 1, 3, 4.
+  [1, 3, 4].forEach(function (seed) {
     var m = mask.generateMask(9, 9, mask.mulberry32(seed));
     assert.notStrictEqual(mask.deriveSlots(m), null, 'seed ' + seed);
   });
