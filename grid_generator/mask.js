@@ -221,6 +221,46 @@ function scoreMask(mask, weights) {
   return total + clusterPenalty(mask, w);
 }
 
+function randomArrows(rng) {
+  var pick = Math.floor(rng() * (ARROWS.length + ARROW_PAIRS.length));
+  if (pick < ARROWS.length) return [ARROWS[pick]];
+  return ARROW_PAIRS[pick - ARROWS.length].slice();
+}
+
+function generateMask(nbLines, nbColumns, rng, options) {
+  options = options || {};
+  var w = options.weights || DEFAULT_WEIGHTS;
+  var defRatio = options.defRatio !== undefined ? options.defRatio : 0.2;
+  var maxStale = options.maxStale !== undefined ? options.maxStale : 5000;
+  var maxIterations = options.maxIterations !== undefined ? options.maxIterations : 500000;
+
+  var cells = [];
+  for (var i = 0; i < nbLines * nbColumns; i++) {
+    cells.push(rng() < defRatio ? { kind: DEF, arrows: randomArrows(rng) } : { kind: LETTER });
+  }
+  var mask = { cells: cells, nbLines: nbLines, nbColumns: nbColumns };
+  // ponytail: full rescore per mutation (~tens of us on 15x15); go incremental
+  // (rescore only words/clusters touching the mutated cell) if the benchmark
+  // test ever pushes a full hillclimb past ~30s
+  var penalty = scoreMask(mask, w);
+
+  var stale = 0;
+  for (var iter = 0; iter < maxIterations && stale < maxStale; iter++) {
+    var idx = Math.floor(rng() * cells.length);
+    var saved = cells[idx];
+    if (saved.kind === LETTER) cells[idx] = { kind: DEF, arrows: randomArrows(rng) };
+    else if (rng() < 0.5) cells[idx] = { kind: LETTER };
+    else cells[idx] = { kind: DEF, arrows: randomArrows(rng) };
+
+    var next = scoreMask(mask, w);
+    if (next < penalty) { penalty = next; stale = 0; }
+    else { cells[idx] = saved; stale++; }
+  }
+
+  mask.penalty = penalty;
+  return mask;
+}
+
 module.exports = {
   LETTER: LETTER,
   DEF: DEF,
@@ -231,5 +271,6 @@ module.exports = {
   deriveSlots: deriveSlots,
   mulberry32: mulberry32,
   DEFAULT_WEIGHTS: DEFAULT_WEIGHTS,
-  scoreMask: scoreMask
+  scoreMask: scoreMask,
+  generateMask: generateMask
 };
