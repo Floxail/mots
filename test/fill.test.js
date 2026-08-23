@@ -58,10 +58,40 @@ test('solve: forward checking prunes dead branches without backtracking', functi
 });
 
 test('solve: respects maxBacktracks budget', function () {
+  // A full 3x3 word square (6 length-3 slots, every cell shared by one H and
+  // one V slot) against a dictionary that admits plenty of locally-consistent
+  // partial placements but no global solution - unlike the old 1-crossing
+  // pair here, this genuinely needs real search before concluding UNSAT, so
+  // it actually exercises maxBacktracks instead of exhausting on its own in
+  // ~2 backtracks regardless of budget.
+  function slot(cells, crossings) { return { axis: 'H', cells: cells, length: 3, crossings: crossings }; }
   var slots = [
-    { axis: 'H', cells: [0, 1], length: 2, crossings: [{ slotIndex: 1, ownPos: 0, otherPos: 0 }] },
-    { axis: 'V', cells: [0, 2], length: 2, crossings: [{ slotIndex: 0, ownPos: 0, otherPos: 0 }] }
+    slot([0, 1, 2], [{ slotIndex: 3, ownPos: 0, otherPos: 0 }, { slotIndex: 4, ownPos: 1, otherPos: 0 }, { slotIndex: 5, ownPos: 2, otherPos: 0 }]),
+    slot([3, 4, 5], [{ slotIndex: 3, ownPos: 0, otherPos: 1 }, { slotIndex: 4, ownPos: 1, otherPos: 1 }, { slotIndex: 5, ownPos: 2, otherPos: 1 }]),
+    slot([6, 7, 8], [{ slotIndex: 3, ownPos: 0, otherPos: 2 }, { slotIndex: 4, ownPos: 1, otherPos: 2 }, { slotIndex: 5, ownPos: 2, otherPos: 2 }]),
+    slot([0, 3, 6], [{ slotIndex: 0, ownPos: 0, otherPos: 0 }, { slotIndex: 1, ownPos: 1, otherPos: 0 }, { slotIndex: 2, ownPos: 2, otherPos: 0 }]),
+    slot([1, 4, 7], [{ slotIndex: 0, ownPos: 0, otherPos: 1 }, { slotIndex: 1, ownPos: 1, otherPos: 1 }, { slotIndex: 2, ownPos: 2, otherPos: 1 }]),
+    slot([2, 5, 8], [{ slotIndex: 0, ownPos: 0, otherPos: 2 }, { slotIndex: 1, ownPos: 1, otherPos: 2 }, { slotIndex: 2, ownPos: 2, otherPos: 2 }])
   ];
-  // no consistent pair exists -> must terminate quickly and return null
-  assert.strictEqual(fill.solve(slots, dico(['AB', 'CD']), { maxBacktracks: 5 }), null);
+  var words = ['ABC', 'ABD', 'ABE', 'ACD', 'ACE', 'ADE', 'BCD', 'BCE', 'BDE', 'CDE',
+    'AXY', 'BXY', 'CXY', 'DXY', 'EXY', 'XYZ'];
+
+  // Measured locally: uncapped, this scenario takes 33 backtracks to exhaust
+  // and correctly returns null (no 3x3 square exists in this word set).
+  // Capping at 5 must cut that off much earlier - the loop-unwind after a
+  // budget hit adds a small, bounded overshoot per stack frame, observed at
+  // 7 here, well short of 33.
+  var uncappedStats = {};
+  var uncapped = fill.solve(slots, dico(words), { stats: uncappedStats });
+  assert.strictEqual(uncapped, null);
+  assert.ok(uncappedStats.backtracks > 20,
+    'uncapped scenario must need real search, got ' + uncappedStats.backtracks + ' backtracks');
+
+  var cappedStats = {};
+  var capped = fill.solve(slots, dico(words), { maxBacktracks: 5, stats: cappedStats });
+  assert.strictEqual(capped, null);
+  assert.ok(cappedStats.backtracks <= 8,
+    'maxBacktracks:5 must cut the search off early, got ' + cappedStats.backtracks + ' backtracks');
+  assert.ok(cappedStats.backtracks < uncappedStats.backtracks,
+    'the cap must actually reduce backtracks: capped ' + cappedStats.backtracks + ' vs uncapped ' + uncappedStats.backtracks);
 });

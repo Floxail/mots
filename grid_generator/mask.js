@@ -4,9 +4,11 @@ var DEF = 'D';
 // Arrow types: where the word starts relative to the def cell, and its axis.
 // R : starts right, runs right (H)   RB: starts right, runs down (V, bent)
 // B : starts below, runs down  (V)   BR: starts below, runs right (H, bent)
-var ARROWS = ['R', 'RB', 'B', 'BR'];
-// Pair combinations observed in real GSO grids
-var ARROW_PAIRS = [['R', 'B'], ['RB', 'B'], ['R', 'BR'], ['B', 'BR'], ['RB', 'BR']];
+// The four double-arrow combinations real GSO grids use, per gridManager.js's
+// placeArrows character table (e-i, j-n, o-s, t-x - derived empirically over
+// 51 real provider grids). There is no character encoding B+BR, so that pair
+// is not observed and is deliberately absent here.
+var ARROW_PAIRS = [['R', 'B'], ['RB', 'B'], ['R', 'BR'], ['RB', 'BR']];
 
 function mulberry32(seed) {
   var state = seed;
@@ -257,7 +259,10 @@ function deriveSlots(mask) {
 }
 
 function scoreMask(mask, weights) {
-  var w = weights || DEFAULT_WEIGHTS;
+  // Object.assign so a partial weights object (the barème is deliberately
+  // injectable - see spec section 12) fills in from the default instead of
+  // silently producing NaN for whatever key it omitted.
+  var w = Object.assign({}, DEFAULT_WEIGHTS, weights);
   var total = 0;
   var words = deriveWords(mask);
   var size = mask.cells.length;
@@ -324,12 +329,6 @@ function scoreMask(mask, weights) {
   return total + clusterPenalty(mask, w) + uncluedRunPenalty(mask, words, w) + defRunPenalty(mask, w);
 }
 
-function randomArrows(rng) {
-  var pick = Math.floor(rng() * (ARROWS.length + ARROW_PAIRS.length));
-  if (pick < ARROWS.length) return [ARROWS[pick]];
-  return ARROW_PAIRS[pick - ARROWS.length].slice();
-}
-
 // Engel 2009 section 3.4: a typical mask is about two thirds letter fields,
 // and among definitions the straight single arrows occur far more often than
 // the bent ones. Drawing uniformly over every arrow option (as this used to)
@@ -379,7 +378,7 @@ function pickMutationCells(mask, rng) {
 
 function generateMask(nbLines, nbColumns, rng, options) {
   options = options || {};
-  var w = options.weights || DEFAULT_WEIGHTS;
+  var w = Object.assign({}, DEFAULT_WEIGHTS, options.weights);
   var maxStale = options.maxStale !== undefined ? options.maxStale : 60000;
   var maxIterations = options.maxIterations !== undefined ? options.maxIterations : 500000;
 
@@ -411,17 +410,11 @@ function generateMask(nbLines, nbColumns, rng, options) {
 }
 
 module.exports = {
-  LETTER: LETTER,
-  DEF: DEF,
-  ARROWS: ARROWS,
-  ARROW_PAIRS: ARROW_PAIRS,
-  arrowAxis: arrowAxis,
   deriveWords: deriveWords,
   deriveSlots: deriveSlots,
   mulberry32: mulberry32,
   DEFAULT_WEIGHTS: DEFAULT_WEIGHTS,
   scoreMask: scoreMask,
-  randomArrows: randomArrows,
   randomCellKind: randomCellKind,
   pickMutationCells: pickMutationCells,
   generateMask: generateMask

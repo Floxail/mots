@@ -304,10 +304,25 @@ test('generateMask: converged 9x9 masks are valid (deriveSlots accepts them)', f
   // still healthy; the drop is the expected cost of forbidding the
   // "band of definitions" defect the retune exists to fix (see
   // task-11-report.md). Re-picked canary seeds: 1, 3, 4.
-  [1, 3, 4].forEach(function (seed) {
+  //
+  // Final-review update: ARROW_PAIRS dropped the unobserved B+BR combination
+  // (see the comment on ARROW_PAIRS in mask.js), which changes what
+  // randomCellKind draws and so which seeds converge - seed 3 stopped
+  // converging. Re-scanned seeds 1-40 at default budget: 15/40 (37.5%)
+  // converge, matching the pre-fix rate. Re-picked canary seeds: 1, 4, 5.
+  [1, 4, 5].forEach(function (seed) {
     var m = mask.generateMask(9, 9, mask.mulberry32(seed));
     assert.notStrictEqual(mask.deriveSlots(m), null, 'seed ' + seed);
   });
+});
+
+test('generateMask: converged 15x15 mask is valid (product-size canary)', function () {
+  // Spec section 11 asks for a convergence canary at the product target size
+  // (13x13/15x15), not just 9x9. Scanned seeds 1-40 at default budget
+  // (maxStale 60000): 5/40 converge (13, 15, 26, 31, 40); seed 31 is the
+  // fastest at ~5s, well under this test's budget.
+  var m = mask.generateMask(15, 15, mask.mulberry32(31));
+  assert.notStrictEqual(mask.deriveSlots(m), null, 'seed 31');
 });
 
 test('randomCellKind draws Letter about two thirds of the time and favours straight arrows', function () {

@@ -59,8 +59,10 @@ non-Lettre ou le bord. **Les mots sont définis par les flèches du génome**, p
 scan des runs : un run de lettres sans flèche qui le pointe = lettres non couvertes =
 pénalité (c'est ainsi qu'Engel unifie validité et qualité).
 
-Paires de flèches autorisées sur une même case (combinaisons observées dans les
-grilles GSO réelles) : `R+B`, `RB+B`, `R+BR`, `B+BR`, `RB+BR`.
+Paires de flèches autorisées sur une même case (les quatre combinaisons observées
+dans les grilles GSO réelles, d'après la table de caractères empirique de
+`gridManager.js::placeArrows` sur 51 grilles) : `R+B`, `RB+B`, `R+BR`, `RB+BR`.
+Aucun caractère n'encode `B+BR` : cette paire n'existe pas.
 
 Contraintes de validité (pénalisées très fort, jamais réparées par du code spécial) :
 

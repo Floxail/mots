@@ -4,7 +4,10 @@ var assert = require('node:assert');
 var dictionary = require('../grid_generator/dictionary');
 var generateGrid = require('../scripts/generate-grid');
 
-test('generate returns null quickly when the dictionary cannot fill anything', function () {
+test('generate returns null when the mask pool never fills (maxStale too low to converge)', function () {
+  // maxStale 500 is far below what 9x9 needs to converge (default 60000), so
+  // the pool stays empty and generate returns null without ever reaching the
+  // fill loop - this covers the "no masks to try" path, not a fill failure.
   var dico = dictionary.buildDictionary([{ word: 'ABC', definitions: ['x'] }]);
   var grid = generateGrid.generate(9, 9, dico, {
     seed: 1, maxMaskAttempts: 2, maxStale: 500, maxBacktracks: 100, timeoutMs: 2000
@@ -38,7 +41,7 @@ test('generate fills the lowest-penalty mask in the pool first', function () {
   // making the ordering assertion pass vacuously on an empty pool.
   var dico = dictionary.buildDictionary([{ word: 'ABC', definitions: ['x'] }]);
   var seen = [];
-  generateGrid.generate(7, 7, dico, {
+  var grid = generateGrid.generate(7, 7, dico, {
     seed: 3, maxMaskAttempts: 30, maskPoolSize: 4, maxStale: 6000,
     maxBacktracks: 50, timeoutMs: 1500,
     onSelect: function (poolSize, rank, penalty) { seen.push(penalty); }
@@ -51,6 +54,9 @@ test('generate fills the lowest-penalty mask in the pool first', function () {
     assert.ok(seen[i] >= seen[i - 1],
       'pool must be tried in ascending penalty order, got ' + seen.join(','));
   }
+  // the ABC-only dictionary cannot fill any of these multi-slot 7x7 masks,
+  // so every pooled mask is tried and fails - generate must return null.
+  assert.strictEqual(grid, null);
 });
 
 test('generate stops collecting masks once the pool is full', function () {
@@ -67,11 +73,21 @@ test('generate stops collecting masks once the pool is full', function () {
   assert.ok(found <= 2, 'collection must stop at maskPoolSize, collected ' + found);
 });
 
-test('generate still returns null when nothing in the pool can be filled', function () {
+test('generate returns null when a real pool fills but every fill attempt fails', function () {
+  // Same 7x7/maxStale 6000/maskPoolSize 4 shape as the ordering test above:
+  // it genuinely builds a pool (unlike a 9x9/low-maxStale combo, which never
+  // converges and returns null before the fill loop runs at all - see
+  // "generate returns null when the mask pool never fills" above). The
+  // ABC-only dictionary can't satisfy any of these masks' crossings, so this
+  // exercises "pool had masks, every fill failed, returns null" for real -
+  // proven by the onSelect counter below, not assumed.
   var dico = dictionary.buildDictionary([{ word: 'ABC', definitions: ['x'] }]);
-  var grid = generateGrid.generate(9, 9, dico, {
-    seed: 1, maxMaskAttempts: 10, maskPoolSize: 2, maxStale: 800,
-    maxBacktracks: 50, timeoutMs: 1500
+  var attempts = 0;
+  var grid = generateGrid.generate(7, 7, dico, {
+    seed: 3, maxMaskAttempts: 30, maskPoolSize: 4, maxStale: 6000,
+    maxBacktracks: 50, timeoutMs: 1500,
+    onSelect: function () { attempts++; }
   });
+  assert.ok(attempts >= 2, 'fill loop must actually run more than once, got ' + attempts);
   assert.strictEqual(grid, null);
 });

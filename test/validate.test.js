@@ -47,26 +47,22 @@ test('flags an unclued letter run (no arrow points at it)', function () {
 });
 
 test('flags a word that is not a maximal run (merged run)', function () {
-  // 3x1: D(R) A B but a third letter C follows the word... impossible in 3x1;
-  // use 4x1: D(R)->word [1,2,3]="ABC" is fine; instead craft a bent word starting mid-run:
-  // 2x3 (nbLines=2, nbColumns=3): col 0 letters rows 0-2 = A,B,C; D at (0,1) with RB?
-  // Simplest merged case: arrow B at (0,1) -> V word [3? ] ... build explicitly:
-  // nbLines=2: idx (r,c) = r*2+c. Letters at (0,0),(1,0),(2,0); D at (0,1) arrow code 1 (RB)
-  // -> RB from (0,1): start (0,2) off-grid -> length 0 error AND run [0,2,4] unclued.
+  // 2 wide x 3 tall. Column 1 holds a 3-cell vertical run (rows 0-2). The
+  // description at index 2 points RB (code 1): start right, run down - so its
+  // word begins at index 3, one cell INTO that run, and is therefore not the
+  // maximal run the player actually sees.
   var g = { nbLines: 2, nbColumns: 3, cases: [
     { type: enums.CaseType.Letter, value: 'A' },
-    { type: enums.CaseType.Description, nbDesc: 1, desc: ['d'], arrow: [1] },
     { type: enums.CaseType.Letter, value: 'B' },
-    { type: enums.CaseType.Description, nbDesc: 1, desc: ['d'], arrow: [2] },
+    { type: enums.CaseType.Description, nbDesc: 1, desc: ['d'], arrow: [1] },
     { type: enums.CaseType.Letter, value: 'C' },
-    { type: enums.CaseType.Letter, value: 'D' }
+    { type: enums.CaseType.Letter, value: 'D' },
+    { type: enums.CaseType.Letter, value: 'E' }
   ] };
-  // arrow at idx1 (RB) walks V from (0,2)? -> col 2 doesn't exist (nbLines=2) -> len 0
-  // arrow at idx3 (B) walks V from (2,1): cell 5 = 'D', word [5] len 1
-  // vertical run col0 [0,2,4] has no arrow -> unclued
   var r = validate.validateGrid(g);
   assert.strictEqual(r.valid, false);
-  assert.ok(r.errors.length >= 2);
+  assert.ok(r.errors.some(function (e) { return e.indexOf('non maximal') !== -1; }),
+    'expected a "non maximal" error, got ' + JSON.stringify(r.errors));
 });
 
 test('flags duplicate words', function () {

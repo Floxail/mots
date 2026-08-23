@@ -10,9 +10,10 @@ var lexiqueFrequencyLib = require('../grid_generator/lexiqueFrequency');
 
 function generate(nbLines, nbColumns, dictionary, options) {
   options = options || {};
-  // 60 attempts yields roughly 8 valid masks at 15x15 (about a quarter of
-  // attempts converge), which is enough spread for the penalty sort to have
-  // something to choose between without the collection phase dominating.
+  // 60 attempts yields roughly 8-10 valid masks at 15x15 (measured ~13-17%
+  // of attempts converge at that size), which is enough spread for the
+  // penalty sort to have something to choose between without the collection
+  // phase dominating.
   var maxMaskAttempts = options.maxMaskAttempts !== undefined ? options.maxMaskAttempts : 60;
   var maskPoolSize = options.maskPoolSize !== undefined ? options.maskPoolSize : 8;
   var rng = options.rng || maskLib.mulberry32(options.seed !== undefined ? options.seed : Date.now());

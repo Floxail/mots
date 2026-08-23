@@ -12,7 +12,12 @@ function shortestDefinition(defs) {
 function exportGrid(mask, slots, assignment, dictionary) {
   var cases = mask.cells.map(function (cell, idx) {
     if (cell.kind === 'L') return new Case.LetterCase(idx, null);
-    return new Case.DescriptionCase(idx, 'a');
+    // null, not a GSO character: this cell's nbDesc/desc/arrow are set below
+    // from the mask/slots, not derived from a character. A hardcoded 'a'
+    // would silently look like a real GSO single-Right-arrow cell to
+    // gridManager.js's exported placeArrows() if a future caller ran it over
+    // a generated grid, rewriting every def cell to one Right arrow.
+    return new Case.DescriptionCase(idx, null);
   });
 
   var slotByArrow = new Map(); // defCell * 2 + arrowIndex -> slot index
