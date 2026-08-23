@@ -81,8 +81,9 @@ grid_generator/
 ├── dictionary.js        (conservé tel quel)
 ├── lexiqueFrequency.js  (conservé tel quel)
 ├── extractWords.js      (conservé tel quel — scrape)
-├── mask.js              NOUVEAU : génome, pénalités, hillclimber
-├── slots.js             RÉÉCRIT : mots dérivés des flèches (plus de scan de runs)
+├── mask.js              NOUVEAU : génome, pénalités, hillclimber, dérivation des slots
+│                        (la dérivation mots/slots partage la marche des flèches avec le
+│                        scoring — un seul module, l'ancien slots.js est supprimé)
 ├── fill.js              NOUVEAU : backtracking MRV + forward checking (remplace backtracking.js)
 ├── export.js            RÉÉCRIT : masque + assignation → JSON grille, flèches coudées incluses
 └── validate.js          RÉÉCRIT : filet de sécurité final adapté au nouveau modèle
@@ -91,7 +92,7 @@ scripts/
 ```
 
 Supprimés : `grid_generator/skeleton.js`, `grid_generator/backtracking.js`,
-`grid_generator/exporter.js` et leurs tests. `scripts/benchmark-fill.js` supprimé ou
+`grid_generator/exporter.js`, `grid_generator/slots.js` et leurs tests. `scripts/benchmark-fill.js` supprimé ou
 adapté à `fill.js`.
 
 ## 5. mask.js — génome, pénalités, hillclimber
@@ -142,15 +143,17 @@ répéter :
 arrêt : N mutations infructueuses consécutives (défaut 5 000, paramétrable)
 ```
 
-Le score se recalcule **incrémentalement** : une mutation n'affecte que les mots et
-clusters touchant la case mutée. Implémentation : recalcul localisé (mots traversant la
-ligne/colonne de la case + clusters adjacents), pas de recalcul complet à chaque
-mutation. Un recalcul complet sert de vérité terrain dans les tests.
+Le score se recalcule **en entier à chaque mutation** dans un premier temps : sur
+15×15 (225 cases, ~45 mots) un recalcul complet est de l'ordre de la dizaine de
+microsecondes, soit quelques secondes pour un hillclimb entier — un benchmark dans les
+tests le vérifie. Si le benchmark montre que c'est trop lent, on passe au recalcul
+incrémental (mots et clusters touchant la case mutée), avec le recalcul complet comme
+vérité terrain de test.
 
 Sortie : `{ cells, nbLines, nbColumns, penalty }`. Déterministe à seed fixée
 (mulberry32 conservé).
 
-## 6. slots.js — dérivation des mots
+## 6. Dérivation des slots (dans mask.js)
 
 `deriveSlots(mask)` parcourt les cases Déf ; chaque flèche produit un slot :
 `{ axis: 'H'|'V', cells: [indices], length, crossings: [{slotIndex, ownPos,
@@ -235,7 +238,9 @@ différente (masques indépendants). Pas de couplage fill→pénalités dans cet
 - **export.js** : codes flèches 0/1/2/3 conformes au contrat client ; définitions
   attachées ; cas coudé en bord haut/gauche.
 - **validate.js** : chaque règle a son cas rouge et son cas vert.
-- **Intégration** : `generate(9, 9)` sur mini-dico synthétique → grille valide.
+- **Intégration** : `generate(9, 9)` sur le **vrai** `data/dico.json` (un dico
+  synthétique ne peut pas remplir une grille organique), seed trouvée
+  empiriquement puis figée → grille valide.
 
 Vérification manuelle finale : génération 15×15 réelle, chargement `!grid local`,
 contrôle visuel (bords remplis, flèches coudées rendues, pas de chaîne de défs).
