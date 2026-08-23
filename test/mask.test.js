@@ -252,10 +252,65 @@ test('generateMask: converged 9x9 masks are valid (deriveSlots accepts them)', f
   // is expected and matches Task 8's finding that the pre-fix objective was
   // far too permissive (~98% of its "valid" masks failed validateGrid);
   // this canary now exercises the real, harder constraint end-to-end.
-  // Filed as a concern for follow-up (simulated annealing / basin hops /
-  // reweighting) - see task-9-report.md.
-  [86, 131, 289].forEach(function (seed) {
+  //
+  // Task 10 update: the k=1 uniform mutation was itself the bottleneck
+  // (Engel 2009 3.4 measured it as his worst setting). Switching to k in
+  // {2,3} clustered cells with non-uniform field types, and raising the
+  // default maxStale from 5000 to 60000 (justified by the Step 6 table in
+  // task-10-report.md - convergence keeps climbing with budget at every
+  // grid size), lifted the 9x9 rate from 1% to 150/300 (50%) over seeds
+  // 1-300. Re-picked canary seeds: 1, 4, 5.
+  [1, 4, 5].forEach(function (seed) {
     var m = mask.generateMask(9, 9, mask.mulberry32(seed));
     assert.notStrictEqual(mask.deriveSlots(m), null, 'seed ' + seed);
   });
+});
+
+test('randomCellKind draws Letter about two thirds of the time and favours straight arrows', function () {
+  // Engel 3.4: a typical mask is ~2/3 letter fields, and single straight
+  // definitions are twice as likely as bent ones. Exact ratios are tuning
+  // values; this asserts the shape of the distribution, not precise numbers.
+  var rng = mask.mulberry32(11);
+  var letters = 0, straightSingle = 0, bentSingle = 0, pairs = 0;
+  for (var i = 0; i < 6000; i++) {
+    var cell = mask.randomCellKind(rng);
+    if (cell.kind === 'L') { letters++; continue; }
+    if (cell.arrows.length === 2) { pairs++; continue; }
+    if (cell.arrows[0] === 'R' || cell.arrows[0] === 'B') straightSingle++;
+    else bentSingle++;
+  }
+  assert.ok(letters > 3300 && letters < 4700, 'letters ~2/3, got ' + letters + '/6000');
+  assert.ok(straightSingle > bentSingle, 'straight singles should beat bent: ' + straightSingle + ' vs ' + bentSingle);
+  assert.ok(pairs > 0, 'pairs must still be reachable');
+});
+
+test('pickMutationCells returns 2 or 3 distinct in-bounds cells', function () {
+  var rng = mask.mulberry32(5);
+  var m = mask.generateMask(9, 9, mask.mulberry32(5));
+  for (var i = 0; i < 500; i++) {
+    var picked = mask.pickMutationCells(m, rng);
+    assert.ok(picked.length === 2 || picked.length === 3, 'k must be 2 or 3, got ' + picked.length);
+    assert.strictEqual(new Set(picked).size, picked.length, 'cells must be distinct');
+    picked.forEach(function (idx) {
+      assert.ok(idx >= 0 && idx < m.cells.length, 'in bounds: ' + idx);
+    });
+  }
+});
+
+test('pickMutationCells keeps its cells near each other', function () {
+  // Engel 3.4: two distant changes are uncorrelated, and an uncorrelated pair
+  // is far more likely to hurt than help - so the cells cluster (sigma ~ 3).
+  var rng = mask.mulberry32(7);
+  var m = mask.generateMask(15, 15, mask.mulberry32(7));
+  var far = 0, total = 0;
+  for (var i = 0; i < 500; i++) {
+    var picked = mask.pickMutationCells(m, rng);
+    var c0 = picked[0] % m.nbLines, r0 = (picked[0] - c0) / m.nbLines;
+    for (var j = 1; j < picked.length; j++) {
+      var c = picked[j] % m.nbLines, r = (picked[j] - c) / m.nbLines;
+      total++;
+      if (Math.abs(c - c0) > 9 || Math.abs(r - r0) > 9) far++;
+    }
+  }
+  assert.ok(far / total < 0.05, 'clustered draws should rarely exceed 3 sigma, got ' + far + '/' + total);
 });

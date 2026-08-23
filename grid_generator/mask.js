@@ -274,17 +274,61 @@ function randomArrows(rng) {
   return ARROW_PAIRS[pick - ARROWS.length].slice();
 }
 
+// Engel 2009 section 3.4: a typical mask is about two thirds letter fields,
+// and among definitions the straight single arrows occur far more often than
+// the bent ones. Drawing uniformly over every arrow option (as this used to)
+// produces far too many double-definition cells, which are the hardest kind
+// to satisfy.
+function randomCellKind(rng) {
+  var roll = rng();
+  if (roll < 0.66) return { kind: LETTER };
+  if (roll < 0.755) return { kind: DEF, arrows: ['R'] };
+  if (roll < 0.85) return { kind: DEF, arrows: ['B'] };
+  if (roll < 0.895) return { kind: DEF, arrows: ['RB'] };
+  if (roll < 0.94) return { kind: DEF, arrows: ['BR'] };
+  return { kind: DEF, arrows: ARROW_PAIRS[Math.floor(rng() * ARROW_PAIRS.length)].slice() };
+}
+
+// Box-Muller, so the spread around the central point is a real normal draw.
+function gaussian(rng, sigma) {
+  var u = 1 - rng();
+  var v = rng();
+  return sigma * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+// Engel 2009 section 3.4 measured mutation size: k=1 was the worst setting he
+// tested and k drawn from {2,3} the best. Escaping a local optimum in a mask
+// normally takes two or three coordinated changes - a single flip cannot make
+// one, which is exactly the stall this generator hit. The cells are drawn
+// close together (sigma ~ 3) because two distant changes are uncorrelated,
+// and an uncorrelated pair is far likelier to hurt than to help.
+function pickMutationCells(mask, rng) {
+  var k = rng() < 0.5 ? 2 : 3;
+  var size = mask.cells.length;
+  var centre = Math.floor(rng() * size);
+  var centreCol = centre % mask.nbLines;
+  var centreRow = (centre - centreCol) / mask.nbLines;
+  var picked = [centre];
+  var guard = 0;
+
+  while (picked.length < k && guard++ < 50) {
+    var col = Math.round(centreCol + gaussian(rng, 3));
+    var row = Math.round(centreRow + gaussian(rng, 3));
+    if (col < 0 || row < 0 || col >= mask.nbLines || row >= mask.nbColumns) continue;
+    var idx = row * mask.nbLines + col;
+    if (picked.indexOf(idx) === -1) picked.push(idx);
+  }
+  return picked;
+}
+
 function generateMask(nbLines, nbColumns, rng, options) {
   options = options || {};
   var w = options.weights || DEFAULT_WEIGHTS;
-  var defRatio = options.defRatio !== undefined ? options.defRatio : 0.2;
-  var maxStale = options.maxStale !== undefined ? options.maxStale : 5000;
+  var maxStale = options.maxStale !== undefined ? options.maxStale : 60000;
   var maxIterations = options.maxIterations !== undefined ? options.maxIterations : 500000;
 
   var cells = [];
-  for (var i = 0; i < nbLines * nbColumns; i++) {
-    cells.push(rng() < defRatio ? { kind: DEF, arrows: randomArrows(rng) } : { kind: LETTER });
-  }
+  for (var i = 0; i < nbLines * nbColumns; i++) cells.push(randomCellKind(rng));
   var mask = { cells: cells, nbLines: nbLines, nbColumns: nbColumns };
   // ponytail: full rescore per mutation (~tens of us on 15x15); go incremental
   // (rescore only words/clusters touching the mutated cell) if the benchmark
@@ -293,16 +337,17 @@ function generateMask(nbLines, nbColumns, rng, options) {
 
   var stale = 0;
   for (var iter = 0; iter < maxIterations && stale < maxStale; iter++) {
-    var idx = Math.floor(rng() * cells.length);
-    var saved = cells[idx];
-    if (saved.kind === LETTER) cells[idx] = { kind: DEF, arrows: randomArrows(rng) };
-    else if (rng() < 0.5) cells[idx] = { kind: LETTER };
-    else cells[idx] = { kind: DEF, arrows: randomArrows(rng) };
+    var targets = pickMutationCells(mask, rng);
+    var saved = targets.map(function (idx) { return cells[idx]; });
+    targets.forEach(function (idx) { cells[idx] = randomCellKind(rng); });
 
     var next = scoreMask(mask, w);
     if (next < penalty) { penalty = next; stale = 0; }
     else if (next === penalty) { stale++; }  // plateau move: keep it, still count toward the break
-    else { cells[idx] = saved; stale++; }
+    else {
+      targets.forEach(function (idx, n) { cells[idx] = saved[n]; });
+      stale++;
+    }
   }
 
   mask.penalty = penalty;
@@ -320,5 +365,8 @@ module.exports = {
   mulberry32: mulberry32,
   DEFAULT_WEIGHTS: DEFAULT_WEIGHTS,
   scoreMask: scoreMask,
+  randomArrows: randomArrows,
+  randomCellKind: randomCellKind,
+  pickMutationCells: pickMutationCells,
   generateMask: generateMask
 };

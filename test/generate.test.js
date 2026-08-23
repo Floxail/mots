@@ -15,12 +15,13 @@ test('generate returns null quickly when the dictionary cannot fill anything', f
 test('generate reports attempts via onAttempt', function () {
   var calls = 0;
   var dico = dictionary.buildDictionary([{ word: 'ABC', definitions: ['x'] }]);
-  // seed 86 reaches a deriveSlots-valid mask on the first attempt at the
-  // default maxStale (5000) - see test/mask.test.js's convergence canary
-  // (Task 9: unclued-run gate made deriveSlots much stricter, so seed 1 /
-  // maxStale 500 no longer reaches a valid mask within 2 attempts).
+  // seed 1 reaches a deriveSlots-valid mask on the first attempt at the
+  // default maxStale (60000) - see test/mask.test.js's convergence canary
+  // (Task 10: the clustered k in {2,3} mutation operator plus the raised
+  // default maxStale changed which seeds converge; seed 86 - valid under
+  // the old k=1 operator - no longer converges within 2 attempts).
   generateGrid.generate(9, 9, dico, {
-    seed: 86, maxMaskAttempts: 2, maxBacktracks: 100, timeoutMs: 2000,
+    seed: 1, maxMaskAttempts: 2, maxBacktracks: 100, timeoutMs: 2000,
     onAttempt: function () { calls++; }
   });
   assert.ok(calls >= 1);
