@@ -1385,3 +1385,896 @@ git push origin feature/grid-generator
 - [ ] **Step 6: Hand off to the user for in-game verification**
 
 Ask the user to run `pnpm start`, then `!grid local` + `!start` in the chat, and visually confirm: filled top/left edges, bent arrows rendered on border description cells, no long chains of description cells, organic word mix. Weight tuning (defRatio, cluster/length tables) happens after this feedback — via the `weights` option, without code changes.
+
+---
+
+### Task 9: Fix the mask objective — unclued runs are a validity violation
+
+**Why this task exists:** Task 8 found that `generate()` cannot produce a valid 15×15, and root-caused it: `scoreMask` and `deriveSlots` treat a Letter cell as "covered" when any perpendicular word owns it, but `validateGrid` (correctly) demands that **every maximal run of ≥2 cells be exactly one clued word**. So the hillclimber optimizes toward something that is not validity: ~98% of masks that pass `deriveSlots` still fail `validateGrid` with "Run H/V non clue".
+
+Spec §3 already states the correct rule — *"un run de lettres sans flèche qui le pointe = lettres non couvertes = pénalité"* — Task 2's per-cell `hCov`/`vCov` implementation simply did not encode it. The spec stands; the implementation is wrong.
+
+This was verified against reality, not assumed: real GSO grid 2118 has **zero** genuinely unclued runs (the one apparent exception traces to a pre-existing `gridManager.js` bug mapping the char `'t'` to `Bottom` instead of `RightBottom`).
+
+**Files:**
+- Modify: `grid_generator/mask.js`
+- Modify: `test/mask.test.js`
+- Modify: `test/generate.integration.test.js` (seed may change)
+
+**Interfaces:**
+- Consumes: everything already in `mask.js`.
+- Produces: `DEFAULT_WEIGHTS.uncluedRun` (new weight); `scanRuns(mask, axis)` internal helper; `deriveSlots` gains a run-equivalence gate; `generateMask` accepts equal-penalty (plateau) moves.
+
+- [ ] **Step 1: Write the failing tests**
+
+```js
+// append to test/mask.test.js
+
+test('scoreMask: a maximal run of 2+ with no arrow pointing at it is penalized', function () {
+  var w = zeroWeights(); w.uncluedRun = 1500;
+  // 3 wide, 1 tall, all letters, no description at all -> one unclued H run [0,1,2].
+  // Each column is a 1-cell V run, which is never an unclued-run violation.
+  assert.strictEqual(mask.scoreMask(M(3, 1, [L(), L(), L()]), w), 1500);
+});
+
+test('scoreMask: a properly clued maximal run costs nothing', function () {
+  var w = zeroWeights(); w.uncluedRun = 1500;
+  assert.strictEqual(mask.scoreMask(M(3, 1, [D('R'), L(), L()]), w), 0);
+});
+
+test('scoreMask: cells fully covered on the other axis still owe for their unclued runs', function () {
+  var w = zeroWeights(); w.uncluedRun = 1500;
+  // 2 wide, 3 tall. Two B arrows clue both columns fully, so every letter cell
+  // IS owned by a vertical word - but rows 1 and 2 are each an unclued H run of 2.
+  var m = M(2, 3, [D('B'), D('B'), L(), L(), L(), L()]);
+  assert.strictEqual(mask.scoreMask(m, w), 3000);
+});
+
+test('deriveSlots: null when a maximal run is not clued, even if every cell is covered', function () {
+  // same mask as above: vertical coverage is complete, horizontal runs are unclued
+  var m = M(2, 3, [D('B'), D('B'), L(), L(), L(), L()]);
+  assert.strictEqual(mask.deriveSlots(m), null);
+});
+
+test('deriveSlots: still accepts a mask whose every run is clued', function () {
+  var m = M(2, 2, [D('RB', 'BR'), L(), L(), L()]);
+  assert.notStrictEqual(mask.deriveSlots(m), null);
+});
+```
+
+- [ ] **Step 2: Run tests, verify they fail**
+
+Run: `node --test test/mask.test.js`
+Expected: the four new penalty/gate tests FAIL (`uncluedRun` unknown → 0 penalty; `deriveSlots` returns slots instead of null).
+
+- [ ] **Step 3: Implement**
+
+Add the run scanner near `deriveWords` in `grid_generator/mask.js`:
+
+```js
+// Every maximal run of 2+ letter cells must be exactly one clued word: the
+// player reads any such run as a word, so a run no arrow points at is
+// unsolvable even when each of its cells is covered by the perpendicular
+// axis. validateGrid enforces this on the finished grid; scoring and
+// deriveSlots have to agree with it or the hillclimber optimizes toward
+// masks the validator will reject.
+function scanRuns(mask, axis) {
+  var runs = [];
+  var outerCount = axis === 'H' ? mask.nbColumns : mask.nbLines;
+  var innerCount = axis === 'H' ? mask.nbLines : mask.nbColumns;
+  for (var outer = 0; outer < outerCount; outer++) {
+    var run = [];
+    for (var inner = 0; inner < innerCount; inner++) {
+      var idx = axis === 'H' ? outer * mask.nbLines + inner : inner * mask.nbLines + outer;
+      if (mask.cells[idx].kind === LETTER) run.push(idx);
+      else if (run.length) { runs.push(run); run = []; }
+    }
+    if (run.length) runs.push(run);
+  }
+  return runs;
+}
+
+function uncluedRunPenalty(mask, words, w) {
+  var clued = { H: new Set(), V: new Set() };
+  words.forEach(function (word) {
+    if (word.cells.length >= 2) clued[word.axis].add(word.cells.join(','));
+  });
+  var total = 0;
+  ['H', 'V'].forEach(function (axis) {
+    scanRuns(mask, axis).forEach(function (run) {
+      if (run.length >= 2 && !clued[axis].has(run.join(','))) total += w.uncluedRun;
+    });
+  });
+  return total;
+}
+```
+
+Add `uncluedRun: 1500` to `DEFAULT_WEIGHTS` (same tier as `uncovered` — both are hard validity violations, not quality nudges).
+
+In `scoreMask`, add the term to the returned total. The existing return is
+`return total + clusterPenalty(mask, w);` — make it:
+
+```js
+  return total + clusterPenalty(mask, w) + uncluedRunPenalty(mask, words, w);
+```
+
+In `deriveSlots`, after the existing uncovered-cell loop and before the crossings pass, add the matching gate:
+
+```js
+  var clued = { H: new Set(), V: new Set() };
+  slots.forEach(function (slot) { clued[slot.axis].add(slot.cells.join(',')); });
+  var axes = ['H', 'V'];
+  for (var a = 0; a < axes.length; a++) {
+    var runs = scanRuns(mask, axes[a]);
+    for (var r = 0; r < runs.length; r++) {
+      if (runs[r].length >= 2 && !clued[axes[a]].has(runs[r].join(','))) return null;
+    }
+  }
+```
+
+- [ ] **Step 4: Run tests, verify pass**
+
+Run: `node --test test/mask.test.js`
+Expected: PASS. The Task 4 canary test (`generateMask` converges on seeds 6/12/25) may now fail — that is expected, the objective changed. Do not delete it; Step 6 re-derives its seeds.
+
+- [ ] **Step 5: Let the hillclimber escape plateaus**
+
+The Task 4 investigation established that strict-improvement single-cell hillclimbing gets stuck: escaping a local optimum needs a temporarily-equal-or-worse move. Accepting *equal*-penalty moves costs nothing in solution quality and lets the search drift along plateaus. Keep counting them as stale so the break condition still terminates.
+
+In `generateMask`, replace the accept/revert branch:
+
+```js
+    var next = scoreMask(mask, w);
+    if (next < penalty) { penalty = next; stale = 0; }
+    else if (next === penalty) { stale++; }  // plateau move: keep it, still count toward the break
+    else { cells[idx] = saved; stale++; }
+```
+
+- [ ] **Step 6: Re-derive the convergence canary**
+
+Measure how many seeds now converge to a `deriveSlots`-valid 9×9 mask:
+
+```bash
+node -e "
+var mask = require('./grid_generator/mask');
+var ok = [];
+for (var s = 1; s <= 40; s++) {
+  var m = mask.generateMask(9, 9, mask.mulberry32(s));
+  if (mask.deriveSlots(m)) ok.push(s);
+}
+console.log('valid seeds', ok.length + '/40:', ok.join(','));
+"
+```
+
+Update the Task 4 canary test to three seeds from that list, and update its explanatory comment with the new measured rate. Report the before (3/30) and after numbers.
+
+- [ ] **Step 7: Full suite**
+
+Run: `pnpm test`
+Expected: green. The integration test may fail if its seed no longer produces a valid grid — if so, re-run the Task 8 seed search (`generate(9, 9, dictionary, {seed: s, maxMaskAttempts: 5})` over seeds 1..40, real dictionary) and update the seed in `test/generate.integration.test.js`.
+
+- [ ] **Step 8: Real 15×15**
+
+Run: `node scripts/generate-grid.js 15 15` (foreground, allow up to 10 minutes).
+Record: wall time, how many attempts passed `deriveSlots`, the winning mask penalty, and the word count.
+
+If it still fails, do NOT weaken `validate.js` or inflate budgets. Report DONE_WITH_CONCERNS with the diagnosis: how many of the 30 masks passed `deriveSlots`, and for those that did, whether `fill.solve` timed out or exhausted its candidates.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add grid_generator/mask.js test/mask.test.js test/generate.integration.test.js
+git commit -m "fix: unclued runs are a validity violation, not a coverage nudge"
+```
+
+Use this full commit body:
+
+```
+fix: unclued runs are a validity violation, not a coverage nudge
+
+scoreMask and deriveSlots counted a letter cell as covered whenever any
+perpendicular word owned it, so the hillclimber happily converged on
+masks where a whole horizontal run had no arrow pointing at it -
+validateGrid rejects those, which is why ~98% of deriveSlots-valid masks
+failed to export. Spec section 3 already called an unpointed run a
+penalty; this encodes it. The hillclimber also now accepts equal-penalty
+moves so it can drift along plateaus instead of stalling in the local
+optima Task 4 documented.
+```
+
+---
+
+### Task 10: Give the hillclimber Engel's real mutation operator
+
+**Why this task exists:** Task 9 made the objective correct (unclued runs now cost `uncluedRun`), and convergence got *worse*: 0/30 masks pass `deriveSlots` at 15×15, ~1% at 9×9, confirmed as a genuine local-optimum stall (10× budget produced identical penalties).
+
+The objective is right; the search is too weak. Engel 2009 §3.4 measured this exact failure: **k = 1 is the worst mutation size he tested**, and the best is k drawn uniformly from {2, 3} (his Figure 3.9, thirty 20×20 masks per setting). His explanation is our situation verbatim — *"changing two or more adjacent fields often helps overcoming a local optimum"* — and in §3.3 he notes that structural problems needing several coordinated changes are *"a good example for a local minimum"* that a fitness penalty alone resolves only *"fairly ineffectively"*.
+
+`generateMask` currently mutates exactly one cell, drawn uniformly, with the new field type drawn uniformly over all 9 arrow options. That is the strawman version of Engel's operator. This task implements the real one.
+
+Three changes, all inside the mutation step — deliberately one group of variables so the effect is measurable:
+
+| | Current | Engel |
+|---|---|---|
+| Mutation size | k = 1 | k ∈ {2, 3} |
+| Placement | one uniform cell | k cells clustered around a central point (σ ≈ 3) |
+| Field types | uniform over 9 | ~2/3 Letter; straight arrows twice as likely as bent |
+
+**Files:**
+- Modify: `grid_generator/mask.js`
+- Modify: `test/mask.test.js`
+- Modify: `test/generate.integration.test.js` (seed may change)
+
+**Interfaces:**
+- Produces: `randomCellKind(rng)` (replaces the uniform `randomArrows` draw at mutation and init sites); `pickMutationCells(mask, rng)` → array of 2–3 cell indices; `generateMask` unchanged in signature and still deterministic per rng.
+- `randomArrows` stays exported and unchanged — `randomCellKind` uses it for the pair case.
+
+- [ ] **Step 1: Write the failing tests**
+
+```js
+// append to test/mask.test.js
+
+test('randomCellKind draws Letter about two thirds of the time and favours straight arrows', function () {
+  // Engel 3.4: a typical mask is ~2/3 letter fields, and single straight
+  // definitions are twice as likely as bent ones. Exact ratios are tuning
+  // values; this asserts the shape of the distribution, not precise numbers.
+  var rng = mask.mulberry32(11);
+  var letters = 0, straightSingle = 0, bentSingle = 0, pairs = 0;
+  for (var i = 0; i < 6000; i++) {
+    var cell = mask.randomCellKind(rng);
+    if (cell.kind === 'L') { letters++; continue; }
+    if (cell.arrows.length === 2) { pairs++; continue; }
+    if (cell.arrows[0] === 'R' || cell.arrows[0] === 'B') straightSingle++;
+    else bentSingle++;
+  }
+  assert.ok(letters > 3300 && letters < 4700, 'letters ~2/3, got ' + letters + '/6000');
+  assert.ok(straightSingle > bentSingle, 'straight singles should beat bent: ' + straightSingle + ' vs ' + bentSingle);
+  assert.ok(pairs > 0, 'pairs must still be reachable');
+});
+
+test('pickMutationCells returns 2 or 3 distinct in-bounds cells', function () {
+  var rng = mask.mulberry32(5);
+  var m = mask.generateMask(9, 9, mask.mulberry32(5));
+  for (var i = 0; i < 500; i++) {
+    var picked = mask.pickMutationCells(m, rng);
+    assert.ok(picked.length === 2 || picked.length === 3, 'k must be 2 or 3, got ' + picked.length);
+    assert.strictEqual(new Set(picked).size, picked.length, 'cells must be distinct');
+    picked.forEach(function (idx) {
+      assert.ok(idx >= 0 && idx < m.cells.length, 'in bounds: ' + idx);
+    });
+  }
+});
+
+test('pickMutationCells keeps its cells near each other', function () {
+  // Engel 3.4: two distant changes are uncorrelated, and an uncorrelated pair
+  // is far more likely to hurt than help - so the cells cluster (sigma ~ 3).
+  var rng = mask.mulberry32(7);
+  var m = mask.generateMask(15, 15, mask.mulberry32(7));
+  var far = 0, total = 0;
+  for (var i = 0; i < 500; i++) {
+    var picked = mask.pickMutationCells(m, rng);
+    var c0 = picked[0] % m.nbLines, r0 = (picked[0] - c0) / m.nbLines;
+    for (var j = 1; j < picked.length; j++) {
+      var c = picked[j] % m.nbLines, r = (picked[j] - c) / m.nbLines;
+      total++;
+      if (Math.abs(c - c0) > 9 || Math.abs(r - r0) > 9) far++;
+    }
+  }
+  assert.ok(far / total < 0.05, 'clustered draws should rarely exceed 3 sigma, got ' + far + '/' + total);
+});
+```
+
+- [ ] **Step 2: Run tests, verify they fail**
+
+Run: `node --test test/mask.test.js`
+Expected: FAIL — `randomCellKind` / `pickMutationCells` are not exported.
+
+- [ ] **Step 3: Implement the operator**
+
+Add to `grid_generator/mask.js`, next to `randomArrows`:
+
+```js
+// Engel 2009 section 3.4: a typical mask is about two thirds letter fields,
+// and among definitions the straight single arrows occur far more often than
+// the bent ones. Drawing uniformly over every arrow option (as this used to)
+// produces far too many double-definition cells, which are the hardest kind
+// to satisfy.
+function randomCellKind(rng) {
+  var roll = rng();
+  if (roll < 0.66) return { kind: LETTER };
+  if (roll < 0.755) return { kind: DEF, arrows: ['R'] };
+  if (roll < 0.85) return { kind: DEF, arrows: ['B'] };
+  if (roll < 0.895) return { kind: DEF, arrows: ['RB'] };
+  if (roll < 0.94) return { kind: DEF, arrows: ['BR'] };
+  return { kind: DEF, arrows: ARROW_PAIRS[Math.floor(rng() * ARROW_PAIRS.length)].slice() };
+}
+
+// Box-Muller, so the spread around the central point is a real normal draw.
+function gaussian(rng, sigma) {
+  var u = 1 - rng();
+  var v = rng();
+  return sigma * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+// Engel 2009 section 3.4 measured mutation size: k=1 was the worst setting he
+// tested and k drawn from {2,3} the best. Escaping a local optimum in a mask
+// normally takes two or three coordinated changes - a single flip cannot make
+// one, which is exactly the stall this generator hit. The cells are drawn
+// close together (sigma ~ 3) because two distant changes are uncorrelated,
+// and an uncorrelated pair is far likelier to hurt than to help.
+function pickMutationCells(mask, rng) {
+  var k = rng() < 0.5 ? 2 : 3;
+  var size = mask.cells.length;
+  var centre = Math.floor(rng() * size);
+  var centreCol = centre % mask.nbLines;
+  var centreRow = (centre - centreCol) / mask.nbLines;
+  var picked = [centre];
+  var guard = 0;
+
+  while (picked.length < k && guard++ < 50) {
+    var col = Math.round(centreCol + gaussian(rng, 3));
+    var row = Math.round(centreRow + gaussian(rng, 3));
+    if (col < 0 || row < 0 || col >= mask.nbLines || row >= mask.nbColumns) continue;
+    var idx = row * mask.nbLines + col;
+    if (picked.indexOf(idx) === -1) picked.push(idx);
+  }
+  return picked;
+}
+```
+
+Export `randomCellKind` and `pickMutationCells`.
+
+- [ ] **Step 4: Rewire `generateMask` to use them**
+
+Replace the initialization draw and the whole mutation block. The initial fill becomes:
+
+```js
+  var cells = [];
+  for (var i = 0; i < nbLines * nbColumns; i++) cells.push(randomCellKind(rng));
+```
+
+(`options.defRatio` is now unused — delete it from the options handling and from the docstring; `randomCellKind` owns the letter/definition balance. Leave `maxStale` and `maxIterations` as they are.)
+
+The mutation block becomes:
+
+```js
+  for (var iter = 0; iter < maxIterations && stale < maxStale; iter++) {
+    var targets = pickMutationCells(mask, rng);
+    var saved = targets.map(function (idx) { return cells[idx]; });
+    targets.forEach(function (idx) { cells[idx] = randomCellKind(rng); });
+
+    var next = scoreMask(mask, w);
+    if (next < penalty) { penalty = next; stale = 0; }
+    else if (next === penalty) { stale++; }  // plateau move: keep it, still count toward the break
+    else {
+      targets.forEach(function (idx, n) { cells[idx] = saved[n]; });
+      stale++;
+    }
+  }
+```
+
+- [ ] **Step 5: Run tests**
+
+Run: `node --test test/mask.test.js`
+Expected: the three new tests pass. The Task 4/9 convergence canary will very likely fail again — its seeds are re-derived in Step 6, do not delete the test.
+
+- [ ] **Step 6: Measure convergence, and raise the budget if that is what is missing**
+
+```bash
+node -e "
+var mask = require('./grid_generator/mask');
+[9, 13, 15].forEach(function (n) {
+  [5000, 20000, 60000].forEach(function (stale) {
+    var ok = 0, t0 = Date.now();
+    for (var s = 1; s <= 40; s++) {
+      var m = mask.generateMask(n, n, mask.mulberry32(s), { maxStale: stale });
+      if (mask.deriveSlots(m)) ok++;
+    }
+    console.log(n + 'x' + n + ' maxStale=' + stale + ': ' + ok + '/40 valid, ' + (Date.now() - t0) + 'ms total');
+  });
+});
+"
+```
+
+Report the full table. Engel's runs used millions of evaluations per mask; ours were stopping after a few tens of thousands, so a higher `maxStale` is legitimate here — but only raise the **default** if the table shows it actually buys convergence. A hillclimb that costs a second and succeeds beats thirty that cost 143ms and fail.
+
+Then update the canary test in `test/mask.test.js` with three seeds that converge, and its comment with the new measured rate.
+
+- [ ] **Step 7: Full suite**
+
+Run: `pnpm test`
+Expected: green. If the real-dictionary integration test's seed no longer yields a valid grid, re-derive it (seeds 1..40, `generate(9, 9, dictionary, {seed: s, maxMaskAttempts: 5})`) and update it.
+
+- [ ] **Step 8: Real 15×15**
+
+Run: `node scripts/generate-grid.js 15 15` (foreground, up to 10 minutes).
+Record wall time, how many attempts passed `deriveSlots`, the winning mask penalty, and the word count.
+
+If 15×15 now works, also try `node scripts/generate-grid.js 13 15` and report whether rectangles behave.
+
+If it still fails, report DONE_WITH_CONCERNS with the numbers, and say specifically whether masks now pass `deriveSlots` (search fixed, fill is the bottleneck) or still do not (search still too weak). Do **not** weaken `validate.js` and do **not** inflate `fill.solve` budgets to force a pass — the next lever is Engel's guided mutation (tournament on local penalty) plus his shift/split predefined mutations, which is a separate task.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add grid_generator/mask.js test/mask.test.js test/generate.integration.test.js
+git commit -m "fix: mutate 2-3 clustered cells instead of one uniform cell"
+```
+
+Full commit body:
+
+```
+fix: mutate 2-3 clustered cells instead of one uniform cell
+
+The hillclimber was using the exact mutation operator Engel 2009 measured
+as the worst of the ones he tried: k=1, drawn uniformly, with the new
+field type uniform over every arrow option. Escaping a local optimum in a
+crossword mask normally needs two or three coordinated changes, so a lone
+flip could not make one - which is why the corrected objective from the
+previous commit left 0/30 masks valid at 15x15.
+
+Now k is drawn from {2,3} and the cells cluster around a central point
+(sigma ~ 3), since two distant changes are uncorrelated and an
+uncorrelated pair is likelier to hurt than help. Field types are drawn
+with Engel's rough proportions - about two thirds letters, straight
+arrows twice as likely as bent - instead of uniformly, which had been
+producing far too many double-definition cells.
+```
+
+---
+
+### Task 11: Retune the penalty barème against measured GSO structure
+
+**Why this task exists:** Task 10 made the generator work — a real 15×15 now generates, validates, and fills with genuine French words in ~56s. But its *shape* does not match real grids. Measured over 51 real GSO grids against the first generated 15×15:
+
+| Measure | Real GSO (51 grids) | Generated 15×15 |
+|---|---|---|
+| Straight **vertical** definition run | **never exceeds 1** (100% are length 1) | **7** |
+| Straight **horizontal** definition run | max 2 (1×94%, 2×6%) | 2 ✓ |
+| 8-connected definition cluster | max 3 (1×81%, 2×17%, 3×2%) | **13** |
+| Definition density | 19.0% avg (17.8–21.1) | 21% ✓ |
+| Word length mix | 2:16% 3:17% 4:21% 5:15% 6:10% 7:4% 8:5% 9:7% 10:5% | — |
+
+A column of seven stacked definition cells is exactly the "bande de définitions sur un côté" the user reported on the previous generator. Nothing in the current barème forbids it: the cluster term charges by size and extension, and the optimizer simply pays it.
+
+The word-length table is wrong for this dictionary too. It is Engel's, tuned on German *Schwedenrätsel*, and charges 650 for a 2-letter word — but 2-letter words are **16% of all words in real GSO grids**. Spec §12 anticipated exactly this: *"Barème de pénalités mal réglé pour notre dico français … Réglage empirique après premier run réel."* This is that retune.
+
+Nothing structural changes. Weights only, plus one new penalty family for straight definition chains.
+
+**Files:**
+- Modify: `grid_generator/mask.js`
+- Modify: `test/mask.test.js`
+- Modify: `test/generate.integration.test.js` (seed may change)
+
+**Interfaces:**
+- Produces: `DEFAULT_WEIGHTS.defRunH`, `DEFAULT_WEIGHTS.defRunV` (new); retuned `DEFAULT_WEIGHTS.wordLength` and `DEFAULT_WEIGHTS.clusterBase`. No signature changes.
+
+- [ ] **Step 1: Write the failing tests**
+
+```js
+// append to test/mask.test.js
+// NOTE: also add `defRunH: 0, defRunV: 0` to zeroWeights() so the existing
+// per-penalty isolation tests keep measuring only their own term.
+
+test('scoreMask: two vertically stacked description cells are penalized', function () {
+  var w = zeroWeights(); w.defRunV = 900;
+  // 1 wide, 2 tall: a vertical definition run of length 2. Real GSO grids
+  // never do this - 100% of their vertical definition runs are length 1.
+  assert.strictEqual(mask.scoreMask(M(1, 2, [D('R'), D('R')]), w), 900);
+});
+
+test('scoreMask: vertical description runs cost more the longer they get', function () {
+  var w = zeroWeights(); w.defRunV = 900;
+  var two = mask.scoreMask(M(1, 2, [D('R'), D('R')]), w);
+  var three = mask.scoreMask(M(1, 3, [D('R'), D('R'), D('R')]), w);
+  assert.ok(three > two * 1.5, 'length 3 must cost superlinearly more than length 2: ' + three + ' vs ' + two);
+});
+
+test('scoreMask: a lone description cell costs no chain penalty', function () {
+  var w = zeroWeights(); w.defRunV = 900; w.defRunH = 900;
+  assert.strictEqual(mask.scoreMask(M(1, 1, [D('R')]), w), 0);
+});
+
+test('scoreMask: two side-by-side description cells are free, three are not', function () {
+  var w = zeroWeights(); w.defRunH = 900;
+  // Real GSO grids do reach horizontal runs of 2 (6% of the time) but never 3.
+  assert.strictEqual(mask.scoreMask(M(2, 1, [D('B'), D('B')]), w), 0);
+  assert.ok(mask.scoreMask(M(3, 1, [D('B'), D('B'), D('B')]), w) > 0);
+});
+
+test('scoreMask: two-letter words are only mildly penalized', function () {
+  // Engel charged 650 here, tuned on German puzzles. Real GSO grids make 16%
+  // of their words two letters long, so this must not be a near-veto.
+  assert.ok(mask.DEFAULT_WEIGHTS.wordLength[2] < 150,
+    'length-2 penalty should be mild, got ' + mask.DEFAULT_WEIGHTS.wordLength[2]);
+  assert.ok(mask.DEFAULT_WEIGHTS.wordLength[2] > mask.DEFAULT_WEIGHTS.wordLength[4],
+    'length 4 should still be preferred over length 2');
+});
+```
+
+- [ ] **Step 2: Run tests, verify they fail**
+
+Run: `node --test test/mask.test.js`
+Expected: the chain tests FAIL (no `defRunH`/`defRunV` term), and the length-2 assertion FAILS (it is 650).
+
+- [ ] **Step 3: Implement the straight-chain penalty**
+
+Add to `grid_generator/mask.js`, next to `clusterPenalty`:
+
+```js
+// Measured over 51 real GSO grids: every vertical run of adjacent definition
+// cells is length 1, and horizontal runs reach 2 only 6% of the time and
+// never 3. The 8-connected cluster term alone does not express this - it
+// charges a diagonal scatter and a straight bar about the same - so a
+// straight stack of definitions was cheap enough for the optimizer to buy.
+// That stack is what reads as a "band of definitions" down one side.
+// Cost grows quadratically past the length real grids tolerate.
+function defRunPenalty(mask, w) {
+  var total = 0;
+
+  function chargeRun(len, allowed, weight) {
+    if (len <= allowed) return 0;
+    var excess = len - allowed;
+    return weight * excess * excess;
+  }
+
+  for (var row = 0; row < mask.nbColumns; row++) {
+    var run = 0;
+    for (var col = 0; col < mask.nbLines; col++) {
+      if (mask.cells[row * mask.nbLines + col].kind === DEF) run++;
+      else { total += chargeRun(run, 2, w.defRunH); run = 0; }
+    }
+    total += chargeRun(run, 2, w.defRunH);
+  }
+
+  for (var col2 = 0; col2 < mask.nbLines; col2++) {
+    var run2 = 0;
+    for (var row2 = 0; row2 < mask.nbColumns; row2++) {
+      if (mask.cells[row2 * mask.nbLines + col2].kind === DEF) run2++;
+      else { total += chargeRun(run2, 1, w.defRunV); run2 = 0; }
+    }
+    total += chargeRun(run2, 1, w.defRunV);
+  }
+
+  return total;
+}
+```
+
+Add it to `scoreMask`'s total alongside `clusterPenalty` and `uncluedRunPenalty`.
+
+- [ ] **Step 4: Retune the weights**
+
+In `DEFAULT_WEIGHTS`:
+
+```js
+  // Retuned against 51 real GSO grids (see defRunPenalty and the word-length
+  // note below); the previous values were Engel's, measured on German
+  // Schwedenraetsel, and did not describe this provider's grids.
+  defRunH: 900,
+  defRunV: 900,
+```
+
+Replace the word-length table. Real GSO frequencies are 2:16% 3:17% 4:21% 5:15% 6:10% 7:4% 8:5% 9:7% 10:5%, so lengths 2-6 are all ordinary and only the extremes deserve real cost. Keep length 0/1 as hard violations, and keep raising the cost past 10 — those are rare, and long words are the hardest for `fill.solve` to satisfy:
+
+```js
+  wordLength: [2000, 1500, 60, 20, 0, 0, 10, 40, 50, 60, 80, 180, 300, 450, 650, 900],
+```
+
+Retune `clusterBase` so it stops at what real grids actually contain (max 3), rather than treating 4-7 as merely expensive:
+
+```js
+  clusterBase: [0, 0, 60, 260, 900, 1600, 2400, 3400],
+```
+
+Leave every other weight alone — this task changes chain, length and cluster costs only.
+
+- [ ] **Step 5: Re-measure convergence**
+
+```bash
+node -e "
+var mask = require('./grid_generator/mask');
+[9, 13, 15].forEach(function (n) {
+  var ok = 0, t0 = Date.now();
+  for (var s = 1; s <= 40; s++) {
+    if (mask.deriveSlots(mask.generateMask(n, n, mask.mulberry32(s)))) ok++;
+  }
+  console.log(n + 'x' + n + ': ' + ok + '/40 valid, ' + (Date.now() - t0) + 'ms');
+});
+"
+```
+
+Report the table. A retune that makes masks prettier but unreachable is a regression — if convergence collapses (say below 5/40 at 15×15), soften `defRunV`/`defRunH` toward 500 and report both tables rather than shipping a generator that cannot generate.
+
+Update the canary test seeds in `test/mask.test.js` and its comment with the new measured rate.
+
+- [ ] **Step 6: Full suite**
+
+Run: `pnpm test`
+Expected: green. Re-derive the integration test seed if needed (seeds 1..40, `generate(9, 9, dictionary, {seed: s, maxMaskAttempts: 5})`).
+
+- [ ] **Step 7: Generate and measure a real 15×15 against the GSO table**
+
+Run: `node scripts/generate-grid.js 15 15` (foreground, up to 10 minutes), then measure its structure:
+
+```bash
+node -e "
+var fs = require('fs');
+var enums = require('./game_files/enums');
+var g = JSON.parse(fs.readFileSync('data/generated-grid.json', 'utf8'));
+var W = g.nbLines, H = g.nbColumns;
+var isDef = function (i) { return g.cases[i].type === enums.CaseType.Description; };
+var maxH = 0, maxV = 0, defs = 0, r, c, run;
+for (var i = 0; i < g.cases.length; i++) if (isDef(i)) defs++;
+for (r = 0; r < H; r++) { run = 0; for (c = 0; c < W; c++) { if (isDef(r*W+c)) { run++; if (run>maxH) maxH=run; } else run = 0; } }
+for (c = 0; c < W; c++) { run = 0; for (r = 0; r < H; r++) { if (isDef(r*W+c)) { run++; if (run>maxV) maxV=run; } else run = 0; } }
+var seen = new Array(g.cases.length).fill(false), maxClus = 0;
+for (var s = 0; s < g.cases.length; s++) {
+  if (seen[s] || !isDef(s)) continue;
+  var q = [s], n = 0; seen[s] = true;
+  while (q.length) { var idx = q.pop(); n++;
+    var col = idx % W, row = (idx - col) / W;
+    for (var dr = -1; dr <= 1; dr++) for (var dc = -1; dc <= 1; dc++) {
+      var rr = row+dr, cc = col+dc;
+      if (rr<0||cc<0||rr>=H||cc>=W) continue;
+      var nn = rr*W+cc;
+      if (!seen[nn] && isDef(nn)) { seen[nn] = true; q.push(nn); }
+    } }
+  if (n > maxClus) maxClus = n;
+}
+console.log('longest straight def run H' + maxH + ' V' + maxV + ' | max cluster ' + maxClus + ' | density ' + Math.round(defs/g.cases.length*100) + '%');
+"
+```
+
+**Acceptance targets, from the real-grid table:** longest vertical definition run ≤ 2, longest horizontal ≤ 2, max 8-connected cluster ≤ 4, density 17–23%. Report the measured line against these. Being one over on a single measure is a reportable near-miss, not a failure — say so plainly rather than re-rolling seeds until a pretty grid appears.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add grid_generator/mask.js test/mask.test.js test/generate.integration.test.js
+git commit -m "tune: match the penalty barème to measured GSO grid structure"
+```
+
+Full commit body:
+
+```
+tune: match the penalty barème to measured GSO grid structure
+
+The barème was Engel's, measured on German Schwedenraetsel, and it does
+not describe this provider's grids. Across 51 real GSO grids: vertical
+runs of adjacent definition cells are always length 1, horizontal runs
+reach 2 only 6% of the time and never 3, definition clusters never
+exceed 3 cells, and two-letter words are 16% of all words - which the
+old table charged 650 for, nearly a veto.
+
+Nothing forbade a straight stack of definitions, so the optimizer bought
+one: the first generated 15x15 had a column of seven, the same "band of
+definitions down one side" the previous generator was reported for. The
+new defRunH/defRunV terms charge straight chains quadratically past the
+length real grids tolerate, and the word-length and cluster tables now
+follow the measured frequencies.
+```
+
+---
+
+### Task 12: Pick the best mask in the pool, not the first one that fills
+
+**Why this task exists:** Task 11 retuned the barème, and the generator reliably produces valid, playable 15×15 grids. But structural quality is a lottery. Measured over 8 real generations (seeds 101–108) after the retune:
+
+```
+seed 101: H3 V2 cluster4 dens24%  MISS      seed 105: H2 V2 cluster3 dens23%  OK
+seed 102: H3 V2 cluster5 dens23%  MISS      seed 106: H3 V2 cluster4 dens24%  MISS
+seed 103: H3 V2 cluster6 dens24%  MISS      seed 107: H2 V3 cluster5 dens24%  MISS
+seed 104: H3 V2 cluster3 dens22%  MISS      seed 108: H3 V2 cluster6 dens24%  MISS
+```
+
+**1/8 met all four structural targets** (H ≤ 2, V ≤ 2, cluster ≤ 4, density 17–23%). All 8 generated successfully, so this is purely about quality, not function.
+
+The cause is in `scripts/generate-grid.js`. `generate()` hillclimbs a mask, and if it fills, **returns it immediately**. `mask.penalty` — the number that measures exactly this structural quality, now calibrated against 51 real GSO grids — is computed, passed to `onAttempt` for logging, and then thrown away. Nothing ever compares two masks. The grid you get is whichever mask happened to fill first, not the best one available.
+
+Fixing this is free in quality terms: collect the valid masks, sort them by penalty ascending, and fill them best-first. The first fill that succeeds is then the best-structured mask that is actually fillable. Raising penalty weights instead would be the wrong lever — Task 11 measured that pushing `defRun*` to 900 collapsed convergence from 4/15 to 1/15.
+
+The time budget allows it: spec §1 states this generator runs offline, once per grid (a daily cron), never on a player request path.
+
+**Files:**
+- Modify: `scripts/generate-grid.js`
+- Modify: `test/generate.test.js`
+
+**Interfaces:**
+- `generate(nbLines, nbColumns, dictionary, options)` keeps its signature. New options: `maskPoolSize` (default 8), `maxMaskAttempts` default raised 30 → 60.
+- `options.onAttempt(n, total, nbSlots, penalty)` is unchanged and still fires per *valid* mask found during collection.
+- New optional `options.onSelect(poolSize, rank, penalty)` — fires once per fill attempt, so the CLI can show that selection is happening.
+
+- [ ] **Step 1: Write the failing tests**
+
+```js
+// append to test/generate.test.js
+
+test('generate fills the lowest-penalty mask in the pool first', function () {
+  // Three stub masks with known penalties, handed to generate via a stubbed
+  // mask library is not reachable from here - so this asserts the observable
+  // consequence instead: onSelect reports strictly increasing penalties,
+  // i.e. the pool really was tried in ascending order.
+  var dico = dictionary.buildDictionary([{ word: 'ABC', definitions: ['x'] }]);
+  var seen = [];
+  generateGrid.generate(9, 9, dico, {
+    seed: 3, maxMaskAttempts: 25, maskPoolSize: 4, maxStale: 800,
+    maxBacktracks: 50, timeoutMs: 1500,
+    onSelect: function (poolSize, rank, penalty) { seen.push(penalty); }
+  });
+  // the dictionary cannot fill anything, so every pooled mask is attempted
+  for (var i = 1; i < seen.length; i++) {
+    assert.ok(seen[i] >= seen[i - 1],
+      'pool must be tried in ascending penalty order, got ' + seen.join(','));
+  }
+});
+
+test('generate stops collecting masks once the pool is full', function () {
+  var dico = dictionary.buildDictionary([{ word: 'ABC', definitions: ['x'] }]);
+  var found = 0;
+  generateGrid.generate(9, 9, dico, {
+    seed: 3, maxMaskAttempts: 60, maskPoolSize: 2, maxStale: 800,
+    maxBacktracks: 50, timeoutMs: 1500,
+    onAttempt: function () { found++; }
+  });
+  assert.ok(found <= 2, 'collection must stop at maskPoolSize, collected ' + found);
+});
+
+test('generate still returns null when nothing in the pool can be filled', function () {
+  var dico = dictionary.buildDictionary([{ word: 'ABC', definitions: ['x'] }]);
+  var grid = generateGrid.generate(9, 9, dico, {
+    seed: 1, maxMaskAttempts: 10, maskPoolSize: 2, maxStale: 800,
+    maxBacktracks: 50, timeoutMs: 1500
+  });
+  assert.strictEqual(grid, null);
+});
+```
+
+- [ ] **Step 2: Run tests, verify they fail**
+
+Run: `node --test test/generate.test.js`
+Expected: the ordering and pool-cap tests FAIL (`onSelect` never fires; collection does not stop at `maskPoolSize`).
+
+- [ ] **Step 3: Implement**
+
+Replace the body of `generate()`'s loop in `scripts/generate-grid.js`. Collect first, then fill best-first:
+
+```js
+  // The mask penalty measures exactly the structural quality we want - it is
+  // calibrated against 51 real GSO grids - so the mask that fills first is not
+  // the mask we want, it is merely the luckiest. Measured over 8 real 15x15
+  // generations, taking the first fillable mask met all four structural
+  // targets 1 time in 8. Collect the valid masks, then try them in ascending
+  // penalty order: the first one that fills is the best-structured mask that
+  // is actually fillable. Raising the penalty weights instead is the wrong
+  // lever - Task 11 measured that it collapses convergence.
+  var pool = [];
+  for (var attempt = 0; attempt < maxMaskAttempts && pool.length < maskPoolSize; attempt++) {
+    var mask = maskLib.generateMask(nbLines, nbColumns, rng, {
+      weights: options.weights,
+      maxStale: options.maxStale
+    });
+    var slots = maskLib.deriveSlots(mask);
+    if (!slots) continue; // hillclimber went stale on an invalid mask - next seed
+    if (options.onAttempt) options.onAttempt(attempt + 1, maxMaskAttempts, slots.length, mask.penalty);
+    pool.push({ mask: mask, slots: slots });
+  }
+
+  pool.sort(function (a, b) { return a.mask.penalty - b.mask.penalty; });
+
+  for (var i = 0; i < pool.length; i++) {
+    if (options.onSelect) options.onSelect(pool.length, i + 1, pool[i].mask.penalty);
+
+    var assignment = fillLib.solve(pool[i].slots, dictionary, {
+      maxBacktracks: options.maxBacktracks,
+      timeoutMs: options.timeoutMs
+    });
+    if (!assignment) continue;
+
+    var grid = exporterLib.exportGrid(pool[i].mask, pool[i].slots, assignment, dictionary);
+    if (validateLib.validateGrid(grid, dictionary).valid) return grid;
+  }
+  return null;
+```
+
+(Use whatever local name the file already gives the export module — do not rename it.)
+
+Add the two new options near `maxMaskAttempts`:
+
+```js
+  // 60 attempts yields roughly 8 valid masks at 15x15 (about a quarter of
+  // attempts converge), which is enough spread for the penalty sort to have
+  // something to choose between without the collection phase dominating.
+  var maxMaskAttempts = options.maxMaskAttempts !== undefined ? options.maxMaskAttempts : 60;
+  var maskPoolSize = options.maskPoolSize !== undefined ? options.maskPoolSize : 8;
+```
+
+- [ ] **Step 4: Show selection in the CLI**
+
+In the `require.main === module` block, add an `onSelect` alongside the existing `onAttempt`:
+
+```js
+    onSelect: function (poolSize, rank, penalty) {
+      console.log('Remplissage du masque ' + rank + '/' + poolSize + ' (penalite ' + penalty + ')...');
+    },
+```
+
+- [ ] **Step 5: Full suite**
+
+Run: `pnpm test`
+Expected: green. The integration test may need its seed re-derived — its options should also get `maskPoolSize: 2` and a modest `maxMaskAttempts` so it stays under ~30s.
+
+- [ ] **Step 6: Measure the same 8 seeds, before and after**
+
+Re-run the exact measurement that motivated this task, so the comparison is like-for-like:
+
+```bash
+node -e "
+var fs = require('fs');
+var enums = require('./game_files/enums');
+var dictionaryLib = require('./grid_generator/dictionary');
+var lexLib = require('./grid_generator/lexiqueFrequency');
+var gen = require('./scripts/generate-grid');
+var dictionary = dictionaryLib.buildDictionary(
+  JSON.parse(fs.readFileSync('data/dico.json','utf8')),
+  lexLib.buildFrequencyMap(fs.readFileSync('data/Lexique4.tsv','utf8')));
+function struct(g) {
+  var W=g.nbLines,H=g.nbColumns,isDef=function(i){return g.cases[i].type===enums.CaseType.Description;};
+  var maxH=0,maxV=0,defs=0,r,c,run;
+  for (var i=0;i<g.cases.length;i++) if (isDef(i)) defs++;
+  for (r=0;r<H;r++){run=0;for(c=0;c<W;c++){if(isDef(r*W+c)){run++;if(run>maxH)maxH=run;}else run=0;}}
+  for (c=0;c<W;c++){run=0;for(r=0;r<H;r++){if(isDef(r*W+c)){run++;if(run>maxV)maxV=run;}else run=0;}}
+  var seen=new Array(g.cases.length).fill(false),maxC=0;
+  for (var s=0;s<g.cases.length;s++){
+    if(seen[s]||!isDef(s))continue;
+    var q=[s],n=0;seen[s]=true;
+    while(q.length){var idx=q.pop();n++;var col=idx%W,row=(idx-col)/W;
+      for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){
+        var rr=row+dr,cc=col+dc;
+        if(rr<0||cc<0||rr>=H||cc>=W)continue;
+        var nn=rr*W+cc;
+        if(!seen[nn]&&isDef(nn)){seen[nn]=true;q.push(nn);}}}
+    if(n>maxC)maxC=n;}
+  return {maxH:maxH,maxV:maxV,maxC:maxC,dens:Math.round(defs/g.cases.length*100)};
+}
+var ok=0,tot=0;
+for (var seed=101; seed<=108; seed++){
+  var t0=Date.now();
+  var g=gen.generate(15,15,dictionary,{seed:seed});
+  var dt=((Date.now()-t0)/1000).toFixed(0);
+  if(!g){console.log('seed '+seed+': FAILED ('+dt+'s)');tot++;continue;}
+  var s=struct(g);
+  var pass=s.maxH<=2&&s.maxV<=2&&s.maxC<=4&&s.dens>=17&&s.dens<=23;
+  if(pass)ok++; tot++;
+  console.log('seed '+seed+': H'+s.maxH+' V'+s.maxV+' cluster'+s.maxC+' dens'+s.dens+'% '+dt+'s '+(pass?'OK':'MISS'));
+}
+console.log('meets all structural targets: '+ok+'/'+tot);
+"
+```
+
+This takes several minutes — run it in the **foreground** with a generous timeout, and do not launch background scans.
+
+Report the before (1/8) and after numbers, and the wall-time change. Success here is a clear majority passing. If it barely moves, say so plainly and report which measure still dominates the misses — do not re-roll seeds to find a better-looking set.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add scripts/generate-grid.js test/generate.test.js test/generate.integration.test.js
+git commit -m "fix: fill the best mask in the pool, not the first one that fills"
+```
+
+Full commit body:
+
+```
+fix: fill the best mask in the pool, not the first one that fills
+
+generate() hillclimbed a mask and returned it the moment it filled, so
+the grid you got was whichever mask was luckiest, not the best one
+available - mask.penalty was computed, logged, and then discarded. Over
+8 real 15x15 generations only 1 met all four structural targets, with
+horizontal definition chains of 3 in six of them and clusters up to 6.
+
+Now the valid masks are collected into a pool, sorted by penalty, and
+filled best-first, so the result is the best-structured mask that is
+actually fillable. Raising the penalty weights would have been the wrong
+lever: that was measured to collapse convergence.
+```
