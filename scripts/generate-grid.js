@@ -2,109 +2,50 @@
 var fs = require('fs');
 var path = require('path');
 var dictionaryLib = require('../grid_generator/dictionary');
-var skeletonLib = require('../grid_generator/skeleton');
-var slotsLib = require('../grid_generator/slots');
-var backtrackingLib = require('../grid_generator/backtracking');
-var exporterLib = require('../grid_generator/exporter');
+var maskLib = require('../grid_generator/mask');
+var fillLib = require('../grid_generator/fill');
+var exportLib = require('../grid_generator/export');
 var validateLib = require('../grid_generator/validate');
 var lexiqueFrequencyLib = require('../grid_generator/lexiqueFrequency');
 
-function mulberry32(seed) {
-  var state = seed;
-  return function () {
-    state |= 0;
-    state = (state + 0x6D2B79F5) | 0;
-    var t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function generate(nbLines, nbColumns, dictionary, stats, options) {
+function generate(nbLines, nbColumns, dictionary, options) {
   options = options || {};
-  // Two rounds of investigation (docs/superpowers/specs/2026-07-28 and
-  // 2026-07-29) tried to make individual attempts smarter or faster
-  // (static AC-3 pruning, then a word-first constructive fill) and neither
-  // held up: AC-3 barely prunes a 56k-word dictionary and added net
-  // overhead; word-first hit a structural bug (independently-chosen runs
-  // silently merging into non-words via slots.js) that a pure greedy,
-  // no-backtracking fill also failed 0/100 to work around - confirming
-  // backtracking itself is structurally necessary at this scale, not just
-  // "not smart enough". The only thing that has ever produced a real
-  // 15x15 grid in this whole investigation is this plain backtracking
-  // solver, rarely and slowly. This generator runs offline, once per grid
-  // (e.g. a daily cron job), never on a player-facing request path, so a
-  // large time budget here is an acceptable trade for reliability.
-  // ~88% of skeletons get rejected by hasUnclueableEdgeStart before ever
-  // reaching the solver (see its comment in skeleton.js) - that rejection is
-  // cheap (milliseconds), so the attempt budget needs to be much larger than
-  // the actual number of solver calls it should produce. 300 keeps roughly
-  // the same number of real (post-filter) solve attempts as the 40 this used
-  // to be before that filter started skipping most of them for free.
-  var maxSkeletonAttempts = options.maxSkeletonAttempts !== undefined ? options.maxSkeletonAttempts : 300;
-  var rng = options.rng || mulberry32(options.seed !== undefined ? options.seed : Date.now());
+  var maxMaskAttempts = options.maxMaskAttempts !== undefined ? options.maxMaskAttempts : 30;
+  var rng = options.rng || maskLib.mulberry32(options.seed !== undefined ? options.seed : Date.now());
 
-  for (var attempt = 0; attempt < maxSkeletonAttempts; attempt++) {
-    var skeleton = skeletonLib.generateSkeleton(nbLines, nbColumns, stats, rng);
+  for (var attempt = 0; attempt < maxMaskAttempts; attempt++) {
+    var mask = maskLib.generateMask(nbLines, nbColumns, rng, {
+      weights: options.weights,
+      maxStale: options.maxStale
+    });
+    var slots = maskLib.deriveSlots(mask);
+    if (!slots) continue; // hillclimber went stale on an invalid mask - next seed
+    if (options.onAttempt) options.onAttempt(attempt + 1, maxMaskAttempts, slots.length, mask.penalty);
 
-    // A word starting right at column 0 or row 0 has no cell before it to
-    // hold the Description that clues it - exportGrid can never attach a
-    // definition, and validateGrid would reject the final grid anyway. This
-    // is common enough (skeleton.js's own sweep/repair guards reduce it but
-    // can't eliminate it - see hasUnclueableEdgeStart's comment) that
-    // checking it here, before deriving slots or calling the solver, avoids
-    // burning solver budget on a skeleton that's already doomed.
-    if (skeletonLib.hasUnclueableEdgeStart(skeleton)) {
-      if (options.onAttempt) options.onAttempt(attempt + 1, maxSkeletonAttempts, 0, true);
-      continue;
-    }
-
-    var slots = slotsLib.deriveSlots(skeleton);
-
-    // Deriving a skeleton is cheap (milliseconds); solving one is not (up to
-    // timeoutMs). Slot count is the strongest available predictor of how hard
-    // a skeleton will be to solve, so reject one outside the desired range
-    // before spending any solver budget on it at all.
-    var tooManySlots = options.maxSlots !== undefined && slots.length > options.maxSlots;
-    var tooFewSlots = options.minSlots !== undefined && slots.length < options.minSlots;
-    if (tooManySlots || tooFewSlots) {
-      if (options.onAttempt) options.onAttempt(attempt + 1, maxSkeletonAttempts, slots.length, true);
-      continue;
-    }
-
-    if (options.onAttempt) options.onAttempt(attempt + 1, maxSkeletonAttempts, slots.length, false);
-    var assignment = backtrackingLib.solve(slots, dictionary, {
-      maxBacktracks: options.maxBacktracks !== undefined ? options.maxBacktracks : 50000000,
-      timeoutMs: options.timeoutMs !== undefined ? options.timeoutMs : 300000
+    var assignment = fillLib.solve(slots, dictionary, {
+      maxBacktracks: options.maxBacktracks,
+      timeoutMs: options.timeoutMs
     });
     if (!assignment) continue;
 
-    var grid = exporterLib.exportGrid(skeleton, slots, assignment, dictionary);
-    if (validateLib.validateGrid(grid).valid) return grid;
+    var grid = exportLib.exportGrid(mask, slots, assignment, dictionary);
+    if (validateLib.validateGrid(grid, dictionary).valid) return grid;
   }
   return null;
 }
 
 if (require.main === module) {
-  // node scripts/generate-grid.js 15             -> 15x15 (square)
-  // node scripts/generate-grid.js 13 15          -> 13 wide x 15 tall (rectangular)
-  // node scripts/generate-grid.js 15 15 50       -> 15x15, skip any skeleton with more than 50 slots
-  // node scripts/generate-grid.js 13 15 60 40    -> 13x15, only attempt skeletons with 40-60 slots
+  // node scripts/generate-grid.js 15       -> 15x15
+  // node scripts/generate-grid.js 13 15    -> 13 wide x 15 tall
   var nbLines = parseInt(process.argv[2], 10) || 15;
   var nbColumns = parseInt(process.argv[3], 10) || nbLines;
-  var maxSlots = process.argv[4] !== undefined ? parseInt(process.argv[4], 10) : undefined;
-  var minSlots = process.argv[5] !== undefined ? parseInt(process.argv[5], 10) : undefined;
   var dico = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'dico.json'), 'utf8'));
-  var stats = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'gso-stats.json'), 'utf8'));
   var lexiqueRaw = fs.readFileSync(path.join(__dirname, '..', 'data', 'Lexique4.tsv'), 'utf8');
-  var freqMap = lexiqueFrequencyLib.buildFrequencyMap(lexiqueRaw);
-  var dictionary = dictionaryLib.buildDictionary(dico, freqMap);
+  var dictionary = dictionaryLib.buildDictionary(dico, lexiqueFrequencyLib.buildFrequencyMap(lexiqueRaw));
 
-  var grid = generate(nbLines, nbColumns, dictionary, stats, {
-    maxSlots: maxSlots,
-    minSlots: minSlots,
-    onAttempt: function (n, total, nbSlots, skipped) {
-      console.log('Tentative ' + n + '/' + total + ' (' + nbSlots + ' slots)' + (skipped ? ' - ignoree (hors plage)' : '...'));
+  var grid = generate(nbLines, nbColumns, dictionary, {
+    onAttempt: function (n, total, nbSlots, penalty) {
+      console.log('Tentative ' + n + '/' + total + ' (' + nbSlots + ' slots, penalite masque ' + penalty + ')...');
     }
   });
   if (!grid) {
@@ -116,4 +57,4 @@ if (require.main === module) {
   console.log('Grille generee: data/generated-grid.json');
 }
 
-module.exports = { generate: generate, mulberry32: mulberry32 };
+module.exports = { generate: generate, mulberry32: maskLib.mulberry32 };

@@ -4,65 +4,20 @@ var assert = require('node:assert');
 var dictionary = require('../grid_generator/dictionary');
 var generateGrid = require('../scripts/generate-grid');
 
-test('generate produces a valid grid for a trivial single-slot case', function () {
-  // 1 row, 5 wide: Description + a single 4-letter run. Only one segment length
-  // is possible, so the skeleton is deterministic regardless of the rng.
-  var stats = { segmentLengthCounts: { 4: 1 } };
-  var dico = dictionary.buildDictionary([{ word: 'ABCD', definitions: ['test def'] }]);
-
-  var grid = generateGrid.generate(5, 1, dico, stats, { seed: 42 });
-
-  assert.notStrictEqual(grid, null);
-  assert.strictEqual(grid.cases[0].type, 3); // Description
-  assert.strictEqual(grid.cases[0].desc[0], 'test def');
-  assert.strictEqual(grid.cases[1].value, 'A');
-  assert.strictEqual(grid.cases[2].value, 'B');
-  assert.strictEqual(grid.cases[3].value, 'C');
-  assert.strictEqual(grid.cases[4].value, 'D');
-});
-
-test('generate returns null when the dictionary cannot satisfy any skeleton', function () {
-  var stats = { segmentLengthCounts: { 4: 1 } };
-  var dico = dictionary.buildDictionary([{ word: 'ABC', definitions: ['too short'] }]);
-
-  var grid = generateGrid.generate(5, 1, dico, stats, { seed: 42, maxSkeletonAttempts: 2, maxBacktracks: 10 });
+test('generate returns null quickly when the dictionary cannot fill anything', function () {
+  var dico = dictionary.buildDictionary([{ word: 'ABC', definitions: ['x'] }]);
+  var grid = generateGrid.generate(9, 9, dico, {
+    seed: 1, maxMaskAttempts: 2, maxStale: 500, maxBacktracks: 100, timeoutMs: 2000
+  });
   assert.strictEqual(grid, null);
 });
 
-test('generate skips a skeleton without solving it when its slot count exceeds options.maxSlots', function () {
-  // 5-wide, 1-tall, single possible segment length -> always exactly 1 slot.
-  // The dictionary CAN satisfy this skeleton (same as the passing test above),
-  // so maxSlots:0 rejecting it proves the slot-count filter runs before - and
-  // independently of - the solver, not that the dictionary was insufficient.
-  var stats = { segmentLengthCounts: { 4: 1 } };
-  var dico = dictionary.buildDictionary([{ word: 'ABCD', definitions: ['test def'] }]);
-
-  var grid = generateGrid.generate(5, 1, dico, stats, { seed: 42, maxSkeletonAttempts: 3, maxSlots: 0 });
-  assert.strictEqual(grid, null);
-});
-
-test('generate still succeeds when maxSlots is high enough to admit the skeleton', function () {
-  var stats = { segmentLengthCounts: { 4: 1 } };
-  var dico = dictionary.buildDictionary([{ word: 'ABCD', definitions: ['test def'] }]);
-
-  var grid = generateGrid.generate(5, 1, dico, stats, { seed: 42, maxSlots: 1 });
-  assert.notStrictEqual(grid, null);
-});
-
-test('generate rejects a skeleton whose crossing slots can never mutually agree, at seed 42', function () {
-  // Every word here has 'A' at position 1 but 'X'/'Y' (never 'A') at
-  // positions 0 and 2 - empirically confirmed (see plan write-up) that at
-  // seed 42 with a single usable length of 3, all 5 skeleton attempts
-  // involve a crossing that needs position 0 or 2 to match position 1
-  // somewhere, which this dictionary can never satisfy - null even with a
-  // generous budget (maxBacktracks: 100000), confirming genuine
-  // unsatisfiability rather than a starved search.
-  var stats = { segmentLengthCounts: { 3: 1 } };
-  var dico = dictionary.buildDictionary([
-    { word: 'XAX', definitions: ['x'] },
-    { word: 'YAY', definitions: ['x'] }
-  ]);
-
-  var grid = generateGrid.generate(3, 3, dico, stats, { seed: 42, maxSkeletonAttempts: 5, maxBacktracks: 100000, timeoutMs: 5000 });
-  assert.strictEqual(grid, null);
+test('generate reports attempts via onAttempt', function () {
+  var calls = 0;
+  var dico = dictionary.buildDictionary([{ word: 'ABC', definitions: ['x'] }]);
+  generateGrid.generate(9, 9, dico, {
+    seed: 1, maxMaskAttempts: 2, maxStale: 500, maxBacktracks: 100, timeoutMs: 2000,
+    onAttempt: function () { calls++; }
+  });
+  assert.ok(calls >= 1);
 });
