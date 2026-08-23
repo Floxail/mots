@@ -13,12 +13,15 @@ test('generate produces a valid 9x9 grid from the real dictionary', function () 
   var lexique = fs.readFileSync(path.join(__dirname, '..', 'data', 'Lexique4.tsv'), 'utf8');
   var dictionary = dictionaryLib.buildDictionary(dico, lexiqueFrequencyLib.buildFrequencyMap(lexique));
 
-  // seed 81 found empirically: the hillclimber needs 29 mask attempts at 9x9
-  // before it lands on a mask where every physical letter-run is actually
-  // clued by an arrow (see task-8-report.md for the diagnosis - most
-  // deriveSlots-valid masks still leave some runs un-clued and fail
-  // validateGrid downstream; this is a mask-quality gap, not a fill issue).
-  var grid = generateGrid.generate(9, 9, dictionary, { seed: 81, maxMaskAttempts: 30 });
+  // Task 12: generate() now collects a pool of valid masks before filling
+  // any of them, so it no longer stops at the first mask that happens to
+  // fill - it needs maskPoolSize valid masks (or maxMaskAttempts tries,
+  // whichever comes first) before it starts filling at all. Seed 81 (kept
+  // at the default maskPoolSize of 8) pushed this integration test past
+  // 30s, so the seed and pool size are re-derived here for one that
+  // converges quickly: seed 85 with maskPoolSize 2 finds a fillable mask
+  // in ~3.5s at 9x9 with the real dictionary.
+  var grid = generateGrid.generate(9, 9, dictionary, { seed: 85, maxMaskAttempts: 30, maskPoolSize: 2 });
   assert.notStrictEqual(grid, null);
   var result = validateLib.validateGrid(grid, dictionary);
   assert.deepStrictEqual(result.errors, []);
