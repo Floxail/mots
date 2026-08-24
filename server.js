@@ -48,6 +48,10 @@ app.get('/conf.json', function(req, res) {
     // than needing its own endpoint. Sent as bounds, not the whole list: the
     // archive grows by one every night.
     var localGrids = require('./game_files/gridManager').listLocalGrids();
+    // Never cache: this response is derived from the request (SOCKET_ADDR) and
+    // from server state that changes every night (LOCAL_GRIDS). A cached copy
+    // would keep advertising yesterday's grid range, or none at all.
+    res.set('Cache-Control', 'no-store');
     res.json(Object.assign({}, config, {
         SOCKET_ADDR: protocol + '://' + hostname,
         SOCKET_PORT: port,
