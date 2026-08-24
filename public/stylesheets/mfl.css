@@ -437,12 +437,30 @@ html, body {
   -moz-box-sizing: border-box;
   -webkit-box-sizing: border-box;
   border-top: 1px solid transparent;
-  /* Wrapped text would overflow its flex share and get clipped; truncate
-     to one line instead - the click-to-open #desc-popup already shows
-     the full definition text. */
-  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* The definition text, inside the flex item rather than directly in it.
+   text-overflow cannot ellipsis a flex container's own (anonymous) text, so
+   putting it here is what makes the "..." actually render. Clamped to the
+   number of lines that fit its share of the cell (set from grid.js, which
+   knows the cell size and how many definitions share it): the text wraps,
+   the beginning is always visible, and anything past the last line ends in
+   an ellipsis. The full text stays available by clicking the cell. */
+.description span .desc-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; /* fallback; grid.js overrides per cell */
+  line-clamp: 2;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-style: normal;
+  text-align: center;
+  width: 100%;
+  padding: 0 2px;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .description span:not(:first-child) {

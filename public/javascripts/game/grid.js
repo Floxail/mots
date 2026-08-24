@@ -59,10 +59,28 @@ define(['cursor'], function (Cursor) {
 
     frame.style.fontSize = fontSize + 'px';
 
+    // The text lives in an inner element, not directly in the flex item: a
+    // flex container's own text is an anonymous box, which text-overflow
+    // cannot ellipsis. Centred and clipped, that lost the START of a long
+    // definition as well as its end. The inner block wraps over as many lines
+    // as its share of the cell allows, then ellipsises what is left - so the
+    // beginning is always readable and "..." signals there is more, which the
+    // click-to-open #desc-popup shows in full.
+    var lineHeight = Math.round(fontSize * 1.15);
+    var maxLines = Math.max(1, Math.floor((size / info.nbDesc) / lineHeight));
+
     var fullParts = [];
     for (i = 0; i < info.nbDesc; i++) {
       descNode = document.createElement('span');
-      descNode.innerHTML = info.desc[i];
+      var textNode = document.createElement('i');
+      textNode.className = 'desc-text';
+      textNode.innerHTML = info.desc[i];
+      textNode.style.lineHeight = lineHeight + 'px';
+      // setProperty, not style.webkitLineClamp: Firefox honours the prefixed
+      // property but does not expose it under that camelCase alias.
+      textNode.style.setProperty('-webkit-line-clamp', maxLines);
+      textNode.style.setProperty('line-clamp', maxLines);
+      descNode.appendChild(textNode);
       frame.appendChild(descNode);
       fullParts.push(info.desc[i]);
     }
