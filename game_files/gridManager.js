@@ -482,11 +482,36 @@ GridManager.prototype.retreiveAndParseGrid = function (gridNumber, callback) {
   });
 };
 
+// Locally generated grids are archived one per file, numbered like GSO's are,
+// so past days stay replayable instead of being overwritten each night.
+var LOCAL_GRID_DIR = path.join(__dirname, '..', 'data', 'grids');
+
+// Numbers of the archived local grids, ascending. Anything that is not
+// <digits>.json is ignored, so notes or backups left in the folder are
+// harmless.
+function listLocalGrids(dir) {
+  var files;
+  try {
+    files = fs.readdirSync(dir || LOCAL_GRID_DIR);
+  } catch (e) {
+    return [];
+  }
+  return files
+    .map(function (name) { return /^(\d+)\.json$/.exec(name); })
+    .filter(function (m) { return m !== null; })
+    .map(function (m) { return parseInt(m[1], 10); })
+    .sort(function (a, b) { return a - b; });
+}
+
+function localGridPath(number) {
+  return path.join(LOCAL_GRID_DIR, number + '.json');
+}
+
 // Loads a grid produced by scripts/generate-grid.js instead of fetching one
 // from GSO. Same output shape as retreiveAndParseGrid ({nbLines, nbColumns,
 // nbWords, cases}), so nothing downstream (checkPlayerWord, getGrid, etc.)
 // needs to know the difference.
-GridManager.prototype.loadLocalGrid = function (filePath, callback) {
+GridManager.prototype.loadLocalGrid = function (filePath, callback, number) {
   var self = this;
   fs.readFile(filePath, 'utf8', function (err, text) {
     if (err) {
@@ -508,10 +533,11 @@ GridManager.prototype.loadLocalGrid = function (filePath, callback) {
     });
 
     self._gridInfos.provider = 'LOCAL';
-    self._gridInfos.id = 'genere';
+    self._gridInfos.id = number !== undefined ? number : 'genere';
     self._gridInfos.level = 0;
     self._gridInfos.nbWords = grid.nbWords;
-    self._gridInfos.date = Date.now();
+    // The night the grid was generated, not the night it is played.
+    self._gridInfos.date = grid.generated ? Date.parse(grid.generated) : Date.now();
 
     self._grid = grid;
     callback(self._grid);
@@ -530,8 +556,25 @@ GridManager.prototype.resetGrid = function (gridNumber, callback) {
   this._gridInfos.nbWords = 0;
   this._gridInfos.date = null;
 
-  if (gridNumber === 'local') {
-    this.loadLocalGrid(path.join(__dirname, '..', 'data', 'generated-grid.json'), callback);
+  // 'local' = the most recent generated grid, 'local:12' = archived grid #12.
+  if (gridNumber === 'local' || (typeof gridNumber === 'string' && gridNumber.indexOf('local:') === 0)) {
+    var available = listLocalGrids();
+    if (available.length === 0) {
+      onGetGridError(callback, 'Aucune grille locale dans data/grids — lance scripts/daily-grid.js');
+      return;
+    }
+
+    var wanted = gridNumber === 'local'
+      ? available[available.length - 1]
+      : parseInt(gridNumber.slice('local:'.length), 10);
+
+    if (available.indexOf(wanted) === -1) {
+      onGetGridError(callback, 'Grille locale #' + wanted + ' introuvable (disponibles : ' +
+        available[0] + '-' + available[available.length - 1] + ')');
+      return;
+    }
+
+    this.loadLocalGrid(localGridPath(wanted), callback, wanted);
     return;
   }
 
@@ -541,3 +584,8 @@ GridManager.prototype.resetGrid = function (gridNumber, callback) {
 module.exports = GridManager;
 // Exposed so the character/arrow table can be tested without a network fetch.
 module.exports.placeArrows = placeArrows;
+// Used by scripts/daily-grid.js to pick the next number, and by the chat's
+// !grid command to tell players which local grids exist.
+module.exports.listLocalGrids = listLocalGrids;
+module.exports.localGridPath = localGridPath;
+module.exports.LOCAL_GRID_DIR = LOCAL_GRID_DIR;

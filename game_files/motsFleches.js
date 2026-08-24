@@ -224,6 +224,18 @@ GameRoom.prototype.sendGameState = function (socket, player) {
   }
 };
 
+// Turns the argument of "!grid ..." into what resetGrid expects:
+//   "local"    -> 'local'      the most recent generated grid
+//   "local 12" -> 'local:12'   archived local grid #12
+//   "2118"     -> 2118         that GSO grid
+//   anything else -> 0         GSO grid of the day
+function parseGridArg(arg) {
+  var local = /^local(?:\s+(\d+))?$/.exec(arg);
+  if (local) return local[1] ? 'local:' + parseInt(local[1], 10) : 'local';
+  var number = parseInt(arg, 10);
+  return isNaN(number) ? 0 : number;
+}
+
 GameRoom.prototype.checkServerCommand = function (message, socket) {
   if (message[0] !== '!') return false;
   if (this.gameState === enums.ServerState.WaitingForPlayers && message === '!start') {
@@ -236,8 +248,7 @@ GameRoom.prototype.checkServerCommand = function (message, socket) {
   }
   if (message.indexOf('!grid') === 0) {
     var arg     = message.substr(6).trim();
-    var number  = parseInt(arg);
-    var gridNum = arg === 'local' ? 'local' : (isNaN(number) ? 0 : number);
+    var gridNum = parseGridArg(arg);
 
     if (this.gameState === enums.ServerState.OnGame && this.gridManager.getNbRemainingWords() > 0) {
       var self = this;
@@ -574,3 +585,7 @@ exports.startMflServer = function (desiredGrid, httpServer) {
 
   console.log('Game server started — waiting for connections.');
 };
+
+// Exported for tests: the !grid argument parsing is easy to break silently
+// (e.g. "local12" must not be read as local grid 12).
+exports.parseGridArg = parseGridArg;

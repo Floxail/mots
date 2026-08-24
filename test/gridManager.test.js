@@ -75,3 +75,37 @@ test('placeArrows falls back to context inference for an unknown character', fun
   GridManager.placeArrows(grid);
   assert.deepStrictEqual(grid.cases[0].arrow, [0]);
 });
+
+test('parseGridArg maps the !grid argument to what resetGrid expects', function () {
+  var parse = require('../game_files/motsFleches').parseGridArg;
+
+  assert.strictEqual(parse('local'), 'local');          // latest generated grid
+  assert.strictEqual(parse('local 12'), 'local:12');    // archived local grid
+  assert.strictEqual(parse('local   7'), 'local:7');    // extra spacing tolerated
+  assert.strictEqual(parse('2118'), 2118);              // a GSO grid
+  assert.strictEqual(parse(''), 0);                     // GSO grid of the day
+  assert.strictEqual(parse('n import quoi'), 0);
+
+  // "local12" is not a local grid reference - without the space it would
+  // otherwise be read as GSO grid 0 or, worse, local grid 12.
+  assert.strictEqual(parse('local12'), 0);
+  // A negative or non-integer suffix must not become a local reference either.
+  assert.strictEqual(parse('local -3'), 0);
+});
+
+test('listLocalGrids returns archived grid numbers in order, ignoring anything else', function () {
+  var dir = path.join(os.tmpdir(), 'mfl-grids-' + Date.now());
+  fs.mkdirSync(dir, { recursive: true });
+  ['10.json', '2.json', '1.json', 'notes.txt', 'draft.json', '3.json.bak'].forEach(function (name) {
+    fs.writeFileSync(path.join(dir, name), '{}');
+  });
+
+  // Numeric order, not the lexicographic order readdir would give (10 before 2).
+  assert.deepStrictEqual(GridManager.listLocalGrids(dir), [1, 2, 10]);
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('listLocalGrids reports an empty archive rather than throwing', function () {
+  assert.deepStrictEqual(GridManager.listLocalGrids(path.join(os.tmpdir(), 'mfl-absent-' + Date.now())), []);
+});
