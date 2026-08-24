@@ -411,16 +411,28 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
   }
 
   function loadSoloGrid(ref) {
-    _soloScore = 0;
-    var el = document.querySelector('#solo-score .solo-value');
-    if (el) el.textContent = 0;
-
     fetch('/api/grid/' + encodeURIComponent(ref))
       .then(function (r) {
         if (!r.ok) return r.json().then(function (b) { throw new Error(b.error || 'HTTP ' + r.status); });
         return r.json();
       })
       .then(function (fullGrid) {
+        // Clear the previous grid first, exactly as resetGame does in
+        // multiplayer: DisplayGrid appends into #gs-grid-container, so without
+        // this the old cells stay underneath and both grids show through each
+        // other. Done here rather than before the fetch, so a grid that fails
+        // to load leaves the one you are playing untouched.
+        _ui.resetGridInformations();
+        _ui.InfoTooltip(false);
+        if (_gridManager) _gridManager.resetGrid();
+
+        // Score belongs to the grid, so it resets here too - and only once the
+        // new grid is actually in hand, or a failed !grid would wipe the score
+        // of the grid you are still playing.
+        _soloScore = 0;
+        var scoreNode = document.querySelector('#solo-score .solo-value');
+        if (scoreNode) scoreNode.textContent = 0;
+
         _soloGrid    = fullGrid;
         _gridManager = new GridManager(fullGrid, validateSoloWord);
         _gridManager.DisplayGrid();
