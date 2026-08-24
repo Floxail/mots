@@ -176,12 +176,18 @@ define(function () {
     var levelStars = '';
     for (var s = 0; s < infos.level; s++) levelStars += '★';
 
+    // Generated grids are the 15x15 "large" ones, addressed as L<n>; they
+    // carry no difficulty rating, so showing "Difficulté : (0)" for them would
+    // state a level they never had.
+    var isLarge = infos.provider === 'LOCAL';
     var bar = document.createElement('div');
     bar.id = 'gs-grid-infos';
     bar.style.top = (gridBottom + 6) + 'px';
     bar.innerHTML = '<span class="grid-info-date">' + dateStr + '</span>'
-      + '<span class="grid-info-id">Grille n°' + infos.id + '</span>'
-      + '<span class="grid-info-level">Difficulté : ' + levelStars + ' (' + infos.level + ')</span>';
+      + '<span class="grid-info-id">Grille ' + (isLarge ? 'large ' : '') + 'n°' + infos.id + '</span>'
+      + '<span class="grid-info-level">'
+      + (isLarge ? '15 × 15' : 'Difficulté : ' + levelStars + ' (' + infos.level + ')')
+      + '</span>';
     container.appendChild(bar);
 
     // Inject the in-game info panel (timer, level) inside empty cells
@@ -199,7 +205,9 @@ define(function () {
     }, 1000);
 
     // Display grid informations
-    document.querySelector('#ig-infos > header').innerHTML = infos.provider + ' ' + infos.id + ' - Niveau ' + infos.level;
+    document.querySelector('#ig-infos > header').innerHTML = isLarge
+      ? 'Grille large n°' + infos.id
+      : infos.provider + ' ' + infos.id + ' - Niveau ' + infos.level;
   };
 
   /*

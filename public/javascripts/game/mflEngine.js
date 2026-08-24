@@ -40,6 +40,14 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
   var _gridCfg      = Conf.GRID_PROVIDER;
   var _todayGrid    = _gridCfg.PROVIDER_DEFAULT_GRID + Math.floor((Date.now() - _gridCfg.PROVIDER_DEFAULT_GRID_DATE) / 86400000);
   var _gridRange    = '#' + _gridCfg.PROVIDER_FIRST_GRID + ' à #' + _todayGrid;
+  // Generated 15x15 grids, archived on the server one per night. Null until
+  // the first one exists, so the help text can stay silent rather than
+  // advertising a command that would fail.
+  var _localGrids   = Conf.LOCAL_GRIDS || null;
+  var _localRange   = !_localGrids ? null
+    : (_localGrids.first === _localGrids.last
+        ? 'L' + _localGrids.first
+        : 'L' + _localGrids.first + ' à L' + _localGrids.last);
 
   _ui           = new UITools();
   _scoreManager = new Score();
@@ -215,7 +223,7 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
 
     _chat = new Chat(_socket, _scoreManager.UpdatePlayerList, function (cmd) {
       if (cmd === 'clear' && _gridManager) _gridManager.clearUnvalidated();
-    }, _gridRange);
+    }, _gridRange, _localRange);
     _socket.on('grid_event', onStartGame);
     _socket.on('grid_reset', resetGame);
     _socket.on('score_update', _scoreManager.RefreshScore);

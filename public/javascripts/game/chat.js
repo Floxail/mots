@@ -12,7 +12,7 @@ define(function () {
       _writeNode = document.getElementById('gsc-write'),
       _serverColor = null;
 
-  function Chat (socket, notifyPlayerListCallback, localCommandCallback, gridRange) {
+  function Chat (socket, notifyPlayerListCallback, localCommandCallback, gridRange, localRange) {
     // Store usefull object and callback
     _notifyCallback = notifyPlayerListCallback;
     _localCommandCallback = localCommandCallback || null;
@@ -43,7 +43,9 @@ define(function () {
           infoBox.style.color = '#7fb3c8';
           infoBox.innerHTML = '<strong>Commandes disponibles :</strong><br>'
             + '<code>!start</code> — Lance la partie (salle d\'attente)<br>'
-            + '<code>!grid N</code> — Change de grille (vote si partie en cours)'
+            + '<code>!grid L[N]</code> — Lance une grille Large 15x15'
+            + (localRange ? ' · Disponibles : ' + localRange : ' · aucune pour l\'instant') + '<br>'
+            + '<code>!grid [N]</code> — Change de grille (vote si partie en cours)'
             + (gridRange ? ' · Grilles disponibles : ' + gridRange : '') + '<br>'
             + '<code>!oui</code> / <code>!non</code> — Vote pour/contre !grid<br>'
             + '<code>!kick pseudo</code> — Expulse un joueur inactif (10 min)<br>'

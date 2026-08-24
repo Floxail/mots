@@ -43,9 +43,19 @@ app.get('/conf.json', function(req, res) {
     var parts = host.split(':');
     var hostname = parts[0];
     var port = parts[1] ? parseInt(parts[1]) : (protocol === 'https' ? 443 : 80);
+    // Which generated ("L") grids exist is only knowable server-side, and the
+    // client already reads this file at startup - so it rides along rather
+    // than needing its own endpoint. Sent as bounds, not the whole list: the
+    // archive grows by one every night.
+    var localGrids = require('./game_files/gridManager').listLocalGrids();
     res.json(Object.assign({}, config, {
         SOCKET_ADDR: protocol + '://' + hostname,
-        SOCKET_PORT: port
+        SOCKET_PORT: port,
+        LOCAL_GRIDS: localGrids.length === 0 ? null : {
+            first: localGrids[0],
+            last:  localGrids[localGrids.length - 1],
+            count: localGrids.length
+        }
     }));
 });
 
