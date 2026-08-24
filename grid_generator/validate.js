@@ -128,4 +128,7 @@ function validateGrid(grid, dictionary) {
   return { valid: errors.length === 0, errors: errors };
 }
 
-module.exports = { validateGrid: validateGrid };
+// arrowGeometry/walk are exported so tools that read a finished grid (see
+// scripts/show-grid.js) resolve arrows through the same code the validator
+// uses. A second copy of this index maths would drift and quietly disagree.
+module.exports = { validateGrid: validateGrid, arrowGeometry: arrowGeometry, walk: walk };
