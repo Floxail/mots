@@ -79,9 +79,18 @@ test('placeArrows falls back to context inference for an unknown character', fun
 test('parseGridArg maps the !grid argument to what resetGrid expects', function () {
   var parse = require('../game_files/motsFleches').parseGridArg;
 
-  assert.strictEqual(parse('local'), 'local');          // latest generated grid
-  assert.strictEqual(parse('local 12'), 'local:12');    // archived local grid
-  assert.strictEqual(parse('local   7'), 'local:7');    // extra spacing tolerated
+  // L<n> is the form players type: "!grid L1"
+  assert.strictEqual(parse('L1'), 'local:1');
+  assert.strictEqual(parse('L12'), 'local:12');
+  assert.strictEqual(parse('l3'), 'local:3');           // lower case too
+  assert.strictEqual(parse('L'), 'local');              // latest generated grid
+  assert.strictEqual(parse('L 5'), 'local:5');          // stray space tolerated
+
+  // the older spelling still works, so anyone used to it is not broken
+  assert.strictEqual(parse('local'), 'local');
+  assert.strictEqual(parse('local 12'), 'local:12');
+  assert.strictEqual(parse('local   7'), 'local:7');
+
   assert.strictEqual(parse('2118'), 2118);              // a GSO grid
   assert.strictEqual(parse(''), 0);                     // GSO grid of the day
   assert.strictEqual(parse('n import quoi'), 0);
@@ -89,8 +98,19 @@ test('parseGridArg maps the !grid argument to what resetGrid expects', function 
   // "local12" is not a local grid reference - without the space it would
   // otherwise be read as GSO grid 0 or, worse, local grid 12.
   assert.strictEqual(parse('local12'), 0);
-  // A negative or non-integer suffix must not become a local reference either.
+  // Neither is a negative suffix, nor a doubled prefix.
   assert.strictEqual(parse('local -3'), 0);
+  assert.strictEqual(parse('L-2'), 0);
+  assert.strictEqual(parse('LL'), 0);
+});
+
+test('formatGridRef shows players the reference they typed, not the internal one', function () {
+  var format = require('../game_files/motsFleches').formatGridRef;
+
+  // 'local:12' is how resetGrid addresses it; L12 is how a player asks for it.
+  assert.strictEqual(format('local:12'), 'L12');
+  assert.strictEqual(format(2118), '#2118');
+  assert.ok(format('local').indexOf('L') === 0);
 });
 
 test('listLocalGrids returns archived grid numbers in order, ignoring anything else', function () {

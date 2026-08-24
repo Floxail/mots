@@ -134,11 +134,16 @@ GameRoom.prototype.resetGame = function (gridId) {
   self.gridManager.resetGrid(gridId, function (grid) {
     if (!grid) {
       console.error('[ERROR] Cannot retreive requested grid [' + gridId + ']');
-      self.sendChat('Oups, impossible de récupérer la grille ' + gridId + ' !');
+      self.sendChat('Oups, impossible de récupérer la grille ' + formatGridRef(gridId) + ' !');
     } else {
       self.gridReady = true;
       var infos = self.gridManager.getGridInfos();
-      self.sendChat('Grille ' + infos.provider + ' ' + infos.id + ' (Niveau ' + infos.level + ') prête !');
+      // Generated grids have no difficulty rating and are addressed as L<n>,
+      // so announcing them the GSO way ("LOCAL 1 (Niveau 0)") would show a
+      // meaningless level and a name nobody can type back.
+      self.sendChat(infos.provider === 'LOCAL'
+        ? 'Grille L' + infos.id + ' (generee) prête !'
+        : 'Grille ' + infos.provider + ' ' + infos.id + ' (Niveau ' + infos.level + ') prête !');
       self.broadcast('grid_reset');
       self.startGame();
     }
@@ -225,15 +230,26 @@ GameRoom.prototype.sendGameState = function (socket, player) {
 };
 
 // Turns the argument of "!grid ..." into what resetGrid expects:
-//   "local"    -> 'local'      the most recent generated grid
-//   "local 12" -> 'local:12'   archived local grid #12
+//   "L12"      -> 'local:12'   grid #12 generated here
+//   "L"        -> 'local'      the most recent generated grid
+//   "local 12" -> 'local:12'   older spelling, still accepted
 //   "2118"     -> 2118         that GSO grid
 //   anything else -> 0         GSO grid of the day
 function parseGridArg(arg) {
-  var local = /^local(?:\s+(\d+))?$/.exec(arg);
-  if (local) return local[1] ? 'local:' + parseInt(local[1], 10) : 'local';
+  var short = /^[lL]\s*(\d*)$/.exec(arg);
+  if (short) return short[1] ? 'local:' + parseInt(short[1], 10) : 'local';
+  var long = /^local(?:\s+(\d+))?$/i.exec(arg);
+  if (long) return long[1] ? 'local:' + parseInt(long[1], 10) : 'local';
   var number = parseInt(arg, 10);
   return isNaN(number) ? 0 : number;
+}
+
+// How a grid reference reads in chat: 'local:12' is an implementation detail,
+// players type and see L12.
+function formatGridRef(gridId) {
+  if (gridId === 'local') return 'L (derniere generee)';
+  if (typeof gridId === 'string' && gridId.indexOf('local:') === 0) return 'L' + gridId.slice('local:'.length);
+  return '#' + gridId;
 }
 
 GameRoom.prototype.checkServerCommand = function (message, socket) {
@@ -278,7 +294,7 @@ GameRoom.prototype.checkServerCommand = function (message, socket) {
       );
 
       var initiatorNick = initiator ? initiator.getNick() : 'Quelqu\'un';
-      this.sendChat('⚡ Vote lancé par ' + initiatorNick + ' : grille #' + gridNum + ' — tapez !oui ou !non (30s)');
+      this.sendChat('⚡ Vote lancé par ' + initiatorNick + ' : grille ' + formatGridRef(gridNum) + ' — tapez !oui ou !non (30s)');
 
       if (initiator) {
         this._pendingVote.castVote(initiator.getID(), true);
@@ -589,3 +605,4 @@ exports.startMflServer = function (desiredGrid, httpServer) {
 // Exported for tests: the !grid argument parsing is easy to break silently
 // (e.g. "local12" must not be read as local grid 12).
 exports.parseGridArg = parseGridArg;
+exports.formatGridRef = formatGridRef;
