@@ -2,12 +2,14 @@
 // Prints a generated grid's solution and every clue with the word it points at,
 // checking each definition really belongs to that word in the dictionary.
 //
-//   node scripts/show-grid.js                     -> data/generated-grid.json
+//   node scripts/show-grid.js                     -> newest archived grid
+//   node scripts/show-grid.js 12                  -> archived local grid #12
 //   node scripts/show-grid.js path/to/grid.json
 var fs = require('fs');
 var path = require('path');
 var enums = require('../game_files/enums');
 var dictionaryLib = require('../grid_generator/dictionary');
+var GridManager = require('../game_files/gridManager');
 // Resolve arrows through the validator's own helpers, so this tool can never
 // disagree with the code that decides whether a grid is valid.
 var validateLib = require('../grid_generator/validate');
@@ -20,6 +22,23 @@ function readWord(grid, start, axis) {
   return validateLib.walk(grid, start, axis).map(function (idx) {
     return grid.cases[idx].value;
   }).join('');
+}
+
+// arg may be a grid number ("12"), a file path, or absent (newest archived).
+function resolveGridPath(arg) {
+  if (arg && /^\d+$/.test(arg)) return GridManager.localGridPath(parseInt(arg, 10));
+  if (arg) return arg;
+
+  var archived = GridManager.listLocalGrids();
+  if (archived.length > 0) return GridManager.localGridPath(archived[archived.length - 1]);
+
+  var scratch = path.join(__dirname, '..', 'data', 'generated-grid.json');
+  if (fs.existsSync(scratch)) {
+    console.log('(aucune grille archivee dans data/grids — lecture du fichier de travail)\n');
+    return scratch;
+  }
+  console.error('Aucune grille : lance scripts/daily-grid.js pour en archiver une.');
+  process.exit(1);
 }
 
 function renderSolution(grid) {
@@ -56,8 +75,12 @@ function collectClues(grid) {
 }
 
 function main() {
-  var gridPath = process.argv[2] || path.join(__dirname, '..', 'data', 'generated-grid.json');
+  // Default to what the game actually serves - the newest archived grid - not
+  // to generate-grid.js's scratch file, which may be a stale leftover from an
+  // older generator and is nobody's grid of the day.
+  var gridPath = resolveGridPath(process.argv[2]);
   var grid = JSON.parse(fs.readFileSync(gridPath, 'utf8'));
+  console.log('Fichier : ' + gridPath);
 
   // Same dictionary the generator drew from, so "does this definition belong to
   // this word" is answered against the real source, not re-derived here.
