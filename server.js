@@ -26,14 +26,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', routes.index);
 
-// Solo mode — returns full grid (letters included) for client-side word validation
-app.get('/api/grid/:number?', function (req, res) {
+// Solo mode — returns full grid (letters included) for client-side word validation.
+// Takes the same references players type in chat ("L1", "2118", empty = grid of
+// the day), parsed by the same function, so solo and multiplayer can never
+// disagree about what "L1" means.
+app.get('/api/grid/:ref?', function (req, res) {
   var GridManager = require('./game_files/gridManager');
   var gm = new GridManager();
-  var number = req.params.number ? parseInt(req.params.number) : 0;
-  if (isNaN(number)) number = 0;
-  gm.retreiveAndParseGrid(number, function (grid) {
-    if (!grid) return res.status(500).json({ error: 'Impossible de charger la grille' });
+  var ref = mfl.parseGridArg(req.params.ref ? String(req.params.ref) : '');
+  gm.resetGrid(ref, function (grid) {
+    if (!grid) return res.status(404).json({ error: 'Impossible de charger la grille ' + mfl.formatGridRef(ref) });
     res.json(gm.getFullGrid());
   });
 });

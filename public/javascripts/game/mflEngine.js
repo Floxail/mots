@@ -382,16 +382,42 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
 
     _ui.ChangeGameScreen(enumPanels.Game, true);
 
-    // Hide chat panel and chat tab — not needed in solo
-    document.getElementById('gs-chat').style.display = 'none';
+    // The chat panel stays: solo has nobody to talk to, but it is where !grid
+    // and !info live, so hiding it also hid the only way to pick a grid.
+    document.getElementById('gs-chat').style.display = '';
     var chatTabBtn = document.querySelector('.tab-btn[data-tab="chat"]');
-    if (chatTabBtn) chatTabBtn.style.display = 'none';
+    if (chatTabBtn) chatTabBtn.style.display = '';
     document.getElementById('gs-scores').innerHTML =
       '<div id="solo-score"><span class="solo-label">Score</span><span class="solo-value">0</span></div>';
 
-    fetch('/api/grid')
+    _chat = new Chat(_socket, function () {}, onSoloCommand, _gridRange, _localRange, true);
+    _chat.print('Mode solo. <code>!grid L1</code> pour choisir une grille, <code>!info</code> pour l\'aide.');
+
+    loadSoloGrid('');
+  }
+
+  // Solo runs every command itself: there is no room, so no vote and no server
+  // round trip - "!grid L1" simply swaps the grid on the spot.
+  function onSoloCommand(cmd) {
+    if (cmd === 'clear') {
+      if (_gridManager) _gridManager.clearUnvalidated();
+      return;
+    }
+    if (cmd.indexOf('!grid') === 0) {
+      loadSoloGrid(cmd.substr(6).trim());
+      return;
+    }
+    _chat.print('Commande inconnue en solo : <code>' + cmd + '</code>');
+  }
+
+  function loadSoloGrid(ref) {
+    _soloScore = 0;
+    var el = document.querySelector('#solo-score .solo-value');
+    if (el) el.textContent = 0;
+
+    fetch('/api/grid/' + encodeURIComponent(ref))
       .then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
+        if (!r.ok) return r.json().then(function (b) { throw new Error(b.error || 'HTTP ' + r.status); });
         return r.json();
       })
       .then(function (fullGrid) {
@@ -399,9 +425,15 @@ require(['../lib/text!../../conf.json', 'UITools', 'grid', 'chat', 'score'], fun
         _gridManager = new GridManager(fullGrid, validateSoloWord);
         _gridManager.DisplayGrid();
         _ui.displayGridInformations(fullGrid.infos);
+        if (_chat) {
+          _chat.print(fullGrid.infos.provider === 'LOCAL'
+            ? 'Grille large n°' + fullGrid.infos.id + ' chargée.'
+            : 'Grille ' + fullGrid.infos.provider + ' ' + fullGrid.infos.id + ' chargée.');
+        }
       })
       .catch(function (e) {
-        showError('Impossible de charger la grille solo : ' + e.message);
+        if (_chat) _chat.print('⚠ ' + e.message);
+        else showError('Impossible de charger la grille solo : ' + e.message);
       });
   }
 

@@ -8,14 +8,16 @@ define(function () {
       _notifyCallback,
       _chatHandler = null,
       _localCommandCallback = null,
+      _soloMode = false,
       _mesNode = document.getElementById('gsc-messages'),
       _writeNode = document.getElementById('gsc-write'),
       _serverColor = null;
 
-  function Chat (socket, notifyPlayerListCallback, localCommandCallback, gridRange, localRange) {
+  function Chat (socket, notifyPlayerListCallback, localCommandCallback, gridRange, localRange, soloMode) {
     // Store usefull object and callback
     _notifyCallback = notifyPlayerListCallback;
     _localCommandCallback = localCommandCallback || null;
+    _soloMode = soloMode === true;
 
     // Remove previous chat listener if any (prevents duplicates on reconnect)
     if (_socket && _chatHandler) {
@@ -23,11 +25,13 @@ define(function () {
     }
     _socket = socket;
 
-    // On init, bind socket to receive messages
-    _chatHandler = function (messageObj) {
-      treatChatMessage(messageObj);
-    };
-    _socket.on('chat', _chatHandler);
+    // In solo there is no room, so no server chat to listen to.
+    if (!_soloMode && _socket) {
+      _chatHandler = function (messageObj) {
+        treatChatMessage(messageObj);
+      };
+      _socket.on('chat', _chatHandler);
+    }
 
     // Bind onkeyPress of the textarea node to send messages
     _writeNode.onkeypress = function (event) {
@@ -54,6 +58,14 @@ define(function () {
             + '<code>!info</code> — Affiche cette aide';
           _mesNode.appendChild(infoBox);
           _mesNode.scrollTop = _mesNode.scrollHeight;
+        } else if (_soloMode) {
+          // Solo has no room to broadcast to: commands run locally and plain
+          // talk has no audience, so say so rather than swallowing the message.
+          if (msg.indexOf('!') === 0) {
+            if (_localCommandCallback) _localCommandCallback(msg);
+          } else if (msg !== '') {
+            Chat.prototype.print('En solo, seules les commandes fonctionnent (<code>!info</code> pour la liste).');
+          }
         } else if (msg !== '') {
           _socket.emit('chat', _writeNode.value);
         }
@@ -92,6 +104,21 @@ define(function () {
     _mesNode.scrollTop = _mesNode.scrollHeight;
   }
 
+
+  /*
+  * Print a server-styled message straight into the panel, without a round
+  * trip. Solo mode has no server to echo commands back, and the in-chat help
+  * needs it too.
+  * @param {String}  html  message content
+  */
+  Chat.prototype.print = function (html) {
+    var box = document.createElement('article');
+    box.classList.add('server-message');
+    box.style.color = _serverColor || '#7fb3c8';
+    box.innerHTML = html;
+    _mesNode.appendChild(box);
+    _mesNode.scrollTop = _mesNode.scrollHeight;
+  };
 
   /*
   * Print a congrats message in chat !
